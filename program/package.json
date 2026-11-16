@@ -1,0 +1,22 @@
+{
+  "license": "ISC",
+  "scripts": {
+    "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+    "test": "anchor test --validator legacy",
+    "sync-idl": "mkdir -p ../app/lib/idl && cp target/idl/seatsafe.json ../app/lib/idl/seatsafe.json && cp target/types/seatsafe.ts ../app/lib/idl/seatsafe.ts"
+  },
+  "dependencies": {
+    "@anchor-lang/core": "^1.2.2"
+  },
+  "devDependencies": {
+    "chai": "^4.3.4",
+    "mocha": "^9.0.3",
+    "ts-mocha": "^10.0.0",
+    "@types/bn.js": "^5.1.0",
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^9.0.0",
+    "typescript": "^5.7.3",
+    "prettier": "^2.6.2"
+  }
+}

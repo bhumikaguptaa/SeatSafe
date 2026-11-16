@@ -1,0 +1,105 @@
+"use client";
+
+import { Suspense } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Bot, Compass, Palette, ShieldCheck, Tag, Ticket } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { AuthButton } from "@/components/AuthButton";
+import { UsdcBalance } from "@/components/UsdcBalance";
+
+const NAV_ITEMS = [
+  { href: "/", label: "Discover", icon: Compass },
+  { href: "/tickets", label: "My tickets", icon: Ticket },
+  { href: "/sell", label: "Sell", icon: Tag },
+  { href: "/agent", label: "Agent", icon: Bot },
+  { href: "/creator", label: "Creator", icon: Palette },
+] as const;
+
+function isActive(pathname: string | null, href: string) {
+  if (!pathname) return false;
+  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+}
+
+// With Cache Components on, usePathname() must sit behind <Suspense> so dynamic routes
+// (e.g. /orders/[id]) can still prerender a static shell. The Suspense fallback is the
+// same links without the active highlight.
+function ActiveDesktopLinks() {
+  return <DesktopLinks pathname={usePathname()} />;
+}
+
+function ActiveMobileTabs() {
+  return <MobileTabs pathname={usePathname()} />;
+}
+
+function DesktopLinks({ pathname }: { pathname: string | null }) {
+  return (
+    <nav className="hidden items-center gap-1 md:flex">
+      {NAV_ITEMS.map(({ href, label }) => (
+        <Link
+          key={href}
+          href={href}
+          className={cn(
+            "rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground",
+            isActive(pathname, href) && "bg-muted text-foreground",
+          )}
+        >
+          {label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+function MobileTabs({ pathname }: { pathname: string | null }) {
+  return (
+    <ul className="grid grid-cols-5">
+      {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+        <li key={href}>
+          <Link
+            href={href}
+            className={cn(
+              "flex flex-col items-center gap-0.5 py-2 text-[11px] text-muted-foreground",
+              isActive(pathname, href) && "text-vault",
+            )}
+          >
+            <Icon className="size-5" />
+            {label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Top bar: logo + links (desktop), balance + login (all sizes). */
+export function TopNav() {
+  return (
+    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
+        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
+          <ShieldCheck className="size-5 text-vault" />
+          SeatSafe
+        </Link>
+        <Suspense fallback={<DesktopLinks pathname={null} />}>
+          <ActiveDesktopLinks />
+        </Suspense>
+        <div className="ml-auto flex items-center gap-2">
+          <UsdcBalance />
+          <AuthButton />
+        </div>
+      </div>
+    </header>
+  );
+}
+
+/** Bottom tab bar (mobile only). */
+export function BottomTabs() {
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur md:hidden">
+      <Suspense fallback={<MobileTabs pathname={null} />}>
+        <ActiveMobileTabs />
+      </Suspense>
+    </nav>
+  );
+}
