@@ -28,3 +28,6 @@ program/test-ledger/
 .vercel/
 npm-debug.log*
 yarn-error.log*
+
+# Old build folders renamed out of iCloud sync (macOS skips *.nosync)
+*.nosync
