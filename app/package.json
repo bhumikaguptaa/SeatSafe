@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify:local": "../program/node_modules/.bin/ts-node --transpile-only -P scripts/tsconfig.json scripts/verify-builders.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
