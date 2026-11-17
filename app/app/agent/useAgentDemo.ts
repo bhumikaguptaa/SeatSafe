@@ -1,8 +1,9 @@
 "use client";
 
-// Owner: D. DEMO ONLY: the agent console's state, simulated in the browser.
-// Events come from useEvents(); everything else (parsing, the scan, the decision log, the budget)
-// is faked here so the UI can be built and demoed with zero backend.
+// Owner: D. The agent console's state. Mock mode simulates everything in the browser.
+// Events come from useEvents() (mock) or getEvents() (real mode); parsing is local in both.
+// The scan, decision log and fill are faked here in mock mode only. Real-mode budget locking
+// lives in ./useAgentChain.ts.
 //
 // Real wiring (see the PR description for owners):
 //   parseRequest()  -> an LLM call behind an API route that returns StandingOrder fields
@@ -12,8 +13,10 @@
 //   approveFill()   -> the crank waits for the user's yes (VoiceApproval) before it fills
 // The local types below would move to lib/types.ts with A's OK.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useEvents } from "@/lib/hooks";
+import { getEvents, USE_MOCK } from "@/lib/chain";
+import { useAsyncData } from "@/lib/use-chain";
 import type { Event } from "@/lib/types";
 
 /** What the agent understood from the plain-English request. Mirrors StandingOrder's fields. */
@@ -42,7 +45,8 @@ export interface FillProposal {
   sellerRating: number;
 }
 
-export type AgentPhase = "idle" | "review" | "running" | "awaiting" | "filled";
+/** "locked" is real mode only: the budget is locked on devnet, but no crank is running yet. */
+export type AgentPhase = "idle" | "review" | "running" | "awaiting" | "filled" | "locked";
 
 const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 const NUMBER_WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
@@ -103,7 +107,14 @@ export function parseRequest(text: string, events: Event[], nowMs: number): Pars
 }
 
 export function useAgentDemo() {
-  const { events, loading } = useEvents();
+  // Real mode reads events from devnet: useEvents() returns [] there until B wires it to getEvents().
+  const mockEvents = useEvents();
+  const chainEvents = useAsyncData(USE_MOCK ? null : "agent:events", () => getEvents());
+  const events = useMemo(
+    () => (USE_MOCK ? mockEvents.events : (chainEvents.data ?? [])),
+    [mockEvents.events, chainEvents.data],
+  );
+  const loading = USE_MOCK ? mockEvents.loading : chainEvents.loading;
   const [phase, setPhase] = useState<AgentPhase>("idle");
   const [rules, setRules] = useState<ParsedRules | null>(null);
   const [log, setLog] = useState<AgentLogEntry[]>([]);
@@ -181,6 +192,12 @@ export function useAgentDemo() {
     setPhase("running");
   }, [push]);
 
+  /** Real mode: the budget is locked onchain. No simulated scan follows. */
+  const markLocked = useCallback(() => {
+    clearTimers();
+    setPhase("locked");
+  }, [clearTimers]);
+
   const reset = useCallback(() => {
     clearTimers();
     setRules(null);
@@ -191,6 +208,7 @@ export function useAgentDemo() {
   }, [clearTimers]);
 
   return {
+    events,
     eventsLoading: loading,
     phase,
     rules,
@@ -201,6 +219,7 @@ export function useAgentDemo() {
     approveRules,
     approveFill,
     declineFill,
+    markLocked,
     reset,
   };
 }
