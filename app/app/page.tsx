@@ -1,6 +1,6 @@
 "use client";
 
-// Owner: C. Basic version for the skeleton; C will redesign.
+// Owner: D. Basic version for the skeleton; D will redesign.
 // Data comes ONLY from useEvents() (mock today, Supabase later).
 
 import Link from "next/link";
@@ -19,7 +19,7 @@ export default function DiscoverPage() {
     <PagePlaceholder
       title="Discover"
       description="Browse upcoming concerts, games and campus events with fair-price resale."
-      owner="C"
+      owner="D"
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {loading

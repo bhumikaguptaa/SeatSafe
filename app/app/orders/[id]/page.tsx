@@ -1,4 +1,4 @@
-// Owner: C. Route wrapper for the escrow tracker; the UI lives in ./OrderTracker.tsx.
+// Owner: D. Route wrapper for the escrow tracker; the UI lives in ./OrderTracker.tsx.
 // The <Suspense> is required: the order id is only known at request time (Cache Components).
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,7 +10,7 @@ export default function OrderPage() {
     <PagePlaceholder
       title="Order tracker"
       description="Live escrow tracker: where the money and the ticket are at every moment."
-      owner="C"
+      owner="D"
     >
       <Suspense fallback={<Skeleton className="h-40 rounded-xl" />}>
         <OrderTracker />

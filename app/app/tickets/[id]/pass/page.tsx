@@ -1,4 +1,4 @@
-// Owner: C. The gate pass (rotating QR via qrcode.react) goes here.
+// Owner: D. The gate pass (rotating QR via qrcode.react) goes here.
 import { PagePlaceholder } from "@/components/PagePlaceholder";
 
 export default function TicketPassPage() {
@@ -6,7 +6,7 @@ export default function TicketPassPage() {
     <PagePlaceholder
       title="Gate pass"
       description="Full-screen ticket with a QR code to scan at the venue entrance."
-      owner="C"
+      owner="D"
     />
   );
 }
