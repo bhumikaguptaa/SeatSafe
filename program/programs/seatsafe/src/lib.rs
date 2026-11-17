@@ -60,4 +60,54 @@ pub mod seatsafe {
     pub fn swap_resale(ctx: Context<SwapResale>) -> Result<()> {
         instructions::swap_resale::handle_swap_resale(ctx)
     }
+
+    // ----- Tier 2: escrow -----
+    pub fn create_escrow_listing(
+        ctx: Context<CreateEscrowListing>,
+        order_id: u64,
+        price: u64,
+        bond: u64,
+        ship_window_secs: i64,
+        confirm_window_secs: i64,
+    ) -> Result<()> {
+        instructions::escrow::handle_create_escrow_listing(
+            ctx, order_id, price, bond, ship_window_secs, confirm_window_secs,
+        )
+    }
+
+    pub fn fund_escrow(ctx: Context<FundEscrow>) -> Result<()> {
+        instructions::escrow::handle_fund_escrow(ctx)
+    }
+
+    pub fn mark_sent(ctx: Context<MarkSent>) -> Result<()> {
+        instructions::escrow::handle_mark_sent(ctx)
+    }
+
+    pub fn confirm_receipt(ctx: Context<SettleEscrow>) -> Result<()> {
+        instructions::escrow_settle::handle_confirm_receipt(ctx)
+    }
+
+    pub fn refund_expired(ctx: Context<SettleEscrow>) -> Result<()> {
+        instructions::escrow_settle::handle_refund_expired(ctx)
+    }
+
+    pub fn release_expired(ctx: Context<SettleEscrow>) -> Result<()> {
+        instructions::escrow_settle::handle_release_expired(ctx)
+    }
+
+    pub fn cancel_escrow_listing(ctx: Context<CancelEscrowListing>) -> Result<()> {
+        instructions::escrow::handle_cancel_escrow_listing(ctx)
+    }
+
+    pub fn open_dispute(ctx: Context<OpenDispute>) -> Result<()> {
+        instructions::escrow::handle_open_dispute(ctx)
+    }
+
+    pub fn resolve_dispute(ctx: Context<SettleEscrow>, buyer_bps: u16) -> Result<()> {
+        instructions::escrow_settle::handle_resolve_dispute(ctx, buyer_bps)
+    }
+
+    pub fn dispute_timeout(ctx: Context<SettleEscrow>) -> Result<()> {
+        instructions::escrow_settle::handle_dispute_timeout(ctx)
+    }
 }
