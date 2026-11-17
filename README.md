@@ -1,6 +1,6 @@
 # SeatSafe
 
-SeatSafe is a ticketing platform on Solana where fans can buy and resell tickets without getting scammed or price-gouged. Artists sell onchain tickets (Token-2022) with a resale price cap and royalty enforced in code. Fans resell through an atomic swap, so the ticket and the USDC change hands in one transaction. Tickets from outside platforms go through an escrow vault with deadlines and automatic refunds. AI agents can fill standing orders ("2 tickets under $90") from a capped budget vault, and a live tracker shows where the money and the ticket are at every moment. Users never see crypto: they log in with email or Google, see prices in dollars (devnet USDC), and a relayer pays gas.
+SeatSafe is a **ticketing platform** on Solana where fans can **buy and resell tickets without getting scammed or price-gouged**. Artists sell onchain tickets (Token-2022) with a resale price cap and royalty enforced in code. Fans resell through an atomic swap, so the ticket and the USDC change hands in one transaction. Tickets from outside platforms go through an escrow vault with deadlines and automatic refunds.** AI agents can fill standing orders** ("2 tickets under $90") from a capped budget vault, and a live tracker shows where the money and the ticket are at every moment. Users never see crypto: they log in with email or Google, see prices in dollars (devnet USDC), and a relayer pays gas.
 
 Built for the UBC 2026 Hackathon. **Submission due Fri Nov 20, 12 PM CST.**
 
