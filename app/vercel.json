@@ -1,0 +1,7 @@
+{
+  "crons": [
+    { "path": "/api/cron/deadlines", "schedule": "* * * * *" },
+    { "path": "/api/cron/reconcile", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/relayer", "schedule": "*/5 * * * *" }
+  ]
+}

@@ -102,6 +102,18 @@ Keypairs live outside git: deployer in `~/.config/solana/id.json`, relayer and a
 | Relayer | `7r2SszeUx3xyJsjAeUYvveMMmvkjjvxbPhxUGiP78g61` |
 | Arbiter | `5AFvU5Cyxy6bUMbhumhmeJeRLbNxPjgr8bqKXENxnbjr` |
 
+## Backend (Member B)
+
+The API, Supabase schema, QuickNode stream, deadline cron, scam detector and standing-order matcher are documented in [docs/backend.md](docs/backend.md). Short version:
+
+- Apply `supabase/schema.sql` and, for the mock-shaped data, `supabase/seed.sql`.
+- `POST /api/stream-webhook` decodes Anchor logs for program `7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy` and moves orders forward only. Duplicate signatures are ignored.
+- QuickNode: Solana **devnet**, dataset **Logs**, destination `https://<vercel-host>/api/stream-webhook`, header `x-webhook-secret`. The filter is in `docs/backend.md`. The stream is what makes the tracker move without a refresh.
+- Vercel cron (`app/vercel.json`) calls `refund_expired` / `release_expired` every minute and re-reads open escrows every 5 minutes. The relayer is alerted under 1 devnet SOL.
+- `POST /api/chat` flags off-app payment, links and pressure. `POST /api/standing-orders` turns one English sentence into `{ eventId, quantity, maxPrice, minRating, deadline }`. A match at or above $75 waits for `POST /api/standing-orders/:id/approve` (the voice card). Below that, the relayer sends `fill_standing_order`.
+
+Set the Vercel project root to `app/`.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for branches, PRs, file ownership and deadlines.

@@ -493,6 +493,49 @@ export async function openStandingOrder(
   return toTx(ctx, [ix], { address: standingOrder });
 }
 
+/**
+ * Crank path for standing orders. `ctx.user` is the crank (the relayer in production);
+ * `ctx.payer` pays fees and rent. The program checks event, max price, deadline and
+ * seller ≠ owner. Seller rating is not onchain — the matcher checks it before calling this.
+ */
+export async function fillStandingOrder(
+  ctx: TxCtx,
+  args: { standingOrder: PublicKey; ticketMint: PublicKey },
+): Promise<BuiltTx> {
+  const { program, user, payer } = ctx;
+  const cfg = await getConfig(program);
+  const so = await program.account.standingOrder.fetch(args.standingOrder);
+  const listing = pdas(program.programId).listing(args.ticketMint);
+  const listed = await program.account.listing.fetch(listing);
+  const ev = await program.account.event.fetch(listed.event);
+  const ix = await program.methods
+    .fillStandingOrder()
+    .accountsPartial({
+      payer,
+      crank: user,
+      standingOrder: args.standingOrder,
+      owner: so.owner,
+      ticketMint: args.ticketMint,
+      listing,
+      event: listed.event,
+      seller: listed.seller,
+      organizer: ev.organizer,
+      treasury: cfg.treasury,
+      usdcMint: cfg.usdc.mint,
+      budgetVault: vaults.budget(cfg.usdc, args.standingOrder),
+      sellerUsdc: usdcAta(cfg.usdc, listed.seller),
+      organizerUsdc: usdcAta(cfg.usdc, ev.organizer),
+      treasuryUsdc: usdcAta(cfg.usdc, cfg.treasury),
+      listingVault: ticketAta(args.ticketMint, listing),
+      ownerTicketAccount: ticketAta(args.ticketMint, so.owner),
+      ticketAuthority: pdas(program.programId).ticketAuthority(),
+      tokenProgram: cfg.usdc.tokenProgram,
+      ticketTokenProgram: TOKEN_2022_PROGRAM_ID,
+    })
+    .instruction();
+  return toTx(ctx, [ix], { computeUnits: HEAVY_CU, address: args.standingOrder });
+}
+
 export async function closeStandingOrder(
   ctx: TxCtx,
   args: { standingOrder: PublicKey },

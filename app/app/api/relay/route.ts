@@ -5,38 +5,26 @@
 //
 // The client builds a v0 transaction with feePayer = relayer, the user signs it (Privy), and posts it
 // here. We check it against lib/relay-policy.ts, co-sign with RELAYER_SECRET_KEY, send and confirm.
-// TODO(B): rate-limit per IP/user before this is public; every accepted tx costs the relayer fees
-// and possibly rent for new accounts.
+// Rate limit: 20 sponsored transactions per IP per minute. A low relayer balance is
+// reported by GET /api/cron/relayer (under 1 devnet SOL).
 
 import { connection as dynamicRequest, NextResponse, type NextRequest } from "next/server";
 import {
   Connection,
-  Keypair,
   PublicKey,
   SendTransactionError,
   VersionedTransaction,
 } from "@solana/web3.js";
-import { utils } from "@coral-xyz/anchor";
 import { checkRelayTx } from "@/lib/relay-policy";
 import { PROGRAM_ID, RPC_URL } from "@/lib/solana";
 import idl from "@/lib/idl/seatsafe.json";
+import { clientIp, rateLimit } from "@/lib/server/rate-limit";
+import { loadRelayer } from "@/lib/server/relayer";
 
 // Node.js runtime (the default; Cache Components forbids the `runtime` segment config).
 
-/** RELAYER_SECRET_KEY as a JSON byte array ("[12,34,...]") or a base58 string. Server only. */
-function loadRelayer(): Keypair | null {
-  const raw = process.env.RELAYER_SECRET_KEY?.trim();
-  if (!raw) return null;
-  try {
-    const bytes = raw.startsWith("[")
-      ? Uint8Array.from(JSON.parse(raw) as number[])
-      : utils.bytes.bs58.decode(raw);
-    return Keypair.fromSecretKey(bytes);
-  } catch {
-    console.error("RELAYER_SECRET_KEY is set but could not be parsed");
-    return null;
-  }
-}
+const RELAY_LIMIT = 20;
+const RELAY_WINDOW_MS = 60_000;
 
 const programId = PROGRAM_ID ?? new PublicKey(idl.address);
 
@@ -53,6 +41,9 @@ export async function POST(req: NextRequest) {
   const relayer = loadRelayer();
   if (!relayer) {
     return NextResponse.json({ error: "Relayer not configured" }, { status: 503 });
+  }
+  if (!rateLimit(`relay:${clientIp(req.headers)}`, RELAY_LIMIT, RELAY_WINDOW_MS)) {
+    return NextResponse.json({ error: "Too many relay requests. Try again in a minute." }, { status: 429 });
   }
 
   let body: { tx?: string; lastValidBlockHeight?: number };
