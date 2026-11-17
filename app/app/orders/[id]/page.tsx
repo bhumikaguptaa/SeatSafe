@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageShell } from "@/components/PageShell";
 import { OrderTracker } from "./OrderTracker";
+import { OrderChat } from "@/components/OrderChat";
 
 export default function OrderPage() {
   return (
@@ -15,6 +16,7 @@ export default function OrderPage() {
       <Suspense fallback={<Skeleton className="h-72 rounded-2xl" />}>
         {/* Real devnet actions (A's useOrderActions) are wired into the tracker's buttons. */}
         <OrderTracker />
+        <OrderChat />
       </Suspense>
     </PageShell>
   );
