@@ -12,11 +12,13 @@
 //      "Neon Harbor: Midnight Tides Tour"   $75, cap $120, royalty 5%
 //      "UT vs. A&M: Rivalry Game"            $85, cap $130, royalty 3%
 //      "Battle of the Bands: Dorm Edition"   $10, cap $15,  royalty 0%
-// 2. The seller buys 2 Neon Harbor tickets. Funds the seller with 0.2 SOL from the deployer, and with
+// Amounts are kept small so the Circle faucet covers them: everything uses the $10 campus event.
+// 2. The seller buys 2 Battle of the Bands tickets ($10 each). Funds the seller with 0.2 SOL from the deployer, and with
 //    USDC if the deployer has devnet USDC; otherwise prints the seller address and stops so you can
 //    fund it at https://faucet.circle.com (Solana devnet), then re-run.
-// 3. Lists one of them for resale at $110 (under the cap).
-// 4. One outside-ticket escrow listing for the UT game: $90, bond $9, 60-second windows.
+// 3. Lists one of them for resale at $14 (under the $15 cap).
+// 4. One outside-ticket escrow listing for the same event: $20, bond $2, 60-second windows.
+//    Seller needs 22 USDC in total (2 x $10 + $2 bond).
 // 5. Writes ../app/lib/event-meta.json (display data keyed by event PDA; escrow seat keyed by escrow PDA).
 // 6. Prints every address. Never prints secret keys.
 //
@@ -88,8 +90,10 @@ const EVENTS = [
   },
 ];
 
-const RESALE_PRICE = 110;
-const ESCROW = { orderId: 2001, price: 90, bond: 9, windowSecs: 60, seat: "Sec 112 Row 28 Seat 5" };
+const RESALE_PRICE = 14;
+const ESCROW = { orderId: 2001, price: 20, bond: 2, windowSecs: 60, seat: "Lawn GA (outside ticket)" };
+/** Index into EVENTS of the event used for the tickets, the resale and the escrow. */
+const DEMO_EVENT = 2;
 const SELLER_SOL = 0.2;
 const TICKETS_TO_BUY = 2;
 
@@ -156,7 +160,8 @@ async function main() {
       .rpc({ commitment: "confirmed" });
     console.log(`Event created: ${e.meta.title} -> ${ev.toBase58()}  tx ${sig}`);
   }
-  const [neon, utGame] = eventPdas;
+  const demoEvent = eventPdas[DEMO_EVENT];
+  const demoPrice = EVENTS[DEMO_EVENT].price;
 
   // ---- 5 (early). Display data, so the app shows titles even if we stop below -----------------
   const meta = fs.existsSync(META_FILE) ? JSON.parse(fs.readFileSync(META_FILE, "utf8")) : {};
@@ -181,12 +186,12 @@ async function main() {
   }
 
   // How much USDC the remaining steps need.
-  const records = await program.account.ticketRecord.all([{ memcmp: { offset: 8, bytes: neon.toBase58() } }]);
+  const records = await program.account.ticketRecord.all([{ memcmp: { offset: 8, bytes: demoEvent.toBase58() } }]);
   const mine = records.filter((r) => r.account.originalBuyer.equals(seller.publicKey));
   const toBuy = Math.max(0, TICKETS_TO_BUY - mine.length);
   const escrowPda = pda(Buffer.from("escrow"), seller.publicKey.toBuffer(), u64(ESCROW.orderId));
   const escrowExists = !!(await conn.getAccountInfo(escrowPda));
-  const needed = toBuy * EVENTS[0].price + (escrowExists ? 0 : ESCROW.bond);
+  const needed = toBuy * demoPrice + (escrowExists ? 0 : ESCROW.bond);
   const have = await usdcBalance(seller.publicKey);
 
   if (have < needed) {
@@ -212,13 +217,13 @@ async function main() {
   // ---- 2 (cont). Buy primary tickets ------------------------------------------------------------
   const mints = mine.map((r) => r.account.mint);
   for (let i = 0; i < toBuy; i++) {
-    const ev = await program.account.event.fetch(neon);
-    const mint = pda(Buffer.from("ticket_mint"), neon.toBuffer(), u32(ev.sold));
-    const seat = `Sec 101 Row C Seat ${12 + mints.length}`;
+    const ev = await program.account.event.fetch(demoEvent);
+    const mint = pda(Buffer.from("ticket_mint"), demoEvent.toBuffer(), u32(ev.sold));
+    const seat = `Lawn GA ${1 + mints.length}`;
     const sig = await program.methods
       .buyPrimary(seat)
       .accountsPartial({
-        payer: deployer, buyer: seller.publicKey, event: neon, organizer: ev.organizer, treasury: config.treasury,
+        payer: deployer, buyer: seller.publicKey, event: demoEvent, organizer: ev.organizer, treasury: config.treasury,
         usdcMint, buyerUsdc: usdcAta(seller.publicKey), ticketMint: mint,
         buyerTicketAccount: ticketAta(mint, seller.publicKey),
         tokenProgram: TOKEN_PROGRAM_ID, ticketTokenProgram: TOKEN_2022_PROGRAM_ID,
@@ -231,9 +236,9 @@ async function main() {
   }
   mints.forEach((m) => console.log("Seller ticket:", m.toBase58()));
 
-  // ---- 3. Resale listing at $110 ------------------------------------------------------------------
+  // ---- 3. Resale listing at $14  ------------------------------------------------------------------
   const listings = await program.account.listing.all([{ memcmp: { offset: 8, bytes: seller.publicKey.toBase58() } }]);
-  if (listings.some((l) => l.account.event.equals(neon))) {
+  if (listings.some((l) => l.account.event.equals(demoEvent))) {
     listings.forEach((l) => console.log(`Listing exists: ${l.publicKey.toBase58()} at $${l.account.price.toNumber() / 1e6}`));
   } else {
     const mint = mints[0];
@@ -241,7 +246,7 @@ async function main() {
     const sig = await program.methods
       .listResale(USDC(RESALE_PRICE))
       .accountsPartial({
-        payer: deployer, seller: seller.publicKey, ticketMint: mint, event: neon,
+        payer: deployer, seller: seller.publicKey, ticketMint: mint, event: demoEvent,
         sellerTicketAccount: ticketAta(mint, seller.publicKey), listing,
         listingVault: ticketAta(mint, listing), ticketTokenProgram: TOKEN_2022_PROGRAM_ID,
       })
@@ -265,7 +270,7 @@ async function main() {
       .rpc({ commitment: "confirmed" });
     console.log(`Escrow listing ($${ESCROW.price}, bond $${ESCROW.bond}, ${ESCROW.windowSecs}s windows): ${escrowPda.toBase58()}  tx ${sig}`);
   }
-  meta.escrows[escrowPda.toBase58()] = { eventId: utGame.toBase58(), seat: ESCROW.seat, sellerName: "Seed seller" };
+  meta.escrows[escrowPda.toBase58()] = { eventId: demoEvent.toBase58(), seat: ESCROW.seat, sellerName: "Seed seller" };
   writeMeta();
 
   console.log("\nDone. Addresses:");
