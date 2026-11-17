@@ -34,5 +34,11 @@
       "hidden": true
     }
   },
-  "escrows": {}
+  "escrows": {
+    "3gPLQkSMgUaMVi1WY6iBYokNuaDH7nyqRLmjUaeF8zpU": {
+      "eventId": "EMhrDn2puUvJac9PZ15CCTUftj2Axv6E7wp81oV1RzxE",
+      "seat": "Lawn GA (outside ticket)",
+      "sellerName": "Seed seller"
+    }
+  }
 }
