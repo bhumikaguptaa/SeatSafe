@@ -2,7 +2,9 @@
 
 // Owner: D. The agent console: plain-English request -> parsed rules -> one-tap approval ->
 // budget vault + live decision log -> voice approval before a fill.
-// State comes from useAgentDemo() (simulated); see that file for the real wiring.
+// Mock mode: everything is simulated by useAgentDemo(). Real mode (USE_MOCK false): approving locks the
+// budget onchain via useAgentChain(), "Your standing orders" lists them with Close & refund, and the
+// decision log says the agent isn't running yet (no crank on devnet).
 // Filled blue is reserved for the one primary action on screen at a time.
 
 import { useState, type FormEvent } from "react";
@@ -25,12 +27,15 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { USE_MOCK } from "@/lib/chain";
 import { formatDate, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import type { Event, StandingOrder } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VoiceApproval } from "@/components/VoiceApproval";
 import { useAgentDemo, type AgentLogEntry, type ParsedRules } from "./useAgentDemo";
+import { useAgentChain } from "./useAgentChain";
 
 const SUGGESTIONS = [
   "2 tickets for UT vs A&M under $90, 4+ star sellers, before Friday",
@@ -124,17 +129,102 @@ function RulesGrid({ rules }: { rules: ParsedRules }) {
   );
 }
 
+const ORDER_STATUS: Record<StandingOrder["status"], { label: string; className: string }> = {
+  OPEN: { label: "Open", className: "border-vault text-vault" },
+  FILLED: { label: "Filled", className: "border-released text-released" },
+  EXPIRED: { label: "Expired", className: "border-border text-muted-foreground" },
+  CANCELLED: { label: "Closed", className: "border-border text-muted-foreground" },
+};
+
+/** Real mode only: my standing orders from devnet, with Close & refund. */
+function StandingOrdersCard({
+  chain,
+  events,
+}: {
+  chain: ReturnType<typeof useAgentChain>;
+  events: Event[];
+}) {
+  const sorted = [...chain.orders].sort((a, b) => b.deadline.localeCompare(a.deadline));
+
+  return (
+    <section className="rounded-3xl border border-border bg-card p-5 sm:p-6">
+      <h2 className="text-base font-semibold">Your standing orders</h2>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        Live on devnet. Seller-rating rules aren&apos;t stored onchain yet, so they aren&apos;t enforced.
+      </p>
+
+      {!chain.me ? (
+        <p className="mt-4 text-sm text-muted-foreground">Log in to see your standing orders.</p>
+      ) : chain.ordersLoading && sorted.length === 0 ? (
+        <Skeleton className="mt-4 h-20 rounded-2xl" />
+      ) : sorted.length === 0 ? (
+        <p className="mt-4 text-sm text-muted-foreground">No standing orders yet.</p>
+      ) : (
+        <ul className="mt-3 divide-y divide-border">
+          {sorted.map((o) => {
+            const status = ORDER_STATUS[o.status];
+            const title = events.find((e) => e.id === o.eventId)?.title ?? `Event ${o.eventId.slice(0, 4)}…${o.eventId.slice(-4)}`;
+            const closable = o.status === "OPEN" || o.status === "EXPIRED";
+            const closing = chain.busy === o.id;
+            return (
+              <li key={o.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {o.quantity} × up to {formatUsd(o.maxPriceUsd)} · {formatUsd(o.budgetUsd)} budget · until{" "}
+                    {formatDate(o.deadline)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={cn("rounded-full border px-2.5 py-0.5 text-xs font-medium", status.className)}>
+                    {status.label}
+                  </span>
+                  {closable && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full"
+                      disabled={chain.busy !== null}
+                      onClick={() => void chain.close(o.id)}
+                    >
+                      {closing && <Loader2 className="animate-spin" />}
+                      Close &amp; refund
+                    </Button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export function AgentConsole() {
   const agent = useAgentDemo();
   const [text, setText] = useState("");
   const { phase, rules, log, spentUsd, proposal } = agent;
 
+  const chain = useAgentChain();
+
   const ready = rules?.event && rules.maxPriceUsd !== null && rules.budgetUsd !== null;
-  const started = phase === "running" || phase === "awaiting" || phase === "filled";
+  const started = phase === "running" || phase === "awaiting" || phase === "filled" || phase === "locked";
+  const needsLogin = !USE_MOCK && !chain.me;
+  const locking = chain.busy === "open";
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     agent.submit(text);
+  }
+
+  // Mock: simulate the scan. Real: lock the budget onchain, then show the honest "not running" state.
+  async function onApproveRules() {
+    if (USE_MOCK) {
+      agent.approveRules();
+      return;
+    }
+    if (rules && (await chain.open(rules))) agent.markLocked();
   }
 
   return (
@@ -213,15 +303,24 @@ export function AgentConsole() {
                   <Button
                     size="lg"
                     className="h-12 w-full rounded-xl text-base"
-                    disabled={!ready}
-                    onClick={agent.approveRules}
+                    disabled={!ready || needsLogin || locking}
+                    onClick={onApproveRules}
                   >
-                    <Lock />
-                    {ready ? `Approve rules & lock ${formatUsd(rules.budgetUsd!)}` : "Approve rules"}
+                    {locking ? <Loader2 className="animate-spin" /> : <Lock />}
+                    {needsLogin
+                      ? "Log in to lock a budget"
+                      : ready
+                        ? `Approve rules & lock ${formatUsd(rules.budgetUsd!)}`
+                        : "Approve rules"}
                   </Button>
                   {!ready && (
                     <p className="mt-2 text-center text-xs text-muted-foreground">
                       Add an event and a max price to your request, then send it again.
+                    </p>
+                  )}
+                  {ready && !USE_MOCK && (
+                    <p className="mt-2 text-center text-xs text-muted-foreground">
+                      Moves {formatUsd(rules.budgetUsd!)} of devnet USDC from your wallet into a budget vault.
                     </p>
                   )}
                 </div>
@@ -249,10 +348,17 @@ export function AgentConsole() {
                     {phase === "filled" ? "Filled" : "Budget locked"}
                   </span>
                 </div>
-                <p className="mt-4 flex items-baseline gap-2">
-                  <span className="text-5xl font-bold tracking-tight tabular-nums">{formatUsd(spentUsd)}</span>
-                  <span className="text-muted-foreground tabular-nums">/ {formatUsd(rules.budgetUsd)} used</span>
-                </p>
+                {phase === "locked" ? (
+                  <p className="mt-4 flex items-baseline gap-2">
+                    <span className="text-5xl font-bold tracking-tight tabular-nums">{formatUsd(rules.budgetUsd)}</span>
+                    <span className="text-muted-foreground">locked · 0 of {rules.quantity} filled</span>
+                  </p>
+                ) : (
+                  <p className="mt-4 flex items-baseline gap-2">
+                    <span className="text-5xl font-bold tracking-tight tabular-nums">{formatUsd(spentUsd)}</span>
+                    <span className="text-muted-foreground tabular-nums">/ {formatUsd(rules.budgetUsd)} used</span>
+                  </p>
+                )}
                 <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
                   <motion.div
                     className="h-full rounded-full bg-foreground"
@@ -262,7 +368,9 @@ export function AgentConsole() {
                   />
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Locked in your SeatSafe vault. Anything unused comes back to you when the order closes.
+                  {phase === "locked"
+                    ? "Locked in your SeatSafe vault on devnet. Use Close & refund under Your standing orders to get it back."
+                    : "Locked in your SeatSafe vault. Anything unused comes back to you when the order closes."}
                 </p>
               </motion.section>
             )}
@@ -284,7 +392,12 @@ export function AgentConsole() {
               )}
             </div>
 
-            {log.length === 0 && phase !== "running" ? (
+            {phase === "locked" ? (
+              <p className="text-sm text-muted-foreground">
+                Your budget is locked on devnet, but the agent isn&apos;t running there yet, so it won&apos;t scan
+                listings or buy anything. Its decisions will show up here once it does.
+              </p>
+            ) : log.length === 0 && phase !== "running" ? (
               <p className="text-sm text-muted-foreground">
                 Approve your rules to start the agent. Every decision it makes shows up here.
               </p>
@@ -325,6 +438,8 @@ export function AgentConsole() {
           </section>
         </div>
       )}
+
+      {!USE_MOCK && <StandingOrdersCard chain={chain} events={agent.events} />}
 
       <VoiceApproval
         request={
