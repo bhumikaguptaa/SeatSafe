@@ -110,4 +110,25 @@ pub mod seatsafe {
     pub fn dispute_timeout(ctx: Context<SettleEscrow>) -> Result<()> {
         instructions::escrow_settle::handle_dispute_timeout(ctx)
     }
+
+    // ----- Standing orders (agents) -----
+    pub fn open_standing_order(
+        ctx: Context<OpenStandingOrder>,
+        order_id: u64,
+        max_price: u64,
+        quantity: u32,
+        deadline_secs: i64,
+    ) -> Result<()> {
+        instructions::standing_order::handle_open_standing_order(
+            ctx, order_id, max_price, quantity, deadline_secs,
+        )
+    }
+
+    pub fn fill_standing_order(ctx: Context<FillStandingOrder>) -> Result<()> {
+        instructions::standing_order::handle_fill_standing_order(ctx)
+    }
+
+    pub fn close_standing_order(ctx: Context<CloseStandingOrder>) -> Result<()> {
+        instructions::standing_order::handle_close_standing_order(ctx)
+    }
 }
