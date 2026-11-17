@@ -47,4 +47,17 @@ pub mod seatsafe {
     pub fn buy_primary(ctx: Context<BuyPrimary>, seat: String) -> Result<()> {
         instructions::buy_primary::handle_buy_primary(ctx, seat)
     }
+
+    // ----- Tier 1: resale -----
+    pub fn list_resale(ctx: Context<ListResale>, price: u64) -> Result<()> {
+        instructions::list_resale::handle_list_resale(ctx, price)
+    }
+
+    pub fn cancel_listing(ctx: Context<CancelListing>) -> Result<()> {
+        instructions::cancel_listing::handle_cancel_listing(ctx)
+    }
+
+    pub fn swap_resale(ctx: Context<SwapResale>) -> Result<()> {
+        instructions::swap_resale::handle_swap_resale(ctx)
+    }
 }
