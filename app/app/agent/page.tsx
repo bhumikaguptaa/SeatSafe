@@ -1,19 +1,16 @@
-// Owner: D. Standing orders ("2 tickets under $90"), budget vault, chat and voice approval go here.
-import { PagePlaceholder } from "@/components/PagePlaceholder";
-import { OrderChat } from "@/components/OrderChat";
-import { VoiceApproval } from "@/components/VoiceApproval";
+// Owner: D. Agent console: standing orders ("2 tickets under $90"), budget vault, decision log and
+// voice approval. The UI lives in ./AgentConsole.tsx.
+import { PageShell } from "@/components/PageShell";
+import { AgentConsole } from "./AgentConsole";
 
 export default function AgentPage() {
   return (
-    <PagePlaceholder
+    <PageShell
       title="Agent"
       description="Set a standing order and let your AI agent buy within a capped budget."
-      owner="D"
+      width="narrow"
     >
-      <div className="grid gap-4 md:grid-cols-2">
-        <OrderChat />
-        <VoiceApproval />
-      </div>
-    </PagePlaceholder>
+      <AgentConsole />
+    </PageShell>
   );
 }
