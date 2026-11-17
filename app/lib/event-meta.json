@@ -1,0 +1,38 @@
+{
+  "events": {
+    "Hw1cWsKxef959oD338Qx86TjDt2km4XXRBqPgxjjvL7a": {
+      "title": "Neon Harbor: Midnight Tides Tour",
+      "category": "concert",
+      "venue": "Riverside Amphitheater",
+      "city": "Austin, TX",
+      "organizerName": "Neon Harbor",
+      "imageGradient": "bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-900"
+    },
+    "6hW7X8JNFfwhU7Qx3dFTyy3LUa5tsCvMWyFhREdZZXzs": {
+      "title": "UT vs. A&M: Rivalry Game",
+      "category": "sports",
+      "venue": "Memorial Stadium",
+      "city": "Austin, TX",
+      "organizerName": "UT Athletics",
+      "imageGradient": "bg-gradient-to-br from-orange-600 via-amber-700 to-red-950"
+    },
+    "EMhrDn2puUvJac9PZ15CCTUftj2Axv6E7wp81oV1RzxE": {
+      "title": "Battle of the Bands: Dorm Edition",
+      "category": "campus",
+      "venue": "West Quad Lawn",
+      "city": "Austin, TX",
+      "organizerName": "Campus Radio KSRF",
+      "imageGradient": "bg-gradient-to-br from-yellow-400 via-lime-600 to-teal-900"
+    },
+    "2aiG3Nznw6g4hfQCR85juQKj36HRyaDB33G1CUbVzCRy": {
+      "title": "Relay smoke test",
+      "category": "campus",
+      "venue": "-",
+      "city": "-",
+      "imageGradient": "",
+      "organizerName": "test",
+      "hidden": true
+    }
+  },
+  "escrows": {}
+}
