@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Loader2, ShieldCheck, Ticket as TicketIcon } from "lucide-react";
 import { PublicKey } from "@solana/web3.js";
 import { getEvent as getMockEvent, getListingsForEvent as getMockListings, tickets as mockTickets } from "@/lib/mock";
-import { getEvent, getListingsForEvent, USE_MOCK, type ChainEvent, type ChainListing } from "@/lib/chain";
+import { getEvent, getListingsForEvent, seatLabel, USE_MOCK, type ChainEvent, type ChainListing } from "@/lib/chain";
 import { buyPrimary, fundEscrow, swapResale } from "@/lib/program";
 import { saveMeta } from "@/lib/event-meta";
 import { mockTx, useRunTx } from "@/lib/tx";
@@ -28,7 +28,7 @@ async function loadMock(id: string): Promise<{ event: ViewEvent | null; listings
   const event = getMockEvent(id) ?? null;
   const listings = getMockListings(id).map((l) => {
     const t = mockTickets.find((x) => x.id === l.ticketId);
-    return { ...l, seat: t ? `Sec ${t.section} Row ${t.row} Seat ${t.seat}` : "" };
+    return { ...l, seat: t ? seatLabel(t) : "" };
   });
   return { event, listings };
 }

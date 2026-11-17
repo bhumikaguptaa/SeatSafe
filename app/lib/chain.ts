@@ -86,6 +86,7 @@ export async function getEvents(): Promise<ChainEvent[]> {
   const program = chainProgram();
   const [rows, meta] = await Promise.all([program.account.event.all(), getMetaMap()]);
   return rows
+    .filter((r) => !meta.events[r.publicKey.toBase58()]?.hidden)
     .map((r) => toEvent(r.publicKey, r.account, meta))
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 }
@@ -187,6 +188,14 @@ export interface ChainTicket extends Ticket {
 export function parseSeat(label: string): Pick<Ticket, "section" | "row" | "seat"> {
   const m = /Sec(?:tion)?\s+(\S+)\s+Row\s+(\S+)\s+Seat\s+(\S+)/i.exec(label);
   return m ? { section: m[1], row: m[2], seat: m[3] } : { section: label || "GA", row: "-", seat: "-" };
+}
+
+/** Ticket -> "Sec 101 Row C Seat 12", or just "GA" / "Lawn" when row and seat are "-". */
+export function seatLabel(t: Pick<Ticket, "section" | "row" | "seat">): string {
+  const parts = [`Sec ${t.section}`];
+  if (t.row && t.row !== "-") parts.push(`Row ${t.row}`);
+  if (t.seat && t.seat !== "-") parts.push(`Seat ${t.seat}`);
+  return parts.length === 1 ? t.section : parts.join(" ");
 }
 
 /**

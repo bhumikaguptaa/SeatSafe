@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Loader2, QrCode, Tag, X } from "lucide-react";
 import { PublicKey } from "@solana/web3.js";
 import { events as mockEvents, MOCK_USER_ID, tickets as mockTickets } from "@/lib/mock";
-import { getEvents, getMyTickets, USE_MOCK, type ChainTicket } from "@/lib/chain";
+import { getEvents, getMyTickets, seatLabel, USE_MOCK, type ChainTicket } from "@/lib/chain";
 import { cancelListing, listResale } from "@/lib/program";
 import { mockTx, useRunTx, useTxWallet } from "@/lib/tx";
 import { useAsyncData } from "@/lib/use-chain";
@@ -38,7 +38,7 @@ async function loadMock(): Promise<TicketsData> {
   return {
     tickets: mockTickets
       .filter((t) => t.ownerId === MOCK_USER_ID)
-      .map((t) => ({ ...t, seatLabel: `Sec ${t.section} Row ${t.row} Seat ${t.seat}`, listed: false, mock: true as const })),
+      .map((t) => ({ ...t, seatLabel: seatLabel(t), listed: false, mock: true as const })),
     events: Object.fromEntries(mockEvents.map((e) => [e.id, e])),
   };
 }
