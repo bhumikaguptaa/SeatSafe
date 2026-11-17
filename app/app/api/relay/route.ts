@@ -21,7 +21,7 @@ import { checkRelayTx } from "@/lib/relay-policy";
 import { PROGRAM_ID, RPC_URL } from "@/lib/solana";
 import idl from "@/lib/idl/seatsafe.json";
 
-export const runtime = "nodejs";
+// Node.js runtime (the default; Cache Components forbids the `runtime` segment config).
 
 /** RELAYER_SECRET_KEY as a JSON byte array ("[12,34,...]") or a base58 string. Server only. */
 function loadRelayer(): Keypair | null {

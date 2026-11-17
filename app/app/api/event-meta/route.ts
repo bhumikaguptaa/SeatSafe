@@ -14,7 +14,7 @@ import { createClient } from "@supabase/supabase-js";
 import { PublicKey } from "@solana/web3.js";
 import { z } from "zod";
 
-export const runtime = "nodejs";
+// Node.js runtime (the default; Cache Components forbids the `runtime` segment config).
 
 const TABLE = "event_meta";
 

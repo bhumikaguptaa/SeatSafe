@@ -314,6 +314,7 @@ export interface ChainEscrow {
   state: "LISTED" | "CANCELLED" | OrderState;
   priceUsd: number;
   bondUsd: number;
+  seller: string;
   buyer: string | null;
   shipDeadline: string | null;
   confirmDeadline: string | null;
@@ -331,6 +332,7 @@ function toChainEscrow(key: PublicKey, e: RawEscrow, meta: MetaMap): ChainEscrow
     state: s === "listed" ? "LISTED" : s === "cancelled" ? "CANCELLED" : toOrderState(s)!,
     priceUsd: usd(e.price),
     bondUsd: usd(e.bond),
+    seller: e.seller.toBase58(),
     buyer: e.buyer?.toBase58() ?? null,
     shipDeadline: ship > 0 ? iso(ship) : null,
     confirmDeadline: confirm > 0 ? iso(confirm) : null,

@@ -208,3 +208,18 @@ export function useRunTx() {
   );
   return { run, wallet };
 }
+
+/**
+ * Mock mode stand-in for run(): same toasts, no transaction. Pass `error` to show a friendly
+ * error instead (e.g. the over-cap rejection, so the demo moment works without devnet).
+ */
+export async function mockTx(opts: RunTxOptions, error?: string): Promise<boolean> {
+  const id = toast.loading(opts.pending);
+  await new Promise((r) => setTimeout(r, 700));
+  if (error) {
+    toast.error(error, { id, description: "Mock mode: no transaction sent." });
+    return false;
+  }
+  toast.success(opts.success, { id, description: "Mock mode: no transaction sent." });
+  return true;
+}
