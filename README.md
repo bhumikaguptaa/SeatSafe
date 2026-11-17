@@ -93,7 +93,7 @@ Keypairs live outside git: deployer in `~/.config/solana/id.json`, relayer and a
 
 | What | Address |
 | --- | --- |
-| SeatSafe program | `7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy` (**not yet deployed**: deployer needs devnet SOL) |
+| SeatSafe program | [`7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy`](https://explorer.solana.com/address/7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy?cluster=devnet) (deployed Nov 16, 2026) |
 | USDC mint (Circle devnet) | `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU` |
 | Deployer | `2VHBVmwU6C5NLdKjpykvJdGYWoSUw5uHAq3EKTbLHTqv` |
 | Relayer | `7r2SszeUx3xyJsjAeUYvveMMmvkjjvxbPhxUGiP78g61` |
