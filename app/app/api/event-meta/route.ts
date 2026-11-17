@@ -38,6 +38,7 @@ const Entry = z.discriminatedUnion("kind", [
       city: z.string().max(80),
       imageGradient: z.string().max(200),
       organizerName: z.string().max(80),
+      hidden: z.boolean().optional(),
     }),
   }),
   z.object({

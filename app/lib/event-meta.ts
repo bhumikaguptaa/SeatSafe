@@ -19,6 +19,8 @@ export interface EventMeta {
   city: string;
   imageGradient: string;
   organizerName: string;
+  /** Test/smoke events: kept off Discover, /sell and other lists (still reachable by URL). */
+  hidden?: boolean;
 }
 
 export interface EscrowMeta {
