@@ -221,7 +221,11 @@ export async function getMyTickets(owner: string): Promise<ChainTicket[]> {
     listed: true,
     price: usd(l.account.price) as number | undefined,
   }));
-  const all = [...held, ...listed];
+  // Right after a list/cancel, the two reads can come from RPC nodes at different slots and both
+  // return the same mint. Keep one entry per mint (the listing, if there is one).
+  const byMint = new Map<string, (typeof held)[number]>();
+  for (const t of [...held, ...listed]) byMint.set(t.mint.toBase58(), t);
+  const all = [...byMint.values()];
   if (all.length === 0) return [];
 
   const records = await program.account.ticketRecord.fetchMultiple(all.map((t) => p.ticketRecord(t.mint)));
