@@ -9,7 +9,7 @@
 
 1. Branch from `main` with the name `name/feature`, e.g. `sam/escrow-tracker`.
 2. Keep PRs small and focused. Open them into `main`. **A reviews every PR.**
-3. Before opening a PR, run in `app/`: `npm run lint` and `npm run build`. Both must pass.
+3. Before opening a PR, run in `app/`: `npm run lint` and `npm run build`. Both must pass. If you touched `program/`, also run the tests: **run tests with `npm test` in `program/`; plain `anchor test` needs the legacy validator** (`anchor test --validator legacy`, which is what `npm test` runs). Anchor 1.x defaults to Surfpool, and the suite fails to start on it.
 4. Never push directly to `main`.
 
 ## Rules
