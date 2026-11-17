@@ -27,11 +27,11 @@
 
 | Route | File | Owner |
 | --- | --- | --- |
-| `/` | `app/app/page.tsx` | C |
+| `/` | `app/app/page.tsx` | D |
 | `/events/[id]` | `app/app/events/[id]/page.tsx` | A |
-| `/orders/[id]` | `app/app/orders/[id]/page.tsx` (+ `OrderTracker.tsx`) | C |
+| `/orders/[id]` | `app/app/orders/[id]/page.tsx` (+ `OrderTracker.tsx`) | D |
 | `/tickets` | `app/app/tickets/page.tsx` | A |
-| `/tickets/[id]/pass` | `app/app/tickets/[id]/pass/page.tsx` | C |
+| `/tickets/[id]/pass` | `app/app/tickets/[id]/pass/page.tsx` | D |
 | `/sell` | `app/app/sell/page.tsx` | A |
 | `/agent` | `app/app/agent/page.tsx` | D |
 | `/creator` | `app/app/creator/page.tsx` | A |
@@ -43,3 +43,5 @@
 | `supabase/` (schema, seed), real hook implementations (`TODO(B)` in `app/lib/hooks.ts`) | B |
 | `app/components/OrderChat.tsx`, `app/components/VoiceApproval.tsx` (ElevenLabs) | D |
 | `app/lib/types.ts`, shared layout/nav | A |
+
+C owns no code files: C runs the pitch, Devpost page and demo video.

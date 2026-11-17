@@ -10,7 +10,7 @@ export function PagePlaceholder({
 }: {
   title: string;
   description: string;
-  owner: "A" | "B" | "C" | "D";
+  owner: "A" | "B" | "D";
   children?: ReactNode;
 }) {
   return (

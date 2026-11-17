@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local backup folders (e.g. node_modules.old.nosync), git-ignored.
+    "*.nosync/**",
   ]),
 ]);
 
