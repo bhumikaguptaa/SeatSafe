@@ -29,7 +29,7 @@ docs/        longer docs (later)
 | Rust | 1.100.0 (program pins 1.89.0 via `program/rust-toolchain.toml`) | program |
 | Solana CLI (Agave) | 4.3.2 | program |
 | Anchor CLI (via avm) | 1.2.2 | program |
-| Surfpool | optional | default validator for `anchor test` in Anchor 1.x |
+| Surfpool | not needed | Anchor 1.x's default `anchor test` validator, but our tests use `solana-test-validator` via `npm test` (see below) |
 
 Frontend-only teammates need **only Node 20+**. Solana tooling install guide: https://solana.com/docs/intro/installation
 
@@ -73,9 +73,10 @@ cd program
 npm install                      # once, for the TypeScript tests
 anchor build
 npm test                         # = anchor test --validator legacy (uses solana-test-validator)
-# or plain `anchor test` once Surfpool is installed (Anchor 1.x default validator)
 npm run sync-idl                 # copy target/idl + target/types into app/lib/idl/ after every build
 ```
+
+**Run tests with `npm test` in `program/`; plain `anchor test` needs the legacy validator.** Anchor 1.x's `anchor test` starts Surfpool by default, and on this project the suite then fails before any test runs (`Blockhash not found` in the `before all` hook). Anchor.toml has no setting to change the default validator; Anchor reads it only from the `--validator` flag or the `ANCHOR_TEST_VALIDATOR` env var. If you want to type plain `anchor test`, either pass the flag (`anchor test --validator legacy`) or export `ANCHOR_TEST_VALIDATOR=legacy` in your shell first.
 
 Deploy to devnet (deployer = `~/.config/solana/id.json`):
 

@@ -124,6 +124,36 @@ All unlisted field types are `pubkey` (accounts) or `u64` (amounts). In `TicketS
 | `DISPUTE_RESOLVED` | `DisputeResolved` |
 | `SWAPPED` | `TicketSwapped` |
 
+## Errors
+
+All program errors come from the `SeatSafeError` enum (`program/programs/seatsafe/src/errors.rs`). Anchor numbers custom errors from **6000** in enum order. A failed transaction carries the number as `custom program error: 0x…` (hex, e.g. `0x1770` = 6000), and the Anchor TS client exposes it as `err.error.errorCode.code` / `.number`. The IDL (`app/lib/idl/seatsafe.json`, `errors`) has the same list.
+
+`$X`, `$Y` and similar placeholders in the user-facing messages are values the app fills in from the account it already loaded (e.g. `event.resale_cap`, formatted as dollars).
+
+| Code name | Code | Returned by | Meaning | Suggested user-facing message |
+| --- | --- | --- | --- | --- |
+| `AboveResaleCap` | 6000 | `list_resale` | Listing price is above the event's `resale_cap`. | "This artist caps resale at $X. Lower your price to $X or less." |
+| `DeadlineNotReached` | 6001 | `refund_expired`, `release_expired`, `dispute_timeout`, `close_standing_order` (non-owner) | The deadline this action waits for hasn't passed yet: ship deadline for a refund, confirm deadline for a release, dispute deadline for a timeout, or the order deadline for someone other than the owner closing a standing order. | "Not yet. This becomes available after {deadline}." |
+| `DeadlinePassed` | 6002 | `mark_sent`, `open_dispute`, `fill_standing_order` | The window for this action has closed: the seller missed the ship deadline, the dispute window has run out, or the standing order has expired. | "Too late: the deadline for this step passed at {deadline}." |
+| `InvalidState` | 6003 | `fund_escrow`, `mark_sent`, `cancel_escrow_listing`, `open_dispute`, `confirm_receipt`, `refund_expired`, `release_expired`, `resolve_dispute`, `dispute_timeout`, `close_standing_order` | The escrow or standing order isn't in the state this action needs (e.g. funding an order that's already funded, confirming before it's sent, closing a closed order). The five payout instructions also return it when the `buyer` account isn't the escrow's buyer. | "This order has already moved on. Refresh to see its current status." |
+| `Unauthorized` | 6004 | `mark_sent`, `cancel_escrow_listing` (not the seller); `confirm_receipt` (not the buyer); `open_dispute` (neither buyer nor seller); `resolve_dispute` (not the arbiter) | The signer isn't allowed to take this action on this order. | "Only the {buyer / seller / arbiter} can do this." |
+| `SoldOut` | 6005 | `buy_primary` | All tickets for the event are sold (`sold == supply`). | "Sold out. Check resale listings for this event." |
+| `BuyerIsSeller` | 6006 | `buy_primary` (buyer is the organizer), `fund_escrow`, `swap_resale`, `fill_standing_order` (seller is the order owner) | Someone tried to buy from themselves. For `swap_resale`, Anchor usually rejects this first with `ConstraintDuplicateMutableAccount` (2040), see the Tier 1 table. | "You can't buy your own ticket." |
+| `PriceAboveMax` | 6007 | `fill_standing_order` | The listing's price is above the standing order's `max_price`. Expected during matching; the crank should skip the listing. | (Not shown to users; crank skips.) For logs: "Listing at $Y is above your max of $X." |
+| `RatingTooLow` | 6008 | **none (unused)** | Reserved for a seller-rating check. **Defined but never returned:** seller ratings are off-chain, so `minSellerRating` on standing orders is enforced by the backend matcher (crank) before it calls `fill_standing_order`. Kept so the error numbers that follow don't shift. | (Not shown; never returned onchain.) If the backend surfaces it: "Seller's rating is below your minimum." |
+| `MathOverflow` | 6009 | any instruction doing amount, fee or deadline math: `buy_primary`, `swap_resale`, `fill_standing_order`, `open_standing_order`, `fund_escrow`, `mark_sent`, `open_dispute`, `confirm_receipt`, `release_expired`, `resolve_dispute` | A checked add, subtract or multiply overflowed. Only happens with absurd inputs (prices or windows near `u64`/`i64` limits). | "Those numbers are too large. Try a smaller amount or time window." |
+| `InvalidResaleCap` | 6010 | `create_event` | `resale_cap` is below the face price. | "The resale cap must be at least the ticket price ($X)." |
+| `InvalidRoyalty` | 6011 | `create_event` | `royalty_bps + config.fee_bps` is above 50% (5000 bps). | "Royalty is too high: royalty plus the {fee}% platform fee can't exceed 50%." |
+| `InvalidBps` | 6012 | `init_config` (`fee_bps > 5000`), `resolve_dispute` (`buyer_bps > 10000`) | A basis-points value is out of range. Only admin and arbiter calls; fans never see it. | "Percentage must be between 0% and 100%" (arbiter tool) / "Fee can be at most 50%" (setup script). |
+| `InvalidAmount` | 6013 | `create_event` (price or supply 0), `list_resale`, `create_escrow_listing` (price 0), `open_standing_order` (max price or quantity 0) | A price, supply or quantity is zero. | "Enter an amount greater than zero." |
+| `InvalidWindow` | 6014 | `init_config`, `create_escrow_listing`, `open_standing_order` | A time window (`dispute_window_secs`, ship/confirm window, standing-order `deadline_secs`) is zero or negative. | "Choose a time window longer than zero." |
+| `SeatTooLong` | 6015 | `buy_primary` | The seat label is longer than 32 bytes. | "Seat label is too long (max 32 characters)." |
+| `TicketNotHeld` | 6016 | `list_resale` | The seller's ticket account doesn't hold the ticket (amount ≠ 1). | "You don't hold this ticket anymore. Refresh your tickets." |
+| `WrongEvent` | 6017 | `fill_standing_order` | The listing is for a different event than the standing order. Expected during matching; the crank should skip it. | (Not shown to users; crank skips.) |
+| `OrderFilled` | 6018 | `fill_standing_order` | The standing order is no longer open or already bought its full quantity. | "Your agent already bought all {quantity} tickets for this order." |
+
+Errors below 6000 come from Anchor itself, e.g. account constraint failures in the 2000s (`ConstraintDuplicateMutableAccount` = 2040, `ConstraintHasOne` = 2001) and `AccountNotInitialized` (3012). The app can map them to a generic "Something went wrong with this transaction. Please try again."
+
 ## Plan B ticket design (why the cap can't be bypassed)
 
 1. Each ticket is its own Token-2022 mint (decimals 0, supply 1), created by `buy_primary` at a PDA.
