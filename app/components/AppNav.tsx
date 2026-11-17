@@ -7,6 +7,7 @@ import { Bot, Compass, Palette, ShieldCheck, Tag, Ticket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AuthButton } from "@/components/AuthButton";
 import { UsdcBalance } from "@/components/UsdcBalance";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const NAV_ITEMS = [
   { href: "/", label: "Discover", icon: Compass },
@@ -85,8 +86,22 @@ export function TopNav() {
           <ActiveDesktopLinks />
         </Suspense>
         <div className="ml-auto flex items-center gap-2">
-          <UsdcBalance />
-          <AuthButton />
+          {/* A failure in the account area must never take down the page. */}
+          <ErrorBoundary
+            label="nav user area"
+            fallback={
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+              >
+                Account unavailable, reload
+              </button>
+            }
+          >
+            <UsdcBalance />
+            <AuthButton />
+          </ErrorBoundary>
         </div>
       </div>
     </header>

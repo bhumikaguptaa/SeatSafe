@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePrivy } from "@privy-io/react-auth";
-import { useWallets } from "@privy-io/react-auth/solana";
+import { useSolanaWallet } from "@/lib/useSolanaWallet";
 import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Wallet } from "lucide-react";
@@ -28,10 +27,7 @@ export function UsdcBalance() {
 
 // Only rendered inside PrivyProvider.
 function PrivyUsdcBalance() {
-  const { authenticated } = usePrivy();
-  const { wallets } = useWallets();
-  // Only embedded wallets are enabled (no external connectors), so the first Solana wallet is the user's.
-  const address = authenticated ? wallets[0]?.address : undefined;
+  const { address } = useSolanaWallet();
   const [balance, setBalance] = useState<{ address: string; usd: number } | null>(null);
 
   useEffect(() => {
