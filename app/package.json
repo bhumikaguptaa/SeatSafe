@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "verify:local": "../program/node_modules/.bin/ts-node --transpile-only -P scripts/tsconfig.json scripts/verify-builders.ts"
+    "verify:local": "../program/node_modules/.bin/ts-node --transpile-only -P scripts/tsconfig.json scripts/verify-builders.ts",
+    "check:relay": "../program/node_modules/.bin/ts-node --transpile-only -P scripts/tsconfig.json scripts/relay-devnet-check.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
