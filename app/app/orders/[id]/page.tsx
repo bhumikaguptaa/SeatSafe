@@ -4,7 +4,6 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageShell } from "@/components/PageShell";
 import { OrderTracker } from "./OrderTracker";
-import { OrderActions } from "@/components/OrderActions";
 
 export default function OrderPage() {
   return (
@@ -14,10 +13,8 @@ export default function OrderPage() {
       width="narrow"
     >
       <Suspense fallback={<Skeleton className="h-72 rounded-2xl" />}>
+        {/* Real devnet actions (A's useOrderActions) are wired into the tracker's buttons. */}
         <OrderTracker />
-        {/* Added by A: real devnet actions (confirm, dispute, claim refund, release). Renders only when
-            NEXT_PUBLIC_USE_MOCK=false. TODO(D): wire useOrderActions(id) into OrderTracker, then drop this. */}
-        <OrderActions />
       </Suspense>
     </PageShell>
   );

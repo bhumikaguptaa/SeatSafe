@@ -1,9 +1,12 @@
 "use client";
 
-// Owner: D. The live escrow tracker UI. Build it ONLY from useOrder(id).
+// Owner: D. The live escrow tracker UI. Order data comes from useOrder(id); the real devnet actions
+// (confirm, dispute, claim refund, release, mark sent) come from A's useOrderActions(id).
+// Until B's Supabase useOrder() lands, real mode falls back to the devnet escrow for state/amount/deadline.
+// In mock mode the same buttons drive simulate(), acting as the buyer.
 // A coin shows where the money is (You / Vault / Seller) and slides between boxes as the state changes.
 // Status tokens (vault/transit/released/disputed) are only ever outlines, glows and text here:
-// filled blue is reserved for primary buttons. Use the simulate buttons to walk through every state.
+// filled blue is reserved for primary buttons.
 
 import { useSyncExternalStore } from "react";
 import { useParams } from "next/navigation";
@@ -13,6 +16,7 @@ import {
   BadgeCheck,
   CircleCheck,
   Clock,
+  Loader2,
   Lock,
   RotateCcw,
   Send,
@@ -24,8 +28,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useOrder } from "@/lib/hooks";
+import { USE_MOCK, type ChainEscrow } from "@/lib/chain";
 import { formatCountdown, formatDate, formatUsd } from "@/lib/format";
-import type { OrderEvent, OrderState } from "@/lib/types";
+import type { OrderEvent, OrderState, Tier } from "@/lib/types";
+import { useOrderActions } from "@/components/OrderActions";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -94,20 +100,109 @@ function useNow(): number | null {
   return useSyncExternalStore(subscribeClock, getClock, getServerClock);
 }
 
+interface TrackerView {
+  state: OrderState;
+  amount: number;
+  deadline: string | null;
+  tier: Tier;
+  events: OrderEvent[];
+}
+
+/** Devnet escrow -> tracker view (escrows are always Tier 2). Null while it's not an order yet. */
+function fromEscrow(e: ChainEscrow): TrackerView | null {
+  if (e.state === "LISTED" || e.state === "CANCELLED") return null;
+  return {
+    state: e.state,
+    amount: e.priceUsd,
+    deadline: e.state === "HELD" ? e.shipDeadline : e.confirmDeadline,
+    tier: 2,
+    events: [],
+  };
+}
+
+type ActionKey = "confirm" | "dispute" | "refund" | "release" | "markSent";
+
+interface Action {
+  key: ActionKey;
+  label: string;
+  icon: LucideIcon;
+  primary: boolean;
+  run: () => void;
+}
+
 export function OrderTracker() {
   const { id } = useParams<{ id: string }>();
   const { order, state, amount, deadline, events, loading, simulate } = useOrder(id);
+  const actions = useOrderActions(id);
   const now = useNow();
 
-  if (loading) return <Skeleton className="h-72 rounded-2xl" />;
-  if (!order || !state) {
-    return <p className="text-sm text-muted-foreground">No order with id “{id}”.</p>;
+  const escrow = actions.escrow;
+  const view: TrackerView | null =
+    order && state
+      ? { state, amount, deadline, tier: order.tier, events }
+      : escrow
+        ? fromEscrow(escrow)
+        : null;
+
+  if (loading || (!USE_MOCK && actions.loading && !view)) {
+    return <Skeleton className="h-72 rounded-2xl" />;
+  }
+  if (!view) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        {escrow?.state === "LISTED"
+          ? "This ticket is listed and waiting for a buyer."
+          : escrow?.state === "CANCELLED"
+            ? "The seller cancelled this listing."
+            : `No order with id “${id}”.`}
+      </p>
+    );
   }
 
-  const view = STATE_VIEW[state];
-  const tone = TONE[view.tone];
-  const msLeft = deadline && now !== null ? new Date(deadline).getTime() - now : null;
-  const latestFirst = [...events].reverse();
+  const ui = STATE_VIEW[view.state];
+  const tone = TONE[ui.tone];
+  const msLeft = view.deadline && now !== null ? new Date(view.deadline).getTime() - now : null;
+  const deadlinePassed = msLeft !== null && msLeft <= 0;
+  const latestFirst = [...view.events].reverse();
+
+  // Who am I on this order? Mock orders always belong to the mock buyer.
+  const role: "buyer" | "seller" | null = USE_MOCK
+    ? "buyer"
+    : escrow && actions.me === escrow.buyer
+      ? "buyer"
+      : escrow && actions.me === escrow.seller
+        ? "seller"
+        : null;
+  const live = !USE_MOCK && escrow !== null;
+  const canAct = USE_MOCK || live;
+
+  // Same rules as A's OrderActions panel. Real mode sends the tx; mock mode simulates the outcome.
+  const available: Action[] = [];
+  if (canAct && view.state === "HELD") {
+    if (deadlinePassed) {
+      available.push({ key: "refund", label: "Claim refund", icon: RotateCcw, primary: true, run: live ? actions.claimRefund : () => simulate("REFUNDED") });
+    } else if (msLeft !== null) {
+      if (role === "seller") {
+        available.push({ key: "markSent", label: "I sent the ticket", icon: Send, primary: true, run: live ? actions.markSent : () => simulate("IN_TRANSIT") });
+      }
+      if (role) {
+        available.push({ key: "dispute", label: "Report a problem", icon: ShieldAlert, primary: false, run: live ? actions.onDispute : () => simulate("DISPUTED") });
+      }
+    }
+  }
+  if (canAct && view.state === "IN_TRANSIT") {
+    if (deadlinePassed) {
+      available.push({ key: "release", label: "Release payment", icon: Wallet, primary: true, run: live ? actions.releasePayment : () => simulate("RELEASED") });
+    } else if (msLeft !== null) {
+      if (role === "buyer") {
+        available.push({ key: "confirm", label: "Ticket works, release payment", icon: CircleCheck, primary: true, run: live ? actions.onConfirm : () => simulate("RELEASED") });
+      }
+      if (role) {
+        available.push({ key: "dispute", label: "Report a problem", icon: ShieldAlert, primary: false, run: live ? actions.onDispute : () => simulate("DISPUTED") });
+      }
+    }
+  }
+  const busy = live ? actions.busy : null;
 
   return (
     <div className="space-y-4">
@@ -118,31 +213,32 @@ export function OrderTracker() {
             className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${tone.border} ${tone.text}`}
           >
             <span className={`size-1.5 rounded-full ${tone.border} border-2`} />
-            {view.pill}
+            {ui.pill}
           </span>
           <span className="text-xs text-muted-foreground">
-            {order.tier === 1 ? "SeatSafe ticket" : "Outside ticket · escrow"}
+            {live ? "Live on devnet · " : ""}
+            {view.tier === 1 ? "SeatSafe ticket" : "Outside ticket · escrow"}
           </span>
         </div>
 
         <p className="mt-5 text-sm text-muted-foreground">Order amount</p>
-        <p className="text-5xl font-bold tracking-tight tabular-nums">{formatUsd(amount)}</p>
+        <p className="text-5xl font-bold tracking-tight tabular-nums">{formatUsd(view.amount)}</p>
         <AnimatePresence mode="wait" initial={false}>
           <motion.p
-            key={state}
+            key={view.state}
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.2 }}
             className={`mt-1 text-sm font-medium ${tone.text}`}
           >
-            {view.title}
+            {ui.title}
           </motion.p>
         </AnimatePresence>
 
         <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
           {SPOTS.map((s) => {
-            const here = s.id === view.spot;
+            const here = s.id === ui.spot;
             const Icon = s.icon;
             return (
               <div
@@ -158,15 +254,15 @@ export function OrderTracker() {
                       transition={{ type: "spring", stiffness: 260, damping: 24 }}
                       className={`flex size-14 items-center justify-center rounded-full border-2 bg-card text-[11px] font-semibold tabular-nums ${tone.border} ${tone.text} ${tone.glow}`}
                     >
-                      {state === "DISPUTED" ? (
+                      {view.state === "DISPUTED" ? (
                         <motion.span
                           animate={{ scale: [1, 1.12, 1] }}
                           transition={{ duration: 1.2, repeat: Infinity }}
                         >
-                          {formatUsd(amount)}
+                          {formatUsd(view.amount)}
                         </motion.span>
                       ) : (
-                        formatUsd(amount)
+                        formatUsd(view.amount)
                       )}
                     </motion.div>
                   ) : (
@@ -183,59 +279,84 @@ export function OrderTracker() {
           })}
         </div>
 
-        {view.countdown && deadline && (
+        {ui.countdown && view.deadline && (
           <div className={`mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl px-4 py-3 ${tone.tint}`}>
             <span className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock className="size-4" />
-              {view.countdown}
+              {ui.countdown}
             </span>
             <span className="text-right">
               <span className={`font-mono text-lg font-semibold tabular-nums ${tone.text}`}>
                 {msLeft === null ? "--" : formatCountdown(msLeft)}
               </span>
-              <span className="block text-xs text-muted-foreground">by {formatDate(deadline)}</span>
+              <span className="block text-xs text-muted-foreground">by {formatDate(view.deadline)}</span>
             </span>
+          </div>
+        )}
+
+        {available.length > 0 && (
+          <div className="mt-5 space-y-2">
+            {available.map((a) => {
+              const Icon = a.icon;
+              return (
+                <Button
+                  key={a.key}
+                  size="lg"
+                  variant={a.primary ? "default" : "outline"}
+                  className="h-12 w-full rounded-xl text-base"
+                  disabled={busy !== null}
+                  onClick={a.run}
+                >
+                  {busy === a.key ? <Loader2 className="animate-spin" /> : <Icon />}
+                  {a.label}
+                </Button>
+              );
+            })}
           </div>
         )}
       </section>
 
       {/* Activity, newest first. */}
-      <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-        <h2 className="text-base font-semibold">Activity</h2>
-        <ol className="mt-3 divide-y divide-border">
-          {latestFirst.map((e) => {
-            const Icon = EVENT_ICON[e.type];
-            return (
-              <motion.li
-                key={e.id}
-                layout
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-start gap-3 py-3"
-              >
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-                  <Icon className="size-4" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{e.message}</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(e.at)}</p>
-                </div>
-              </motion.li>
-            );
-          })}
-        </ol>
-      </section>
+      {latestFirst.length > 0 && (
+        <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <h2 className="text-base font-semibold">Activity</h2>
+          <ol className="mt-3 divide-y divide-border">
+            {latestFirst.map((e) => {
+              const Icon = EVENT_ICON[e.type];
+              return (
+                <motion.li
+                  key={e.id}
+                  layout
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-start gap-3 py-3"
+                >
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                    <Icon className="size-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{e.message}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(e.at)}</p>
+                  </div>
+                </motion.li>
+              );
+            })}
+          </ol>
+        </section>
+      )}
 
-      <section className="rounded-2xl border border-dashed border-border p-4">
-        <p className="mb-2 text-xs text-muted-foreground">Demo: simulate a state change (mock mode only)</p>
-        <div className="flex flex-wrap gap-2">
-          {STATES.map((s) => (
-            <Button key={s} size="sm" variant="outline" className="rounded-full" onClick={() => simulate(s)}>
-              {s}
-            </Button>
-          ))}
-        </div>
-      </section>
+      {USE_MOCK && (
+        <section className="rounded-2xl border border-dashed border-border p-4">
+          <p className="mb-2 text-xs text-muted-foreground">Demo: simulate a state change (mock mode only)</p>
+          <div className="flex flex-wrap gap-2">
+            {STATES.map((s) => (
+              <Button key={s} size="sm" variant="outline" className="rounded-full" onClick={() => simulate(s)}>
+                {s}
+              </Button>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
