@@ -61,7 +61,7 @@ Copy `app/.env.example` to `app/.env.local` and fill in what you have. Never com
 | `NEXT_PUBLIC_PRIVY_APP_ID` | empty | Empty means login disabled |
 | `NEXT_PUBLIC_SOLANA_RPC_URL` | `https://api.devnet.solana.com` | Devnet RPC |
 | `NEXT_PUBLIC_USDC_MINT` | `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU` | Circle devnet USDC; verify at https://developers.circle.com |
-| `NEXT_PUBLIC_PROGRAM_ID` | empty | SeatSafe program ID (below) |
+| `NEXT_PUBLIC_PROGRAM_ID` | `7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy` | SeatSafe program ID (devnet, see below) |
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | empty | From B |
 | `SUPABASE_SERVICE_ROLE_KEY` | empty | Server only |
 | `RELAYER_SECRET_KEY` | empty | Server only; relayer pays gas |
