@@ -93,12 +93,15 @@ The six parts:
 
 ## 5. QuickNode Streams
 
-TODO(B): fill in from the backend PR (#17, "Add the backend that mirrors the chain into the live tracker"), once merged:
+The live stream is named **SeatSafe** and is delivering on Solana devnet. It posts matching transactions to `POST /api/stream-webhook`, which writes the order tracker in Supabase. A duplicate signature is ignored.
+
 - **Network:** Solana devnet
-- **Dataset:** TODO(B)
-- **Filter logic:** TODO(B), e.g. transactions that touch program `7fnVUPd1…`, decoded into SeatSafe events (`docs/program.md § Events`)
-- **Destination:** TODO(B), e.g. a webhook into `app/api/…` that writes to Supabase
-- **Why:** TODO(B)
+- **Dataset:** Block
+- **Filter logic:** a JavaScript `main(stream)` keeps a transaction only when a log line contains program `7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy`. The filter is in [docs/backend.md](docs/backend.md).
+- **Destination:** `https://seat-safe-chi.vercel.app/api/stream-webhook`, header `x-webhook-secret`
+- **Why:** the tracker updates within about a second of a devnet purchase, without a refresh
+
+![SeatSafe QuickNode stream on Solana devnet](docs/quicknode-stream.png)
 
 ## 6. ElevenLabs
 
