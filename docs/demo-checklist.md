@@ -155,7 +155,16 @@ Log in as wallet 1 there so the wallet checks run.
   your wallet's USDC (≥ $20 for the escrow step), a ticket to resell, open resale and escrow listings, how long
   ago the QuickNode Stream last delivered, and whether ElevenLabs voice is configured. Each red/amber row says how
   to fix it; "No listing" rows show the `reset-demo` command with a copy button.
+- **Step 0: Resale Simulator** (`/simulator`): the 60-second warm-up that explains the whole product without wallets. Simulated mode needs nothing; **Live on devnet** runs real transactions between two demo wallets (see below).
 - **Steps 1–7** in pitch order (primary buy, scalper blocked, fair resale, escrow auto-refund, in person,
   agent, verify): each card has the talking point, the expected result, and an **Open** button that goes to the
   exact page (addresses are read from devnet on load, so they're right after every `reset-demo`).
 - Before going on stage: run `reset-demo`, open `/demo`, wait for all-green, then work down the cards.
+
+### Simulator live mode (`/simulator` → Live on devnet)
+
+Server env (Vercel, Production): `SIM_LIVE_ENABLED=true`, `SIM_SELLER_SECRET_KEY` = contents of `.keys/sim-seller.json`,
+`SIM_BUYER_SECRET_KEY` = contents of `.keys/sim-buyer.json`. No SOL needed (the relayer pays). One full run of both
+scenarios needs **Sam (seller) ≥ $12** (a $10 ticket + $2 bond) and **Bea (buyer) ≥ $34** ($14 resale + $20 escrow);
+the scam refund gives Bea $22 back and the resale gives Sam $13.58, so later runs need less. The page says exactly
+what to fund if a wallet is short. The scam scenario waits for the real 60 s deadline in live mode.
