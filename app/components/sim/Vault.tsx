@@ -22,7 +22,7 @@ export function Vault({ balance, state, label = "SeatSafe vault", children }: { 
       animate={slam && !reduced ? { x: SHAKE_X } : { x: 0 }}
       transition={MOTION.shake}
       className={cn(
-        "relative flex w-44 flex-col items-center rounded-3xl border-2 bg-gradient-to-b from-[#16264f] to-[#070d1f] p-4 md:w-56",
+        "relative flex w-44 flex-col items-center rounded-3xl border-2 bg-[#121218] p-4 md:w-56",
         slam ? "border-disputed glow-disputed" : state === "open" ? "border-released glow-released" : state === "holding" ? "border-vault glow-vault" : "border-white/20",
       )}
     >
@@ -34,7 +34,7 @@ export function Vault({ balance, state, label = "SeatSafe vault", children }: { 
         <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50">{children}</div>
         <motion.div
           className={cn(
-            "absolute inset-0 flex origin-left items-center justify-center rounded-2xl border-2 bg-gradient-to-br from-[#2a3f75] to-[#0f1a3a]",
+            "absolute inset-0 flex origin-left items-center justify-center rounded-2xl border-2 bg-[#2a2a33]",
             slam ? "border-disputed" : "border-white/25",
           )}
           animate={{ rotateY: state === "open" ? -100 : 0 }}

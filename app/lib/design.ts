@@ -9,6 +9,21 @@
 
 import type { Transition } from "motion/react";
 
+/** "Stadium night" palette (Nov 19): solid surfaces, white floating overlays, one red accent. Mirrors
+ *  the .dark tokens in globals.css; the 3D stadium uses these values directly. */
+export const COLORS = {
+  background: "#0B0B0F",
+  surface: "#15151B",
+  border: "#26262E",
+  overlay: "#FFFFFF",
+  overlayText: "#0B0B0F",
+  accent: "#E5383B",
+  vault: "#3B82F6",
+  released: "#22C55E",
+  pending: "#F59E0B",
+  blocked: "#EF4444",
+} as const;
+
 export const DURATION = { fast: 0.15, standard: 0.3, dramatic: 0.8 } as const;
 
 export const MOTION = {

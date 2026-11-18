@@ -507,7 +507,7 @@ export function LiveLab() {
             <p className="text-sm text-white/70">Every number, padlock and coin on this screen is read from Solana, after confirmation.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <div className="flex items-center gap-1 rounded-full border border-white/15 bg-black/30 p-1" role="group" aria-label="Who signs">
+            <div className="flex items-center gap-1 rounded-full border border-white/15 bg-card p-1" role="group" aria-label="Who signs">
               <button type="button" onClick={() => setParams({ driver: null })} className={cn("rounded-full px-3 py-1.5 font-semibold", driver === "users" && "bg-white text-black")}>Two real users</button>
               <button type="button" disabled={!presenter?.enabled} title={presenter?.enabled ? "Server demo wallets sign" : presenter?.reason} onClick={() => setParams({ driver: "presenter", role: null })} className={cn("rounded-full px-3 py-1.5 font-semibold disabled:opacity-40", driver === "presenter" && "bg-vault text-black")}>Presenter</button>
             </div>
@@ -523,7 +523,7 @@ export function LiveLab() {
               aria-selected={scenario === id}
               type="button"
               onClick={() => setParams({ scenario: id, mint: null, escrow: null, seller: null })}
-              className={cn("rounded-2xl border px-4 py-3 text-left", scenario === id ? (id === "scam" ? "border-disputed bg-disputed/10 glow-disputed" : "border-vault bg-vault/10 glow-vault") : "border-white/10 bg-white/[0.03]")}
+              className={cn("rounded-2xl border px-4 py-3 text-left", scenario === id ? (id === "scam" ? "border-disputed bg-disputed/10 glow-disputed" : "border-vault bg-vault/10 glow-vault") : "border-white/10 bg-card")}
             >
               <p className="font-bold">{name}</p>
               <p className="text-xs text-white/60">{sub}</p>
@@ -533,7 +533,7 @@ export function LiveLab() {
 
         {/* Role (two users) */}
         {driver === "users" && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-sm">
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-card p-3 text-sm">
             <UserRound className="size-4 text-white/60" />
             {!me ? (
               <>
@@ -549,7 +549,7 @@ export function LiveLab() {
                   </Button>
                 ))}
                 {role && (
-                  <button type="button" className="ml-auto inline-flex items-center gap-1 rounded-full border border-white/20 px-3 py-1 text-xs hover:bg-white/10" onClick={() => void navigator.clipboard.writeText(shareLink)}>
+                  <button type="button" className="ml-auto inline-flex items-center gap-1 rounded-full border border-white/20 px-3 py-1 text-xs hover:bg-[#1d1d24]" onClick={() => void navigator.clipboard.writeText(shareLink)}>
                     <Copy className="size-3" /> Copy link for the {role === "seller" ? "buyer" : "seller"}&apos;s window
                   </button>
                 )}
@@ -562,7 +562,7 @@ export function LiveLab() {
           <div>
             {/* Stage */}
             <ScaledStage>
-              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_50%_35%,rgba(61,108,240,0.35),transparent_60%),linear-gradient(180deg,#0b1430,#02060f)] p-4 md:p-6">
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_50%_-10%,#3a1013_0%,transparent_55%),linear-gradient(180deg,#121217,#0b0b0f)] p-4 md:p-6">
                 <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4">
                   <div className="flex flex-col items-center gap-1">
                     <Persona name="Seller" role={seller ? short(seller) : "not joined yet"} initial="S" usdc={d?.sellerUsd ?? 0} tone={lastBlocked && latest?.who.startsWith("Seller") ? "disputed" : "neutral"}>
@@ -604,11 +604,11 @@ export function LiveLab() {
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0 }}
                       transition={MOTION.dramatic}
-                      className={cn("absolute inset-x-3 top-3 z-40 mx-auto max-w-xl rounded-2xl border-2 bg-black/85 px-4 py-3 text-center backdrop-blur", TONE[banner.tone].border, TONE[banner.tone].glow)}
+                      className={cn("absolute inset-x-3 top-3 z-40 mx-auto max-w-xl rounded-2xl border-2 overlay-white px-4 py-3 text-center", TONE[banner.tone].border, TONE[banner.tone].glow)}
                       role="status"
                     >
                       <p className={cn("text-xl font-extrabold md:text-2xl", TONE[banner.tone].text)}>{banner.title}</p>
-                      <p className="mt-1 text-sm text-white/85">{banner.text}</p>
+                      <p className="mt-1 text-sm text-[#3f3f46]">{banner.text}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>

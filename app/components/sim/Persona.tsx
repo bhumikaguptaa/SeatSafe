@@ -30,15 +30,15 @@ export function Persona({
   const reduced = useReducedMotion() ?? false;
   const shown = useCountUp(usdc, reduced);
   return (
-    <div className={cn("relative flex w-full flex-col items-center rounded-3xl border bg-white/[0.06] p-4 backdrop-blur", TONE[tone].border, tone !== "neutral" && TONE[tone].glow)}>
+    <div className={cn("relative flex w-full flex-col items-center rounded-3xl border bg-card p-4", TONE[tone].border, tone !== "neutral" && TONE[tone].glow)}>
       <div className="flex w-full items-center gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/30 to-white/5 text-lg font-bold">{initial}</span>
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#26262e] text-lg font-bold">{initial}</span>
         <div className="min-w-0">
           <p className="truncate font-semibold">{name}</p>
           <p className="truncate text-xs text-white/60">{role}</p>
         </div>
       </div>
-      <div className="relative mt-3 w-full rounded-2xl bg-black/30 px-3 py-2 text-center" title={`${name}'s wallet (devnet USDC, shown as dollars)`}>
+      <div className="relative mt-3 w-full rounded-2xl bg-[#0f0f14] px-3 py-2 text-center" title={`${name}'s wallet (devnet USDC, shown as dollars)`}>
         <p className="text-[11px] tracking-wide text-white/60 uppercase">Wallet</p>
         <p className="num text-2xl font-extrabold md:text-3xl" aria-label={`${name} has ${money(usdc)}`}>{money(shown)}</p>
         {delta && delta.amount !== 0 && (
