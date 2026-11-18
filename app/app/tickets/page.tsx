@@ -3,15 +3,17 @@
 // Owner: A. The user's tickets with "Resell" (capped Tier 1 listing). The gate pass page is D's.
 // Real mode: Token-2022 tickets the Privy wallet holds (lib/chain.ts). Mock mode: lib/mock.ts.
 // Deep link: /tickets?resell=<ticket mint> opens that ticket's "Can't go? Resell" dialog (after login).
+// "Sell in person": lists the ticket (same listResale, cap enforced) and shows a Solana Pay QR
+// (components/InPersonSale.tsx) that the buyer scans at the gate.
 
 import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CalendarX2, Loader2, QrCode, ShieldCheck, Tag, X } from "lucide-react";
+import { CalendarX2, Loader2, QrCode, ScanLine, ShieldCheck, Tag, X } from "lucide-react";
 import { PublicKey } from "@solana/web3.js";
 import { events as mockEvents, MOCK_USER_ID, tickets as mockTickets } from "@/lib/mock";
-import { getEvents, getMyTickets, seatLabel, USE_MOCK, type ChainTicket } from "@/lib/chain";
-import { cancelListing, listResale } from "@/lib/program";
+import { chainProgram, getEvents, getMyTickets, seatLabel, USE_MOCK, type ChainTicket } from "@/lib/chain";
+import { cancelListing, listResale, pdas } from "@/lib/program";
 import { mockTx, useRunTx, useTxWallet } from "@/lib/tx";
 import { useAsyncData } from "@/lib/use-chain";
 import { friendlyError } from "@/lib/errors";
@@ -32,6 +34,7 @@ import {
 import { EmptyState, Field } from "@/components/form";
 import { AddToCalendar } from "@/components/AddToCalendar";
 import { AuthButton } from "@/components/AuthButton";
+import { InPersonSale } from "@/components/InPersonSale";
 
 interface TicketsData {
   tickets: (ChainTicket | (ChainTicket & { mock: true }))[];
@@ -116,7 +119,10 @@ function TicketsView() {
   );
 }
 
-type ResellMode = "cap" | "cantGo";
+type ResellMode = "cap" | "cantGo" | "inPerson";
+
+/** What the seller receives: price minus artist royalty and the 3% SeatSafe fee. */
+const netOf = (price: number, event?: Event) => price * (1 - (event?.royaltyBps ?? 0) / 10_000 - 0.03);
 
 function TicketRow({
   ticket,
@@ -139,6 +145,12 @@ function TicketRow({
     setOpen(true);
   };
   const [busy, setBusy] = useState(false);
+  /** Open in-person sale (full-screen QR). */
+  const [qr, setQr] = useState<{ listing: string; price: number } | null>(null);
+  const showQrForExisting = () => {
+    const listing = USE_MOCK ? `mock-${ticket.id}` : pdas(chainProgram().programId).listing(new PublicKey(ticket.id)).toBase58();
+    setQr({ listing, price: ticket.listingPriceUsd ?? 0 });
+  };
 
   const cancel = async () => {
     setBusy(true);
@@ -166,9 +178,16 @@ function TicketRow({
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         {ticket.listed ? (
-          <Button size="sm" variant="outline" disabled={busy} onClick={cancel}>
-            {busy ? <Loader2 className="animate-spin" /> : <X />} Cancel listing
-          </Button>
+          <>
+            {ticket.tier === 1 && (
+              <Button size="sm" onClick={showQrForExisting}>
+                <ScanLine /> Show QR
+              </Button>
+            )}
+            <Button size="sm" variant="outline" disabled={busy} onClick={cancel}>
+              {busy ? <Loader2 className="animate-spin" /> : <X />} Cancel listing
+            </Button>
+          </>
         ) : (
           <>
             <Link href={`/tickets/${ticket.id}/pass`} className={buttonVariants({ size: "sm", variant: "outline" })}>
@@ -178,6 +197,9 @@ function TicketRow({
               <>
                 <Button size="sm" onClick={() => openResell("cap")}>
                   <Tag /> Resell
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => openResell("inPerson")}>
+                  <ScanLine /> Sell in person
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => openResell("cantGo")}>
                   <CalendarX2 /> Can&apos;t go? Resell
@@ -196,8 +218,23 @@ function TicketRow({
           ticket={ticket}
           event={event}
           onDone={onDone}
-          initialPrice={mode === "cantGo" ? event?.priceFromUsd : undefined}
+          initialPrice={mode === "cap" ? undefined : event?.priceFromUsd}
           cantGo={mode === "cantGo"}
+          onInPerson={mode === "inPerson" ? (listing, price) => setQr({ listing, price }) : undefined}
+        />
+      )}
+      {qr && (
+        <InPersonSale
+          listing={qr.listing}
+          ticketMint={ticket.id}
+          priceUsd={qr.price}
+          netUsd={netOf(qr.price, event)}
+          seat={ticket.seatLabel}
+          title={event?.title ?? "SeatSafe event"}
+          onClose={() => {
+            setQr(null);
+            void onDone();
+          }}
         />
       )}
     </li>
@@ -212,6 +249,7 @@ function ResellDialog({
   onDone,
   initialPrice,
   cantGo = false,
+  onInPerson,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -221,6 +259,8 @@ function ResellDialog({
   /** Prefill (face value for "Can't go?"); defaults to the cap. */
   initialPrice?: number;
   cantGo?: boolean;
+  /** "Sell in person": after listing, show the QR for this listing instead of closing. */
+  onInPerson?: (listing: string, priceUsd: number) => void;
 }) {
   const { run } = useRunTx();
   const cap = event?.resaleCapUsd ?? null;
@@ -241,17 +281,22 @@ function ResellDialog({
       errorContext: { resaleCapUsd: cap },
     };
     let ok: boolean;
+    let listing: string | undefined;
     if (USE_MOCK) {
       // Same message the program's AboveResaleCap rejection produces in real mode.
       ok = await mockTx(opts, overCap ? friendlyError({ logs: ["Error Code: AboveResaleCap."] }, { resaleCapUsd: cap }).message : undefined);
+      listing = `mock-${ticket.id}`;
     } else {
       // Over-cap prices are sent on purpose: the program rejects them live (demo moment).
-      ok = (await run((ctx) => listResale(ctx, { ticketMint: new PublicKey(ticket.id), priceUsd: value }), opts)) !== null;
+      const sent = await run((ctx) => listResale(ctx, { ticketMint: new PublicKey(ticket.id), priceUsd: value }), opts);
+      ok = sent !== null;
+      listing = sent?.address?.toBase58();
     }
     setBusy(false);
     if (ok) {
       onOpenChange(false);
-      await onDone();
+      if (onInPerson && listing) onInPerson(listing, value);
+      else await onDone();
     }
   };
 
@@ -260,7 +305,7 @@ function ResellDialog({
       <DialogContent>
         <form onSubmit={submit} className="grid gap-4">
           <DialogHeader>
-            <DialogTitle>{cantGo ? "Can't go? Resell your ticket" : "Resell ticket"}</DialogTitle>
+            <DialogTitle>{onInPerson ? "Sell in person" : cantGo ? "Can't go? Resell your ticket" : "Resell ticket"}</DialogTitle>
             <DialogDescription>
               {event?.title ?? "SeatSafe event"} · {ticket.seatLabel}
             </DialogDescription>
@@ -288,6 +333,12 @@ function ResellDialog({
               autoFocus
             />
           </Field>
+          {onInPerson && (
+            <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+              <ShieldCheck className="mt-px size-3.5 shrink-0 text-vault" aria-hidden />
+              The buyer scans your QR. Ticket and payment swap in one transaction, gas paid by SeatSafe.
+            </p>
+          )}
           {cantGo && (
             <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
               <ShieldCheck className="mt-px size-3.5 shrink-0 text-vault" aria-hidden />
@@ -296,13 +347,14 @@ function ResellDialog({
           )}
           {cap != null && event && valid && (
             <p className="text-xs text-muted-foreground">
-              You get {formatUsd(value * (1 - event.royaltyBps / 10_000 - 0.03))} after the {event.royaltyBps / 100}% artist
+              You get {formatUsd(netOf(value, event))} after the {event.royaltyBps / 100}% artist
               royalty and 3% SeatSafe fee.
             </p>
           )}
           <DialogFooter>
             <Button type="submit" disabled={!valid || busy} className="w-full sm:w-auto">
-              {busy && <Loader2 className="animate-spin" />} List for {valid ? formatUsd(value) : "…"}
+              {busy && <Loader2 className="animate-spin" />}
+              {onInPerson ? <><ScanLine /> Show QR</> : <>List for {valid ? formatUsd(value) : "…"}</>}
             </Button>
           </DialogFooter>
         </form>

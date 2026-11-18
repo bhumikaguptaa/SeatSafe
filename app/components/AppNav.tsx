@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, Compass, Palette, ShieldCheck, Tag, Ticket } from "lucide-react";
+import { Bot, Compass, Palette, ScanLine, ShieldCheck, Tag, Ticket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AuthButton } from "@/components/AuthButton";
 import { UsdcBalance } from "@/components/UsdcBalance";
@@ -12,6 +12,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 const NAV_ITEMS = [
   { href: "/", label: "Discover", icon: Compass },
   { href: "/tickets", label: "My tickets", icon: Ticket },
+  { href: "/scan", label: "Scan to buy", icon: ScanLine },
   { href: "/sell", label: "Sell", icon: Tag },
   { href: "/agent", label: "Agent", icon: Bot },
   { href: "/creator", label: "Creator", icon: Palette },
