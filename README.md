@@ -106,7 +106,7 @@ TODO(D/C): `app/components/VoiceApproval.tsx` is the voice-approval UI for agent
 
 ## 7. Grok Bot on X
 
-TODO(A): 3–4 sentences, written after testing.
+SeatSafe uses Grok to demonstrate how AI can support ticket listings and buyer education through X. In our demo, Grok generated a promotional post for a SeatSafe ticket listing and included a link to the marketplace. When asked whether the listing was legitimate, Grok explained how escrow can protect buyers by withholding payment until ticket delivery requirements are met. The conversation demonstrates how AI can help users understand ticket transaction risks and SeatSafe's proposed escrow protection.
 
 Chat export: [docs/grok-chat-export.md](docs/grok-chat-export.md).
 
