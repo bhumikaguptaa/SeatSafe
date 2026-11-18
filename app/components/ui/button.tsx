@@ -7,9 +7,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Branding gradient use #2 of 3 (see globals.css).
+        // Royal-blue gradient fill (--brand-button in globals.css) with a lit top edge.
         default:
-          "[background-image:var(--brand-button)] bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgb(140_185_204/0.35)] hover:brightness-110",
+          "[background-image:var(--brand-button)] bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.3)] hover:brightness-110",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:

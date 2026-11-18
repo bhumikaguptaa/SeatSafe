@@ -41,8 +41,8 @@ function DesktopLinks({ pathname }: { pathname: string | null }) {
           key={href}
           href={href}
           className={cn(
-            "rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground",
-            isActive(pathname, href) && "bg-muted text-foreground",
+            "rounded-md px-3 py-1.5 text-sm text-white/80 transition-colors hover:text-white",
+            isActive(pathname, href) && "bg-white/15 text-white",
           )}
         >
           {label}
@@ -77,11 +77,11 @@ function MobileTabs({ pathname }: { pathname: string | null }) {
 /** Top bar: logo + links (desktop), balance + login (all sizes). */
 export function TopNav() {
   return (
-    // Transparent over the page glow; the blur keeps it legible once content scrolls underneath.
+    // Transparent over the page gradient; the blur keeps it legible once content scrolls underneath.
     <header className="sticky top-0 z-40 bg-transparent backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <ShieldCheck className="size-5 text-primary" />
+          <ShieldCheck className="size-5 text-white" />
           SeatSafe
         </Link>
         <Suspense fallback={<DesktopLinks pathname={null} />}>

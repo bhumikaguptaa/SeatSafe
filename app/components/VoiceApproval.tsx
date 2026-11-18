@@ -175,7 +175,7 @@ function CallPanel({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 40 }}
       transition={{ type: "spring", stiffness: 300, damping: 28 }}
-      className="fixed inset-x-4 bottom-24 z-50 mx-auto max-w-sm overflow-hidden rounded-3xl border border-border bg-card/95 p-6 shadow-2xl backdrop-blur-xl md:inset-x-auto md:right-8 md:bottom-8 md:w-96"
+      className="fixed inset-x-4 bottom-24 z-50 mx-auto max-w-sm overflow-hidden rounded-3xl border border-border bg-[#0b1430]/90 p-6 shadow-[inset_0_1px_0_rgb(255_255_255/0.22),0_24px_60px_-20px_rgb(2_6_15/0.8)] backdrop-blur-xl md:inset-x-auto md:right-8 md:bottom-8 md:w-96"
     >
       <div className="relative flex flex-col items-center text-center">
         {/* Caller avatar: rings while ringing, steady once answered */}

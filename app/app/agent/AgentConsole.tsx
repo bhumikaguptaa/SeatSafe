@@ -77,11 +77,11 @@ function RuleCard({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-2xl border bg-background/50 p-3",
+        "flex items-center gap-3 rounded-2xl border bg-muted p-3",
         missing ? "border-dashed border-border" : "border-border",
       )}
     >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-muted-foreground">
         <Icon className="size-4" />
       </span>
       <div className="min-w-0">
@@ -134,7 +134,7 @@ function RulesGrid({ rules }: { rules: ParsedRules }) {
 function AgentRunCard({ crank }: { crank: ReturnType<typeof useAgentCrank> }) {
   const busy = crank.checking || crank.filling || crank.pending !== null;
   return (
-    <section className="rounded-3xl border border-border bg-card p-5 sm:p-6">
+    <section className="surface-solid rounded-3xl p-5 sm:p-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-base font-semibold">
           Your agent
@@ -225,7 +225,7 @@ function StandingOrdersCard({
   const sorted = [...chain.orders].sort((a, b) => b.deadline.localeCompare(a.deadline));
 
   return (
-    <section className="rounded-3xl border border-border bg-card p-5 sm:p-6">
+    <section className="surface-solid rounded-3xl p-5 sm:p-6">
       <h2 className="text-lg font-bold">Your standing orders</h2>
       <p className="mt-0.5 text-xs text-muted-foreground">
         Live on devnet. Seller-rating rules aren&apos;t stored onchain yet, so they aren&apos;t enforced.
@@ -330,7 +330,7 @@ export function AgentConsole() {
               key={s}
               type="button"
               onClick={() => setText(s)}
-              className="w-48 shrink-0 rounded-2xl border border-border bg-card p-3.5 text-left text-[13px] leading-snug text-foreground/85 transition-colors hover:border-muted-foreground/40"
+              className="w-48 shrink-0 rounded-2xl glass p-3.5 text-left text-[13px] leading-snug text-foreground/85 transition-colors hover:border-muted-foreground/40"
             >
               <span className="mb-3 flex size-8 items-center justify-center rounded-full bg-muted">
                 <Sparkles className="size-4 text-muted-foreground" />
@@ -342,7 +342,7 @@ export function AgentConsole() {
 
         <form
           onSubmit={onSubmit}
-          className="mt-4 flex items-center gap-2 rounded-full border border-border bg-card py-1.5 pr-1.5 pl-5 focus-within:border-ring"
+          className="mt-4 flex items-center gap-2 rounded-full glass py-1.5 pr-1.5 pl-5 focus-within:border-ring"
         >
           <label htmlFor="agent-request" className="sr-only">
             Your request
@@ -373,7 +373,7 @@ export function AgentConsole() {
         <div className="space-y-4">
           <div className="space-y-4">
             {/* Parsed rules, approved with one tap. */}
-            <section className="rounded-3xl border border-border bg-card p-5 sm:p-6">
+            <section className="surface-solid rounded-3xl p-5 sm:p-6">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="text-lg font-bold">Your rules</h2>
                 {started ? (
@@ -422,7 +422,7 @@ export function AgentConsole() {
               <motion.section
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-3xl border border-border bg-card p-5 sm:p-6"
+                className="surface-solid rounded-3xl p-5 sm:p-6"
               >
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -468,7 +468,7 @@ export function AgentConsole() {
 
           {/* Simulated decision log (mock mode). Real mode shows AgentRunCard below. */}
           {USE_MOCK && (
-            <section className="rounded-3xl border border-border bg-card p-5 sm:p-6">
+            <section className="surface-solid rounded-3xl p-5 sm:p-6">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <h2 className="text-lg font-bold">Decision log</h2>
                 {phase === "running" && (

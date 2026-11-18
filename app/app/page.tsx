@@ -3,7 +3,7 @@
 // Owner: D. Discover: featured event, category chips, and an "Upcoming" list of event rows.
 // Data comes ONLY from useEvents() (mock today, Supabase later).
 // Colours come from the global theme; event art is <EventArt> (palette shades + category icon).
-// The featured card is one of the three places that use the branding gradient.
+// The featured event is a <GlassHero> (glass with soft light blobs, like Finora's card).
 
 import { useState } from "react";
 import Link from "next/link";
@@ -15,6 +15,7 @@ import type { Event } from "@/lib/types";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EventArt } from "@/components/EventArt";
+import { GlassHero } from "@/components/GlassHero";
 import { PageShell } from "@/components/PageShell";
 
 type Filter = "all" | Event["category"];
@@ -28,38 +29,38 @@ const FILTERS: { id: Filter; label: string }[] = [
 
 function FeaturedEvent({ event }: { event: Event }) {
   return (
-    <Link href={`/events/${event.id}`} className="group relative block overflow-hidden rounded-3xl border border-border">
-      <EventArt event={event} featured className="h-64 sm:h-72" />
-
-      <div className="absolute top-4 left-4 flex gap-2">
-        <span className="rounded-full bg-black/40 px-2.5 py-1 text-xs font-semibold text-white capitalize">
-          Featured · {event.category}
-        </span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-xs font-semibold text-white">
-          <ShieldCheck className="size-3.5" />
-          Protected
-        </span>
-      </div>
-
-      <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
-        <h2 className="text-[22px] leading-tight font-bold tracking-tight text-white sm:text-[26px]">{event.title}</h2>
-        <p className="mt-1 text-sm text-white/75">
-          {formatDate(event.startsAt)} · {event.venue}
-        </p>
-        <div className="mt-3 flex items-end justify-between gap-4">
-          <div>
-            <p className="text-xs text-white/70">From</p>
-            <p className="text-[34px] leading-none font-bold tracking-tight text-white tabular-nums">
-              {formatUsd(event.priceFromUsd)}
-            </p>
-          </div>
-          <span
-            className={cn(buttonVariants(), "h-11 shrink-0 rounded-2xl px-5 text-[15px] font-semibold ring-1 ring-white/40")}
-          >
-            Get tickets
+    <Link href={`/events/${event.id}`} className="group block">
+      <GlassHero className="h-64 sm:h-72">
+        <div className="absolute top-4 left-4 flex gap-2">
+          <span className="rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-xs font-semibold text-white capitalize backdrop-blur-md">
+            Featured · {event.category}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
+            <ShieldCheck className="size-3.5" />
+            Protected
           </span>
         </div>
-      </div>
+  
+        <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
+          <h2 className="text-[22px] leading-tight font-bold tracking-tight text-white sm:text-[26px]">{event.title}</h2>
+          <p className="mt-1 text-sm text-white/75">
+            {formatDate(event.startsAt)} · {event.venue}
+          </p>
+          <div className="mt-3 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs text-white/70">From</p>
+              <p className="text-[34px] leading-none font-bold tracking-tight text-white tabular-nums">
+                {formatUsd(event.priceFromUsd)}
+              </p>
+            </div>
+            <span
+              className={cn(buttonVariants(), "h-11 shrink-0 rounded-2xl px-5 text-[15px] font-semibold ring-1 ring-white/40")}
+            >
+              Get tickets
+            </span>
+          </div>
+        </div>
+      </GlassHero>
     </Link>
   );
 }
@@ -125,14 +126,14 @@ export default function DiscoverPage() {
             <Skeleton className="h-80 rounded-2xl" />
           </>
         ) : !featured ? (
-          <p className="rounded-2xl border border-border bg-card p-5 text-[15px] text-muted-foreground">
+          <p className="rounded-2xl glass p-5 text-[15px] text-muted-foreground">
             No {FILTERS.find((f) => f.id === filter)?.label.toLowerCase()} events right now.
           </p>
         ) : (
           <>
             <FeaturedEvent event={featured} />
             {rest.length > 0 && (
-              <section className="rounded-2xl border border-border bg-card px-5 pt-5 pb-2">
+              <section className="rounded-2xl glass px-5 pt-5 pb-2">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-bold">Upcoming</h2>
                   <span className="text-sm text-muted-foreground">

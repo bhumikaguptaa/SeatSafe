@@ -16,7 +16,7 @@ import { useEvents } from "@/lib/hooks";
 import { formatDate } from "@/lib/format";
 import type { Ticket } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EventArt } from "@/components/EventArt";
+import { GlassHero } from "@/components/GlassHero";
 
 const ROTATE_MS = 10_000;
 
@@ -83,7 +83,7 @@ export function GatePass() {
   if (loading) return <Skeleton className="mx-auto h-[36rem] w-full max-w-sm rounded-3xl" />;
   if (!ticket || !event) {
     return (
-      <div className="mx-auto max-w-sm rounded-3xl border border-border bg-card p-6 text-center">
+      <div className="mx-auto max-w-sm rounded-3xl glass p-6 text-center">
         <p className="font-semibold">No pass for this ticket</p>
         <p className="mt-1 text-sm text-muted-foreground">It isn&apos;t one of your tickets, or it was resold.</p>
         <Link href="/tickets" className="mt-4 inline-block text-sm underline underline-offset-4">
@@ -106,10 +106,9 @@ export function GatePass() {
         My tickets
       </Link>
 
-      <article className="overflow-hidden rounded-3xl border border-border bg-card">
-        {/* Event art (palette shade + category icon) behind the event details */}
+      <GlassHero as="article">
+        {/* Event details on the hero glass (soft light blobs show through) */}
         <div className="relative overflow-hidden p-5 pb-6">
-          <EventArt event={event} className="absolute inset-0" />
           <div className="relative">
             <div className="flex items-center justify-between gap-2">
               <span className="rounded-full bg-black/40 px-2.5 py-0.5 text-xs font-medium text-white">
@@ -187,7 +186,7 @@ export function GatePass() {
             The code changes every 10 seconds, so screenshots won&apos;t get in. Show this screen at the gate.
           </p>
         </div>
-      </article>
+      </GlassHero>
     </div>
   );
 }

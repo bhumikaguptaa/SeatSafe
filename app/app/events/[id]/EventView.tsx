@@ -81,7 +81,7 @@ function EventDetails({
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-6 md:py-8">
-      <Card className="gap-0 overflow-hidden p-0">
+      <Card variant="solid" className="gap-0 overflow-hidden p-0">
         <div className="relative h-32 md:h-44">
           <EventArt event={event} className="absolute inset-0" />
           <Badge className="absolute top-3 left-3 bg-black/50 text-white capitalize">{event.category}</Badge>
