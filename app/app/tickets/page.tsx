@@ -149,7 +149,7 @@ function TicketRow({
   };
 
   return (
-    <li className="rounded-xl border border-border p-4">
+    <li className="surface-solid rounded-xl p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate font-medium">{event?.title ?? "SeatSafe event"}</p>

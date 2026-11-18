@@ -122,7 +122,7 @@ function ListingForm({
   };
 
   return (
-    <Card className="mt-6 p-4 md:p-6">
+    <Card variant="solid" className="mt-6 p-4 md:p-6">
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
         <Field label="Event" htmlFor="sell-event" className="sm:col-span-2">
           <NativeSelect id="sell-event" value={selectedEvent} onChange={(e) => setEventId(e.target.value)} disabled={loadingEvents}>

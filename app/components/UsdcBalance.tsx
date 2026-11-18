@@ -57,7 +57,7 @@ function PrivyUsdcBalance() {
       className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium tabular-nums"
       title="Devnet USDC balance"
     >
-      <Wallet className="size-3.5 text-vault" />
+      <Wallet className="size-3.5 text-primary" />
       {text}
     </span>
   );
