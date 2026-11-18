@@ -17,6 +17,18 @@ Share link: https://x.com/i/grok/share/249b3e1c5f2b41229bf437f42dda7e13
 **What happened**
 
 1. We first sent Grok a SeatSafe resale link on our new `vercel.app` domain. Grok refused to trust it: an unknown, newly deployed ticket site looks like a scam. That is exactly the problem SeatSafe solves, and it shows why proof has to come from the blockchain rather than from the website.
+   > **Me:** I bought a SeatSafe ticket but can't go on Saturday. Help me resell it safely: https://seat-safe-chi.vercel.app/tickets?resell=3Gjxnu1Xf5d1Z45Eimbidxa94GDYkvAAo1jQ8xAihUjQ
+   >
+   > **Grok:** Do not use that link or the SeatSafe site on Vercel to resell (or buy) any ticket. […] It has almost no real content, no established company presence, no verifiable reviews or history as a ticket marketplace, and matches the pattern of many temporary/scam sites that appear on `*.vercel.app` domains. […] Treat the SeatSafe Vercel link as untrusted and do not enter payment or ticket information there.
+
+   <details>
+   <summary>Screenshots (2)</summary>
+
+   ![Grok refuses the vercel.app link](grok/untrusted-site-1.png)
+   ![Grok's safety advice](grok/untrusted-site-2.png)
+
+   </details>
+
 2. We gave Grok the onchain data for two "listings" instead.
 
 **Me:**
