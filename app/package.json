@@ -10,7 +10,8 @@
     "verify:local": "../program/node_modules/.bin/ts-node --transpile-only -P scripts/tsconfig.json scripts/verify-builders.ts",
     "check:relay": "../program/node_modules/.bin/ts-node --transpile-only -P scripts/tsconfig.json scripts/relay-devnet-check.ts",
     "demo:devnet": "../program/node_modules/.bin/ts-node --transpile-only -P scripts/tsconfig.json scripts/demo-devnet.ts",
-    "test:backend": "node --experimental-strip-types --test lib/order-state.test.ts lib/scam-rules.test.ts lib/parse-standing-order.test.ts lib/webhook-payload.test.ts"
+    "test:backend": "node --experimental-strip-types --test lib/order-state.test.ts lib/scam-rules.test.ts lib/parse-standing-order.test.ts lib/webhook-payload.test.ts",
+    "check:pay": "../program/node_modules/.bin/ts-node --transpile-only -P scripts/tsconfig.json scripts/pay-devnet-check.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -21,9 +22,11 @@
     "@solana-program/system": "^0.10.0",
     "@solana-program/token": "^0.9.0",
     "@solana/kit": "^5.5.1",
+    "@solana/pay": "0.2.6",
     "@solana/spl-token": "^0.4.15",
     "@solana/web3.js": "^1.99.0",
     "@supabase/supabase-js": "^2.119.0",
+    "@yudiel/react-qr-scanner": "2.6.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
     "lucide-react": "^1.73.0",

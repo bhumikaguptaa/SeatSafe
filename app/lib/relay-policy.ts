@@ -26,6 +26,12 @@ export function checkRelayTx(
   tx: VersionedTransaction,
   relayer: PublicKey,
   seatsafeProgramId: PublicKey,
+  /**
+   * requireOtherSignatures (default true): /api/relay receives txs the user already signed.
+   * Solana Pay (/api/pay/swap) is the reverse: the relayer signs a tx WE built, and the buyer's wallet
+   * signs afterwards, so the buyer's slot is still empty. Every other check still applies.
+   */
+  opts: { requireOtherSignatures?: boolean } = {},
 ): PolicyResult {
   const msg = tx.message;
   const fail = (reason: string): PolicyResult => ({ ok: false, reason });
@@ -42,7 +48,7 @@ export function checkRelayTx(
 
   // Every required signer except the relayer must already have signed.
   const zero = (sig: Uint8Array) => sig.every((b) => b === 0);
-  for (let i = 1; i < msg.header.numRequiredSignatures; i++) {
+  for (let i = 1; opts.requireOtherSignatures !== false && i < msg.header.numRequiredSignatures; i++) {
     if (!tx.signatures[i] || zero(tx.signatures[i])) {
       return fail(`missing signature for ${keys[i].toBase58()}`);
     }
