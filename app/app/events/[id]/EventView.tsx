@@ -3,6 +3,7 @@
 // Owner: A. Event detail view. Real mode reads devnet through lib/chain.ts; mock mode uses lib/mock.ts.
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2, ShieldCheck, Ticket as TicketIcon } from "lucide-react";
@@ -22,6 +23,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/form";
 import { EventArt } from "@/components/EventArt";
 import { AddToCalendar, CalendarLinks } from "@/components/AddToCalendar";
+
+// 3D seat picker: three.js only runs in the browser (no SSR). Falls back to the list below without WebGL.
+const StadiumPicker = dynamic(() => import("@/components/stadium/StadiumPicker").then((m) => m.StadiumPicker), {
+  ssr: false,
+  loading: () => <div className="mb-6 aspect-[16/10] w-full animate-pulse rounded-2xl border border-border bg-card md:aspect-[16/9]" />,
+});
 
 type ViewEvent = Event & Partial<Pick<ChainEvent, "supply" | "sold" | "priceUsd">>;
 
@@ -46,7 +53,7 @@ async function holdsTicket(eventId: string, owner: string | null): Promise<boole
   return (await getMyTickets(owner)).some((t) => t.eventId === eventId);
 }
 
-export function EventView({ id, openCalendar = false }: { id: string; openCalendar?: boolean }) {
+export function EventView({ id, openCalendar = false, intro = false }: { id: string; openCalendar?: boolean; intro?: boolean }) {
   const { data, loading, refresh: refreshEvent } = useAsyncData(`event:${id}`, () => (USE_MOCK ? loadMock(id) : loadChain(id)), {
     pollMs: USE_MOCK ? undefined : 15_000,
   });
@@ -83,6 +90,7 @@ export function EventView({ id, openCalendar = false }: { id: string; openCalend
       refresh={refresh}
       showCalendar={!!holds || openCalendar}
       openCalendar={openCalendar}
+      intro={intro}
     />
   );
 }
@@ -93,6 +101,7 @@ function EventDetails({
   refresh,
   showCalendar,
   openCalendar,
+  intro,
 }: {
   event: ViewEvent;
   listings: ChainListing[];
@@ -100,6 +109,8 @@ function EventDetails({
   /** The user holds a ticket for this event, or arrived via `?calendar=1`. */
   showCalendar: boolean;
   openCalendar: boolean;
+  /** ?intro=1: hands-free cinematic in the 3D picker (for recording). */
+  intro: boolean;
 }) {
   const soldOut = event.supply !== undefined && event.sold !== undefined && event.sold >= event.supply;
   const left = event.supply !== undefined && event.sold !== undefined ? event.supply - event.sold : null;
@@ -137,7 +148,16 @@ function EventDetails({
         </div>
       </Card>
 
-      <section className="mt-8 space-y-3">
+      <section className="mt-8">
+        <h2 className="mb-3 text-lg font-semibold">Choose your seat</h2>
+        <StadiumPicker event={event} listings={listings} onDone={refresh} intro={intro} />
+      </section>
+
+      <details open className="group mt-4">
+        <summary className="cursor-pointer list-none text-sm font-semibold text-muted-foreground hover:text-foreground">
+          <span className="group-open:hidden">Show</span><span className="hidden group-open:inline">Hide</span> list view · fan resale and outside tickets
+        </summary>
+      <section className="mt-6 space-y-3">
         <div>
           <h2 className="text-lg font-semibold">Fan resale</h2>
           <p className="text-sm text-muted-foreground">
@@ -172,6 +192,7 @@ function EventDetails({
           </ul>
         )}
       </section>
+      </details>
     </div>
   );
 }
