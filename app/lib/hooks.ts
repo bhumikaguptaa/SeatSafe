@@ -29,6 +29,13 @@ import type { ChatMessage, Event, Order, OrderEvent, OrderState, StandingOrder }
 // ===========================================================================
 export const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false";
 
+// Supabase returns the SAME channel object for a repeated topic name, and adding .on() listeners to an
+// already-subscribed channel throws ("cannot add `postgres_changes` callbacks ... after `subscribe()`"),
+// crashing the page. /orders/[id] mounts useOrder twice (tracker + chat), so give every hook instance
+// its own topic. (A, Nov 18 production fix.)
+let channelSeq = 0;
+const uniqueTopic = (name: string) => `${name}#${++channelSeq}`;
+
 /** Fake network latency in mock mode so loading/skeleton states get built. */
 const MOCK_DELAY_MS = 300;
 
@@ -222,7 +229,7 @@ function useEventsSupabase(): UseEventsResult {
     if (!db) return () => { cancelled = true; };
 
     const channel = db
-      .channel("events-live")
+      .channel(uniqueTopic("events-live"))
       .on("postgres_changes", { event: "*", schema: "public", table: "events" }, () => { void load(); })
       .subscribe();
     return () => {
@@ -289,7 +296,7 @@ function useOrderSupabase(orderId: string): UseOrderResult {
     }
 
     const channel = db
-      .channel(`order:${orderId}`)
+      .channel(uniqueTopic(`order:${orderId}`))
       .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `id=eq.${orderId}` }, () => {
         void loadDb().then(publish);
       })
@@ -348,7 +355,7 @@ export function useOrderChat(orderId: string | null): UseOrderChatResult {
         setQuery({ key, messages: ((data ?? []) as ChatRow[]).map(chatFromRow), loading: false });
       });
     const channel = db
-      .channel(`chat:${key}`)
+      .channel(uniqueTopic(`chat:${key}`))
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `order_id=eq.${key}` }, (payload) => {
         const row = chatFromRow(payload.new as ChatRow);
         setQuery((prev) => prev.key !== key || prev.messages.some((m) => m.id === row.id)
@@ -415,7 +422,7 @@ export function useAgentLog(standingOrderId: string | null): { entries: AgentLog
         setQuery({ key, entries: map((data ?? []) as AgentLogRow[]), loading: false });
       });
     const channel = db
-      .channel(`agent:${key}`)
+      .channel(uniqueTopic(`agent:${key}`))
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "agent_log", filter: `standing_order_id=eq.${key}` }, (payload) => {
         const row = payload.new as AgentLogRow;
         const entry = { id: row.id, kind: row.kind, message: row.message, at: row.at };
@@ -476,7 +483,7 @@ export function usePendingApproval(standingOrderId: string | null): PendingAppro
       .then(({ data }) => { if (!cancelled) setQuery({ key, approval: pick((data ?? []) as ApprovalRow[]) }); });
     void load();
     const channel = db
-      .channel(`approval:${key}`)
+      .channel(uniqueTopic(`approval:${key}`))
       .on("postgres_changes", { event: "*", schema: "public", table: "approval_requests", filter: `standing_order_id=eq.${key}` }, () => {
         void load();
       })
@@ -520,7 +527,7 @@ export function useStandingOrders(userId: string | null): { orders: StandingOrde
     };
     void load();
     const channel = db
-      .channel(`standing:${key}`)
+      .channel(uniqueTopic(`standing:${key}`))
       .on("postgres_changes", { event: "*", schema: "public", table: "standing_orders", filter: `user_id=eq.${key}` }, () => { void load(); })
       .subscribe();
     return () => {
