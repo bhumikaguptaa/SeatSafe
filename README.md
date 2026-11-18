@@ -101,6 +101,8 @@ TODO(B): fill in from the backend PR (#17, "Add the backend that mirrors the cha
 - **Destination:** TODO(B), e.g. a webhook into `app/api/…` that writes to Supabase
 - **Why:** TODO(B)
 
+The Stream also powers the **live protection ticker on Discover** ($ protected, scams auto-refunded, fair resales, scalpers blocked): each decoded event lands in Supabase (`/api/stats`), and Supabase Realtime pushes it to open pages within seconds (devnet resale → ticker in ~4 s).
+
 ## 6. ElevenLabs
 
 TODO(D/C): `app/components/VoiceApproval.tsx` is the voice-approval UI for agent purchases ("incoming call"). The ElevenLabs integration (text-to-speech for the prompt, spoken yes/no) is still a `TODO(D)` in that file. Describe which ElevenLabs products are used and how once it's built.

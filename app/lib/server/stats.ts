@@ -14,7 +14,11 @@
 //   scalpersBlocked = # blocked_attempts (over-cap listings the program rejected; see supabase/blocked_attempts.sql)
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { PublicKey } from "@solana/web3.js";
 import { explorerTx } from "@/lib/solana";
+import { chainProgram } from "@/lib/chain";
+import { fromBaseUnits } from "@/lib/program";
+import bundledMeta from "@/lib/event-meta.json";
 
 export interface ActivityItem {
   id: string;
@@ -91,8 +95,20 @@ export async function computeStats(db: SupabaseClient | null): Promise<Stats> {
     ]);
 
     const eventById = new Map(events.map((e) => [e.id, e]));
+    // Events created before the Stream existed have no `events` row: read price/cap from the chain (one call)
+    // and the title from the bundled event-meta.json, so old events still count and show their names.
+    const bundled = (bundledMeta as { events?: Record<string, { title?: string }> }).events ?? {};
+    const missing = [...new Set([...tickets.map((t) => t.event_id), ...orders.map((o) => o.event_id), ...blocked.map((b) => b.event_id ?? "")])]
+      .filter((id) => id && !eventById.has(id) && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(id));
+    if (missing.length) {
+      const onchain = await chainProgram().account.event.fetchMultiple(missing.map((id) => new PublicKey(id))).catch(() => []);
+      missing.forEach((id, i) => {
+        const e = onchain[i];
+        if (e) eventById.set(id, { id, title: bundled[id]?.title ?? "", price_from_usd: fromBaseUnits(e.price), resale_cap_usd: fromBaseUnits(e.resaleCap) });
+      });
+    }
     const titleOf = (id: string | null | undefined) =>
-      (id && (eventById.get(id)?.title || meta.find((m) => m.id === id && m.kind === "event")?.data?.title)) || null;
+      (id && (eventById.get(id)?.title || meta.find((m) => m.id === id && m.kind === "event")?.data?.title || bundled[id]?.title)) || null;
     const orderById = new Map(orders.map((o) => [o.id, o]));
     const bondOf = (o: OrderRow | undefined) => num(listings.find((l) => l.id === (o?.listing_id ?? ""))?.bond_usd);
 
