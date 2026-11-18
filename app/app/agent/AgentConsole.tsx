@@ -535,6 +535,14 @@ export function AgentConsole() {
                   prompt: `Found ${proposal.quantity} ${proposal.quantity === 1 ? "ticket" : "tickets"} for ${rules.event.title} at ${formatUsd(proposal.priceUsd)} each. Buy them?`,
                   totalUsd: proposal.totalUsd,
                   detail: `${proposal.section} · seller ${proposal.sellerRating}★ · paid from your budget vault`,
+                  voice: {
+                    event_title: rules.event.title,
+                    seat: proposal.section,
+                    price: `${formatUsd(proposal.priceUsd)} each`,
+                    max_price: formatUsd(rules.maxPriceUsd ?? proposal.priceUsd),
+                    seller_rating: `${proposal.sellerRating} stars`,
+                    quantity: proposal.quantity,
+                  },
                 }
               : null
           }
@@ -549,6 +557,14 @@ export function AgentConsole() {
                   prompt: `Found a ticket for ${crank.pending.eventTitle} at ${formatUsd(crank.pending.listing.priceUsd)} (your max is ${formatUsd(crank.pending.order.maxPriceUsd)}). Buy it?`,
                   totalUsd: crank.pending.listing.priceUsd,
                   detail: `${crank.pending.listing.seat || "Seat on the ticket"} · seller ${crank.pending.listing.sellerName} · paid from your budget vault`,
+                  voice: {
+                    event_title: crank.pending.eventTitle,
+                    seat: crank.pending.listing.seat || "general admission",
+                    price: formatUsd(crank.pending.listing.priceUsd),
+                    max_price: formatUsd(crank.pending.order.maxPriceUsd),
+                    seller_rating: "not rated yet",
+                    quantity: 1,
+                  },
                 }
               : null
           }
