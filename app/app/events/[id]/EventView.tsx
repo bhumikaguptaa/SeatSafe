@@ -7,8 +7,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2, ShieldCheck, Ticket as TicketIcon } from "lucide-react";
 import { PublicKey } from "@solana/web3.js";
-import { getEvent as getMockEvent, getListingsForEvent as getMockListings, tickets as mockTickets } from "@/lib/mock";
-import { getEvent, getListingsForEvent, seatLabel, USE_MOCK, type ChainEvent, type ChainListing } from "@/lib/chain";
+import { getEvent as getMockEvent, getListingsForEvent as getMockListings, MOCK_USER_ID, tickets as mockTickets } from "@/lib/mock";
+import { getEvent, getListingsForEvent, getMyTickets, seatLabel, USE_MOCK, type ChainEvent, type ChainListing } from "@/lib/chain";
 import { buyPrimary, fundEscrow, swapResale } from "@/lib/program";
 import { saveMeta } from "@/lib/event-meta";
 import { mockTx, useRunTx } from "@/lib/tx";
@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/form";
+import { AddToCalendar, CalendarLinks } from "@/components/AddToCalendar";
 
 type ViewEvent = Event & Partial<Pick<ChainEvent, "supply" | "sold" | "priceUsd">>;
 
@@ -38,10 +39,23 @@ async function loadChain(id: string) {
   return { event: event as ViewEvent | null, listings };
 }
 
-export function EventView({ id }: { id: string }) {
-  const { data, loading, refresh } = useAsyncData(`event:${id}`, () => (USE_MOCK ? loadMock(id) : loadChain(id)), {
+/** Does the logged-in user hold (or have listed) a ticket for this event? */
+async function holdsTicket(eventId: string, owner: string | null): Promise<boolean> {
+  if (USE_MOCK) return mockTickets.some((t) => t.ownerId === MOCK_USER_ID && t.eventId === eventId);
+  if (!owner) return false;
+  return (await getMyTickets(owner)).some((t) => t.eventId === eventId);
+}
+
+export function EventView({ id, openCalendar = false }: { id: string; openCalendar?: boolean }) {
+  const { data, loading, refresh: refreshEvent } = useAsyncData(`event:${id}`, () => (USE_MOCK ? loadMock(id) : loadChain(id)), {
     pollMs: USE_MOCK ? undefined : 15_000,
   });
+  const { wallet } = useRunTx();
+  const owner = wallet?.address.toBase58() ?? null;
+  const { data: holds, refresh: refreshHolds } = useAsyncData(`holds:${id}:${owner ?? "-"}`, () => holdsTicket(id, owner));
+  const refresh = async () => {
+    await Promise.all([refreshEvent(), refreshHolds()]);
+  };
 
   if (loading && !data) {
     return (
@@ -62,17 +76,30 @@ export function EventView({ id }: { id: string }) {
     );
   }
 
-  return <EventDetails event={data.event} listings={data.listings} refresh={refresh} />;
+  return (
+    <EventDetails
+      event={data.event}
+      listings={data.listings}
+      refresh={refresh}
+      showCalendar={!!holds || openCalendar}
+      openCalendar={openCalendar}
+    />
+  );
 }
 
 function EventDetails({
   event,
   listings,
   refresh,
+  showCalendar,
+  openCalendar,
 }: {
   event: ViewEvent;
   listings: ChainListing[];
   refresh: () => Promise<void>;
+  /** The user holds a ticket for this event, or arrived via `?calendar=1`. */
+  showCalendar: boolean;
+  openCalendar: boolean;
 }) {
   const soldOut = event.supply !== undefined && event.sold !== undefined && event.sold >= event.supply;
   const left = event.supply !== undefined && event.sold !== undefined ? event.supply - event.sold : null;
@@ -93,6 +120,7 @@ function EventDetails({
               {event.city ? `, ${event.city}` : ""}
             </p>
             <p className="text-xs text-muted-foreground">By {event.organizerName}</p>
+            {showCalendar && <AddToCalendar event={event} defaultOpen={openCalendar} className="mt-3" />}
           </div>
           <dl className="grid grid-cols-3 gap-2 text-center text-sm">
             <Stat label="Price" value={formatUsd(event.priceFromUsd)} />
@@ -162,7 +190,7 @@ function BuyPrimaryButton({ event, soldOut, onDone }: { event: ViewEvent; soldOu
 
   const buy = async () => {
     setBusy(true);
-    const opts = { pending: "Buying your ticket…", success: "Ticket bought! It's in My tickets." };
+    const opts = { pending: "Buying your ticket…", success: "Ticket bought! It's in My tickets.", successExtra: <CalendarLinks event={event} /> };
     if (USE_MOCK) {
       await mockTx(opts);
     } else {
@@ -190,14 +218,14 @@ function ListingRow({ listing, event, onDone }: { listing: ChainListing; event: 
   const buy = async () => {
     setBusy(true);
     if (listing.tier === 1) {
-      const opts = { pending: "Swapping ticket and payment…", success: "Ticket bought! It's in My tickets." };
+      const opts = { pending: "Swapping ticket and payment…", success: "Ticket bought! It's in My tickets.", successExtra: <CalendarLinks event={event} /> };
       if (USE_MOCK) await mockTx(opts);
       else if (listing.ticketMint) {
         const sent = await run((ctx) => swapResale(ctx, { ticketMint: new PublicKey(listing.ticketMint!) }), opts);
         if (sent) await onDone();
       }
     } else {
-      const opts = { pending: "Locking your payment in the vault…", success: "Payment protected. Track your order." };
+      const opts = { pending: "Locking your payment in the vault…", success: "Payment protected. Track your order.", successExtra: <CalendarLinks event={event} /> };
       if (USE_MOCK) {
         if (await mockTx(opts)) router.push("/orders/ord_held");
       } else if (listing.escrow) {
