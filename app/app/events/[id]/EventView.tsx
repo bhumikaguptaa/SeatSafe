@@ -243,16 +243,22 @@ function ListingRow({ listing, event, onDone }: { listing: ChainListing; event: 
   };
 
   return (
-    <li className="flex flex-wrap items-center gap-3 rounded-xl border border-border p-3">
+    <li className="flex flex-wrap items-center gap-3 rounded-xl border border-border p-3 transition-shadow duration-300 hover:glow-vault">
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium">{listing.seat || "General admission"}</p>
         <p className="truncate text-xs text-muted-foreground">
+          <span
+            className="mr-1.5 inline-flex items-center gap-0.5 rounded-full bg-vault/15 px-1.5 py-px text-[10px] font-semibold text-vault"
+            title={listing.tier === 1 ? "Ticket and payment swap in one transaction, at or under the artist's cap." : "Your payment waits in a SeatSafe vault until you confirm the ticket; the seller's bond is yours if they don't deliver."}
+          >
+            <ShieldCheck className="size-3" aria-hidden /> {listing.tier === 1 ? "Atomic swap" : "Escrow + bond"}
+          </span>
           Seller {listing.sellerName}
           {listing.tier === 2 && ` · ${formatUsd(listing.bondUsd)} seller bond`}
         </p>
       </div>
       <div className="text-right">
-        <p className="font-semibold tabular-nums">{formatUsd(listing.priceUsd)}</p>
+        <p className="num text-lg font-bold">{formatUsd(listing.priceUsd)}</p>
         {listing.tier === 1 && event.resaleCapUsd != null && listing.priceUsd > event.resaleCapUsd && (
           <p className="text-xs text-disputed">Above cap</p>
         )}
