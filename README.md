@@ -101,7 +101,7 @@ TODO(B): fill in from the backend PR (#17, "Add the backend that mirrors the cha
 - **Destination:** TODO(B), e.g. a webhook into `app/api/…` that writes to Supabase
 - **Why:** TODO(B)
 
-The Stream also powers the **live protection ticker on Discover** ($ protected, scams auto-refunded, fair resales, scalpers blocked): each decoded event lands in Supabase (`/api/stats`), and Supabase Realtime pushes it to open pages within seconds (devnet resale → ticker in ~4 s).
+The Stream also powers the **live protection ticker on Discover** ($ protected, scams auto-refunded, fair resales, scalpers blocked): each decoded event lands in Supabase (`/api/stats`), and Supabase Realtime pushes it to open pages within seconds (devnet resale → ticker in ~4 s). The Stream also triggers real-time notifications to buyers and sellers (e.g. "your ticket sold" or "your refund is back"): `lib/server/notify.ts` writes them as each event is applied, and the bell in the nav receives them over Supabase Realtime.
 
 ## 6. ElevenLabs
 
