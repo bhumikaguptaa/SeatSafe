@@ -7,6 +7,7 @@ import { Bot, Compass, Palette, ScanLine, ShieldCheck, Tag, Ticket } from "lucid
 import { cn } from "@/lib/utils";
 import { AuthButton } from "@/components/AuthButton";
 import { UsdcBalance } from "@/components/UsdcBalance";
+import { NotificationBell } from "@/components/NotificationBell";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const NAV_ITEMS = [
@@ -103,6 +104,7 @@ export function TopNav() {
             }
           >
             <UsdcBalance />
+            <NotificationBell />
             <AuthButton />
           </ErrorBoundary>
         </div>

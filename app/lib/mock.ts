@@ -227,3 +227,10 @@ export function getOrder(id: string): Order | undefined {
 export function getListingsForEvent(id: string): Listing[] {
   return listings.filter((l) => l.eventId === id);
 }
+
+// Sample notifications for the nav bell in mock mode (real mode: Supabase `notifications`, Stream-fed).
+export const notifications: import("./notifications").AppNotification[] = [
+  { id: "ntf_1", wallet: MOCK_USER_ID, kind: "sold", title: "Your ticket sold: $13.58 received", body: "Resold at $14.00 · Battle of the Bands: Dorm Edition. Paid in the same transaction.", url: "/tickets", tx_signature: null, created_at: "2026-11-18T19:40:00Z", read_at: null },
+  { id: "ntf_2", wallet: MOCK_USER_ID, kind: "refunded", title: "Seller didn't deliver: your $20.00 (+ $2.00 bond) is back", body: "The ship deadline passed, so SeatSafe refunded you automatically.", url: "/orders/ord_released", tx_signature: null, created_at: "2026-11-18T19:30:00Z", read_at: null },
+  { id: "ntf_3", wallet: MOCK_USER_ID, kind: "minted", title: "You're in! Ticket for Neon Harbor: Midnight Tides Tour", body: "GA. Find it in My tickets.", url: "/tickets", tx_signature: null, created_at: "2026-11-18T18:00:00Z", read_at: null },
+];

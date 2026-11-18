@@ -63,6 +63,10 @@ ticker at the top counts up (fair resales / scams auto-refunded / $ protected) a
 feed within a few seconds, with no reload. An over-cap attempt (d) bumps "scalpers blocked". This is the QuickNode
 Stream → `/api/stream-webhook` → Supabase → Realtime path.
 
+**Notifications:** keep the seller (wallet 1) logged in on a second screen. When wallet 2 buys the resale (e2),
+wallet 1's bell shows "🔔 Your ticket sold: $13.58 received" within seconds, no reload. After the refund (f3), the
+buyer gets "Seller didn't deliver: your $20.00 (+ $2.00 bond) is back".
+
 ## 2. Gas check
 
 Before and after: `solana balance <wallet address> --url devnet` for wallet 1 and 2 stays **0 SOL**
@@ -141,3 +145,17 @@ No camera, or rehearsing alone: on the QR screen tap **Copy link** and paste the
 **Show QR** on `/tickets` to bring the QR back.
 External wallet: Phantom (devnet) can scan the same QR; the buyer needs devnet USDC, no SOL.
 Scripted proof: `cd app && APP_URL=<app url> npm run check:pay` (needs an open seed-seller listing; `reset-demo` makes one).
+
+## 5. Judge mode (`/demo`)
+
+Open **https://seat-safe-chi.vercel.app/demo** on the presenter's phone or second screen (it isn't in the nav).
+Log in as wallet 1 there so the wallet checks run.
+
+- **Readiness** (rechecks every 15 s): relayer SOL, `/api/health`, seed seller USDC (≥ $12 for `reset-demo`),
+  your wallet's USDC (≥ $20 for the escrow step), a ticket to resell, open resale and escrow listings, how long
+  ago the QuickNode Stream last delivered, and whether ElevenLabs voice is configured. Each red/amber row says how
+  to fix it; "No listing" rows show the `reset-demo` command with a copy button.
+- **Steps 1–7** in pitch order (primary buy, scalper blocked, fair resale, escrow auto-refund, in person,
+  agent, verify): each card has the talking point, the expected result, and an **Open** button that goes to the
+  exact page (addresses are read from devnet on load, so they're right after every `reset-demo`).
+- Before going on stage: run `reset-demo`, open `/demo`, wait for all-green, then work down the cards.
