@@ -2,10 +2,9 @@
 
 // Owner: A. Real escrow actions for /orders/[id] (id = escrow PDA), shown under D's tracker.
 //
-// TODO(D): OrderTracker doesn't take callbacks yet. When you redesign it, call useOrderActions(id)
-// and wire onConfirm / onDispute / claimRefund / releasePayment / markSent into your buttons;
-// then this panel can go. It only renders in real mode (NEXT_PUBLIC_USE_MOCK=false); in mock mode
-// your simulate buttons drive the tracker as before.
+// D's OrderTracker calls useOrderActions(id) and wires confirm / dispute / claim refund / release /
+// mark sent into its own buttons. Real mode only (NEXT_PUBLIC_USE_MOCK=false); in mock mode the
+// tracker's simulate buttons drive the order.
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
