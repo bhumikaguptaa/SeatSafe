@@ -8,6 +8,7 @@ import type { OrderEvent, OrderState } from "@/lib/types";
 import type { InboundTx } from "@/lib/webhook-payload";
 import { considerListing } from "@/lib/server/matcher";
 import { supabaseAdmin } from "@/lib/server/supabase-admin";
+import { notifyForEvent } from "@/lib/server/notify"; // added by A
 
 const PROGRAM_ID = process.env.NEXT_PUBLIC_PROGRAM_ID || (idl as { address: string }).address;
 
@@ -561,6 +562,12 @@ export async function processTransaction(tx: InboundTx): Promise<TxResult> {
     for (let i = 0; i < decoded.length; i++) {
       const name = await applyDecodedEvent(db, decoded[i]!, tx.signature, i);
       if (name) applied.push(name);
+      // Added by A: Stream-triggered notifications (lib/server/notify.ts). Never fails the webhook.
+      if (name) {
+        await notifyForEvent(db, decoded[i]!, tx.signature).catch((err) =>
+          console.warn("notify failed:", err instanceof Error ? err.message : err),
+        );
+      }
     }
     const { error } = await db.from("processed_signatures").insert({
       signature: tx.signature,
