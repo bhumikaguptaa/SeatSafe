@@ -9,7 +9,7 @@
 import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CalendarX2, Loader2, QrCode, ScanLine, ShieldCheck, Tag, X } from "lucide-react";
+import { CalendarX2, Loader2, Lock, QrCode, ScanLine, ShieldCheck, Tag, X } from "lucide-react";
 import { PublicKey } from "@solana/web3.js";
 import { events as mockEvents, MOCK_USER_ID, tickets as mockTickets } from "@/lib/mock";
 import { chainProgram, getEvents, getMyTickets, seatLabel, USE_MOCK, type ChainTicket } from "@/lib/chain";
@@ -161,7 +161,7 @@ function TicketRow({
   };
 
   return (
-    <li className="surface-solid rounded-xl p-4">
+    <li className="surface-solid rounded-xl p-4 transition-shadow duration-300 hover:glow-vault">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate font-medium">{event?.title ?? "SeatSafe event"}</p>
@@ -173,7 +173,19 @@ function TicketRow({
             Listed · {formatUsd(ticket.listingPriceUsd ?? 0)}
           </Badge>
         ) : (
-          <Badge variant="outline" className="shrink-0">Tier {ticket.tier}</Badge>
+          ticket.tier === 1 ? (
+            <Badge
+              variant="outline"
+              className="shrink-0 gap-1 border-vault/50 text-vault"
+              title="Frozen on Solana: only the SeatSafe program can move this ticket, so it can't be resold above the artist's cap."
+            >
+              <Lock className="size-3" aria-hidden /> Locked
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="shrink-0 border-transit/50 text-transit" title="A ticket from another platform, sold through the escrow vault.">
+              Outside
+            </Badge>
+          )
         )}
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
