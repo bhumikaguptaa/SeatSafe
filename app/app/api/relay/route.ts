@@ -28,19 +28,27 @@ const RELAY_WINDOW_MS = 60_000;
 
 const programId = PROGRAM_ID ?? new PublicKey(idl.address);
 
+/** Why the relayer is off: missing vs. set-but-unparseable (names only, never the value). */
+function relayerProblem(): string {
+  return process.env.RELAYER_SECRET_KEY?.trim()
+    ? "RELAYER_SECRET_KEY is set but invalid (expected a JSON byte array or base58 secret key)"
+    : "RELAYER_SECRET_KEY not configured";
+}
+
 export async function GET() {
   await dynamicRequest(); // read env at request time, never at build time
   const relayer = loadRelayer();
   return NextResponse.json({
     enabled: relayer !== null,
     relayer: relayer?.publicKey.toBase58() ?? null,
+    ...(relayer ? {} : { error: relayerProblem() }),
   });
 }
 
 export async function POST(req: NextRequest) {
   const relayer = loadRelayer();
   if (!relayer) {
-    return NextResponse.json({ error: "Relayer not configured" }, { status: 503 });
+    return NextResponse.json({ error: relayerProblem() }, { status: 503 });
   }
   if (!rateLimit(`relay:${clientIp(req.headers)}`, RELAY_LIMIT, RELAY_WINDOW_MS)) {
     return NextResponse.json({ error: "Too many relay requests. Try again in a minute." }, { status: 429 });
