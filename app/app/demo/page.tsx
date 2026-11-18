@@ -237,12 +237,15 @@ export default function DemoPage() {
         <div className="mt-5 space-y-3">
           <Step
             n={0}
-            title="Resale Simulator (warm-up, 60 s)"
-            say="Before any crypto: watch Sam and Bea trade a ticket. Every padlock, coin and vault move is animated."
-            expect="Fair resale: $50 blocked, $14 swaps in one transaction. Scam: vault slams on Sam, Bea gets $20 + $2 bond back."
+            title="Live Lab (real devnet, 60–90 s)"
+            say="Everything on this screen is read from Solana after confirmation. Watch the X-ray: wallet, relayer, program, tokens, event, QuickNode, UI."
+            expect="A: $50 rejected (AboveResaleCap), $14 swaps atomically, padlock frozen in the buyer's wallet. B: withdraw rejected (InvalidState), refund after the onchain deadline empties the vault."
             ready="ok"
-            links={[{ label: "Open Simulator", href: "/simulator" }]}
-            note={<>Simulated mode is offline and always works; <b>Live on devnet</b> needs SIM_LIVE_ENABLED and the two sim wallets funded.</>}
+            links={[
+              { label: "Seller window", href: "/simulator?scenario=fair&role=seller" },
+              { label: "Presenter (backup)", href: "/simulator?scenario=fair&driver=presenter" },
+            ]}
+            note={<>Two windows, two logins: Seller → Prepare → Copy link for the buyer → Buyer opens it. Presenter needs SIM_LIVE_ENABLED. Emergency: <b>/simulator?offline=1</b>.</>}
           />
           <Step
             n={1}

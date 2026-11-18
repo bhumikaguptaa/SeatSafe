@@ -4,7 +4,7 @@ SeatSafe is a **ticketing platform** on Solana where fans can **buy and resell t
 
 - **Live app:** TODO(A): Vercel URL
 - **Demo video:** TODO(C)
-- **Resale Simulator:** [/simulator](https://seat-safe-chi.vercel.app/simulator): two people trade a ticket with every padlock, coin and vault move animated (fair resale, scam auto-refund, honest outside sale; simulated or live on devnet). Presenter run sheet: [/demo](https://seat-safe-chi.vercel.app/demo).
+- **Live Lab:** [/simulator](https://seat-safe-chi.vercel.app/simulator): two people trade a ticket on devnet and every number, padlock and coin is read from Solana after confirmation, with an "under the hood" X-ray of each layer (Privy signature, relayer fee, program logs + compute units, token movement, decoded event, QuickNode delivery time, UI update). Offline backup: `/simulator?offline=1`. Presenter run sheet: [/demo](https://seat-safe-chi.vercel.app/demo).
 - Built for the UBC 2026 Hackathon. **Submission due Fri Nov 20, 12 PM CST.**
 
 ## 1. The problem

@@ -168,3 +168,22 @@ Server env (Vercel, Production): `SIM_LIVE_ENABLED=true`, `SIM_SELLER_SECRET_KEY
 scenarios needs **Sam (seller) ≥ $12** (a $10 ticket + $2 bond) and **Bea (buyer) ≥ $34** ($14 resale + $20 escrow);
 the scam refund gives Bea $22 back and the resale gives Sam $13.58, so later runs need less. The page says exactly
 what to fund if a wallet is short. The scam scenario waits for the real 60 s deadline in live mode.
+
+## 6. Live Lab on stage (`/simulator`)
+
+Everything on screen comes from devnet after confirmation; the right-hand X-ray shows each layer as it fires.
+**Set `NEXT_PUBLIC_SOLANA_RPC_URL` to the QuickNode devnet endpoint first**: the public devnet RPC rate-limits
+(HTTP 429) under the 1 s polling, and the page then slows down to 8 s reads ("RPC busy").
+
+**Two real users (preferred):** two browser windows (or a laptop + phone), two Privy logins with devnet USDC.
+
+| Window | Scenario A: fair resale | Scenario B: scam stopped |
+| --- | --- | --- |
+| Seller (wallet 1): `/simulator?scenario=fair&role=seller` | **Prepare** (uses your unlisted Battle of the Bands ticket, or buys one for $10) → **Copy link for the buyer** → **List at $50** (red: `AboveResaleCap`) → **List at $14** | `/simulator?scenario=scam&role=seller` → **List outside ticket $20 + $2 bond** → copy link → after the buyer pays: **Try to withdraw** (red: `InvalidState`) |
+| Buyer (wallet 2): open the copied link | **Buy for $14** → both screens animate the swap; padlock re-frozen in the buyer's wallet | **Pay $20 into the vault** → vault shows $22 → wait for the onchain deadline (60 s) → **Claim refund** → vault $0, buyer +$22 |
+
+Funds: seller ≥ $2 (B) and a ticket or $10 (A); buyer ≥ $14 (A) and ≥ $20 (B). No SOL needed.
+
+**Presenter (backup):** `/simulator?driver=presenter` uses the server demo wallets (needs `SIM_LIVE_ENABLED` and
+`SIM_SELLER_SECRET_KEY` / `SIM_BUYER_SECRET_KEY` in Vercel); same visuals and X-ray, one screen, buttons labelled Sam/Bea.
+**Offline backup:** `/simulator?offline=1` (scripted animation, no network).
