@@ -198,6 +198,8 @@ export default function DemoPage() {
   const d = data;
   const ev = d?.demoEvent;
   const step = (ok: boolean, warn = false): Level => (ok ? (warn ? "warn" : "ok") : "fail");
+  /** Steps that need the demo wallet: amber until logged in, then green/red on whether it holds a ticket. */
+  const walletStep = (): Level => (!d?.loggedIn ? "warn" : d.held ? "ok" : "fail");
 
   return (
     <section className="mx-auto w-full max-w-2xl px-4 py-6 md:py-8">
@@ -246,7 +248,7 @@ export default function DemoPage() {
             title="Scalper blocked"
             say="Try to resell above the artist's cap. The program itself refuses it."
             expect="Red “caps resale at …” message, no listing; ticker “scalpers blocked” +1"
-            ready={step(d.loggedIn && Boolean(d.held), !d.loggedIn)}
+            ready={walletStep()}
             links={[{ label: d.held ? "Open resell dialog" : "Open My tickets", href: d.held ? `/tickets?resell=${d.held.id}` : "/tickets" }]}
             note={ev?.resaleCapUsd != null && <>Type <b>{formatUsd(ev.resaleCapUsd * 3)}</b> (cap {formatUsd(ev.resaleCapUsd)}).</>}
           />
@@ -273,7 +275,7 @@ export default function DemoPage() {
             title="In person (Solana Pay)"
             say="At the gate: seller shows a QR, buyer scans, swap happens on the spot."
             expect="Laptop QR → phone /scan → confirm → laptop flips to “Sold!”"
-            ready={step(d.loggedIn && Boolean(d.held), !d.loggedIn)}
+            ready={walletStep()}
             links={[{ label: "Open My tickets", href: "/tickets" }, { label: "Open Scan (phone)", href: "/scan" }]}
             note={<>Tap <b>Sell in person</b> on a ticket.</>}
           />
