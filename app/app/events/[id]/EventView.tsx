@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/form";
 import { EventArt } from "@/components/EventArt";
 import { AddToCalendar, CalendarLinks } from "@/components/AddToCalendar";
+import { SeatMap } from "@/components/SeatMap";
 
 type ViewEvent = Event & Partial<Pick<ChainEvent, "supply" | "sold" | "priceUsd">>;
 
@@ -137,6 +138,8 @@ function EventDetails({
         </div>
       </Card>
 
+      <SeatMap event={event} listings={listings} />
+
       <section className="mt-8 space-y-3">
         <div>
           <h2 className="text-lg font-semibold">Fan resale</h2>
@@ -243,7 +246,7 @@ function ListingRow({ listing, event, onDone }: { listing: ChainListing; event: 
   };
 
   return (
-    <li className="flex flex-wrap items-center gap-3 rounded-xl border border-border p-3 transition-shadow duration-300 hover:glow-vault">
+    <li id={`listing-${listing.id}`} className="flex flex-wrap items-center gap-3 rounded-xl border border-border p-3 transition-shadow duration-300 hover:glow-vault">
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium">{listing.seat || "General admission"}</p>
         <p className="truncate text-xs text-muted-foreground">

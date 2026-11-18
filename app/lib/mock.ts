@@ -104,7 +104,95 @@ export const events: Event[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Tickets (12), mixed Tier 1 (onchain, has mintAddress) and Tier 2 (outside ticket).
+// Seat-map demo inventory: 8 extra listed seats per event, spread across sections and tiers so the
+// event page seat map has something to show. All priced within each event's resaleCapUsd
+// (lst_02 above stays the one over-cap listing). Each row becomes one Ticket + one Listing.
+// ---------------------------------------------------------------------------
+type DemoSeat = [eventId: string, section: string, row: string, seat: string, tier: 1 | 2, priceUsd: number, sellerId: string, sellerName: string, sellerRating: number];
+
+const demoSeats: DemoSeat[] = [
+  // Neon Harbor (cap $120)
+  ["evt_neon_harbor", "Floor", "A", "8", 1, 118, "user_dana", "Dana W.", 4.9],
+  ["evt_neon_harbor", "Floor", "B", "3", 2, 115, "user_chris", "Chris L.", 4.1],
+  ["evt_neon_harbor", "104", "H", "7", 1, 92, "user_mei", "Mei H.", 4.7],
+  ["evt_neon_harbor", "106", "D", "2", 2, 88, "user_tomas", "Tomás G.", 3.8],
+  ["evt_neon_harbor", "203", "L", "14", 1, 79, "user_riley", "Riley B.", 4.5],
+  ["evt_neon_harbor", "208", "F", "9", 2, 70, "user_ola", "Ola N.", 4.3],
+  ["evt_neon_harbor", "305", "R", "21", 1, 64, "user_dana", "Dana W.", 4.9],
+  ["evt_neon_harbor", "Lawn", "L", "30", 2, 55, "user_chris", "Chris L.", 4.1],
+  // Lila Vance (cap $90)
+  ["evt_lila_vance", "Floor", "C", "11", 1, 88, "user_mei", "Mei H.", 4.7],
+  ["evt_lila_vance", "102", "E", "5", 1, 72, "user_riley", "Riley B.", 4.5],
+  ["evt_lila_vance", "105", "G", "9", 2, 66, "user_tomas", "Tomás G.", 3.8],
+  ["evt_lila_vance", "109", "B", "1", 1, 85, "user_dana", "Dana W.", 4.9],
+  ["evt_lila_vance", "201", "M", "4", 1, 60, "user_ola", "Ola N.", 4.3],
+  ["evt_lila_vance", "207", "J", "15", 2, 58, "user_chris", "Chris L.", 4.1],
+  ["evt_lila_vance", "Balcony", "F", "18", 1, 52, "user_sam", "Sam R.", 5.0],
+  ["evt_lila_vance", "310", "P", "6", 2, 48, "user_alex", "Alex K.", 3.9],
+  // UT vs. A&M (cap $150)
+  ["evt_ut_am", "103", "D", "10", 1, 140, "user_dana", "Dana W.", 4.9],
+  ["evt_ut_am", "106", "J", "3", 2, 128, "user_tomas", "Tomás G.", 3.8],
+  ["evt_ut_am", "109", "S", "22", 1, 118, "user_mei", "Mei H.", 4.7],
+  ["evt_ut_am", "Student", "4", "30", 1, 90, "user_riley", "Riley B.", 4.5],
+  ["evt_ut_am", "205", "K", "8", 2, 105, "user_ola", "Ola N.", 4.3],
+  ["evt_ut_am", "211", "C", "12", 1, 99, "user_sam", "Sam R.", 5.0],
+  ["evt_ut_am", "304", "W", "7", 1, 86, "user_chris", "Chris L.", 4.1],
+  ["evt_ut_am", "314", "Y", "19", 2, 80, "user_alex", "Alex K.", 3.9],
+  // Riverhawks vs. Comets (cap $60)
+  ["evt_soccer", "101", "A", "6", 1, 58, "user_dana", "Dana W.", 4.9],
+  ["evt_soccer", "104", "F", "2", 2, 52, "user_chris", "Chris L.", 4.1],
+  ["evt_soccer", "110", "H", "13", 1, 45, "user_mei", "Mei H.", 4.7],
+  ["evt_soccer", "Supporters", "D", "4", 2, 44, "user_tomas", "Tomás G.", 3.8],
+  ["evt_soccer", "209", "N", "8", 1, 38, "user_riley", "Riley B.", 4.5],
+  ["evt_soccer", "302", "T", "15", 1, 33, "user_ola", "Ola N.", 4.3],
+  ["evt_soccer", "312", "V", "1", 2, 30, "user_alex", "Alex K.", 3.9],
+  ["evt_soccer", "Student", "2", "11", 1, 36, "user_sam", "Sam R.", 5.0],
+  // Winter Gala (cap $30)
+  ["evt_winter_gala", "Floor", "B", "2", 1, 29, "user_mei", "Mei H.", 4.7],
+  ["evt_winter_gala", "Floor", "D", "7", 2, 27, "user_chris", "Chris L.", 4.1],
+  ["evt_winter_gala", "103", "C", "5", 1, 24, "user_riley", "Riley B.", 4.5],
+  ["evt_winter_gala", "107", "E", "9", 2, 22, "user_tomas", "Tomás G.", 3.8],
+  ["evt_winter_gala", "202", "G", "3", 1, 21, "user_dana", "Dana W.", 4.9],
+  ["evt_winter_gala", "206", "H", "11", 1, 19, "user_ola", "Ola N.", 4.3],
+  ["evt_winter_gala", "304", "K", "6", 2, 18, "user_sam", "Sam R.", 5.0],
+  ["evt_winter_gala", "Balcony", "A", "2", 1, 26, "user_alex", "Alex K.", 3.9],
+  // Battle of the Bands (no cap)
+  ["evt_battle_bands", "Floor", "A", "3", 1, 15, "user_riley", "Riley B.", 4.5],
+  ["evt_battle_bands", "Floor", "C", "9", 2, 14, "user_chris", "Chris L.", 4.1],
+  ["evt_battle_bands", "101", "B", "4", 1, 12, "user_mei", "Mei H.", 4.7],
+  ["evt_battle_bands", "105", "D", "8", 1, 11, "user_dana", "Dana W.", 4.9],
+  ["evt_battle_bands", "108", "F", "2", 2, 10, "user_tomas", "Tomás G.", 3.8],
+  ["evt_battle_bands", "204", "H", "6", 1, 9, "user_ola", "Ola N.", 4.3],
+  ["evt_battle_bands", "Lawn", "L", "12", 1, 8, "user_sam", "Sam R.", 5.0],
+  ["evt_battle_bands", "Lawn", "M", "20", 2, 8, "user_alex", "Alex K.", 3.9],
+];
+
+const demoTickets: Ticket[] = demoSeats.map(([eventId, section, row, seat, tier, , sellerId], i) => ({
+  id: `tkt_demo_${i + 1}`,
+  eventId,
+  section,
+  row,
+  seat,
+  tier,
+  ownerId: sellerId,
+  ...(tier === 1 && { mintAddress: `MockMintDemo${String(i + 1).padStart(30, "0")}` }),
+}));
+
+const demoListings: Listing[] = demoSeats.map(([eventId, , , , tier, priceUsd, sellerId, sellerName, sellerRating], i) => ({
+  id: `lst_demo_${i + 1}`,
+  ticketId: `tkt_demo_${i + 1}`,
+  eventId,
+  sellerId,
+  sellerName,
+  sellerRating,
+  priceUsd,
+  tier,
+  bondUsd: tier === 2 ? Math.max(5, Math.round(priceUsd * 0.15)) : 0,
+  createdAt: new Date(Date.UTC(2026, 10, 16, 12, i)).toISOString(),
+}));
+
+// ---------------------------------------------------------------------------
+// Tickets (12 + demo seats), mixed Tier 1 (onchain, has mintAddress) and Tier 2 (outside ticket).
 // ---------------------------------------------------------------------------
 export const tickets: Ticket[] = [
   { id: "tkt_01", eventId: "evt_neon_harbor", section: "GA", row: "-", seat: "-", tier: 1, ownerId: MOCK_USER_ID, mintAddress: "MockMint1111111111111111111111111111111111" },
@@ -119,10 +207,11 @@ export const tickets: Ticket[] = [
   { id: "tkt_10", eventId: "evt_soccer", section: "204", row: "K", seat: "17", tier: 2, ownerId: "user_priya" },
   { id: "tkt_11", eventId: "evt_winter_gala", section: "GA", row: "-", seat: "-", tier: 1, ownerId: "user_alex", mintAddress: "MockMintAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" },
   { id: "tkt_12", eventId: "evt_battle_bands", section: "Lawn", row: "-", seat: "-", tier: 1, ownerId: "user_alex", mintAddress: "MockMintBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB" },
+  ...demoTickets,
 ];
 
 // ---------------------------------------------------------------------------
-// Listings (8). Tier 1 has bondUsd 0; Tier 2 sellers post a bond.
+// Listings (8 + demo seats). Tier 1 has bondUsd 0; Tier 2 sellers post a bond.
 // ---------------------------------------------------------------------------
 export const listings: Listing[] = [
   { id: "lst_01", ticketId: "tkt_02", eventId: "evt_neon_harbor", sellerId: "user_jordan", sellerName: "Jordan P.", sellerRating: 4.8, priceUsd: 110, tier: 1, bondUsd: 0, createdAt: "2026-11-14T16:05:00Z" },
@@ -135,6 +224,7 @@ export const listings: Listing[] = [
   { id: "lst_06", ticketId: "tkt_09", eventId: "evt_soccer", sellerId: "user_sam", sellerName: "Sam R.", sellerRating: 5.0, priceUsd: 48, tier: 1, bondUsd: 0, createdAt: "2026-11-12T18:30:00Z" },
   { id: "lst_07", ticketId: "tkt_10", eventId: "evt_soccer", sellerId: "user_priya", sellerName: "Priya S.", sellerRating: 4.6, priceUsd: 40, tier: 2, bondUsd: 5, createdAt: "2026-11-15T23:55:00Z" },
   { id: "lst_08", ticketId: "tkt_11", eventId: "evt_winter_gala", sellerId: "user_alex", sellerName: "Alex K.", sellerRating: 3.9, priceUsd: 25, tier: 1, bondUsd: 0, createdAt: "2026-11-16T09:15:00Z" },
+  ...demoListings,
 ];
 
 // ---------------------------------------------------------------------------
