@@ -58,6 +58,11 @@ The seed seller's own $14 listing is there too, so the page isn't empty before s
 Also worth showing: `/sell` with "Demo mode: 60-second windows" to list your own outside ticket, then
 **Mark as sent** under "My escrow sales" once someone funds it.
 
+**Live ticker:** keep Discover (`/`) open on a second screen. After the resale (e2) or the refund (f3), the protection
+ticker at the top counts up (fair resales / scams auto-refunded / $ protected) and the new item appears in its
+feed within a few seconds, with no reload. An over-cap attempt (d) bumps "scalpers blocked". This is the QuickNode
+Stream → `/api/stream-webhook` → Supabase → Realtime path.
+
 ## 2. Gas check
 
 Before and after: `solana balance <wallet address> --url devnet` for wallet 1 and 2 stays **0 SOL**
