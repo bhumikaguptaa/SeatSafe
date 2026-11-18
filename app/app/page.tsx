@@ -17,6 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EventArt } from "@/components/EventArt";
 import { GlassHero } from "@/components/GlassHero";
 import { PageShell } from "@/components/PageShell";
+// Added by A: live protection ticker (QuickNode-fed stats). Self-contained; remove this import + the one line below to drop it.
+import { ProtectionTicker } from "@/components/ProtectionTicker";
 
 type Filter = "all" | Event["category"];
 
@@ -100,6 +102,7 @@ export default function DiscoverPage() {
 
   return (
     <PageShell title="Discover" description="Concerts, games and campus events. Every purchase is payment-protected.">
+      <ProtectionTicker /> {/* Added by A */}
       <div className="space-y-5">
         <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Filter by category">
           {FILTERS.map((f) => (
