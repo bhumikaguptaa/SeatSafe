@@ -94,12 +94,15 @@ The six parts:
 
 ## 5. QuickNode Streams
 
-TODO(B): fill in from the backend PR (#17, "Add the backend that mirrors the chain into the live tracker"), once merged:
+The live stream is named **SeatSafe** and is delivering on Solana devnet. It posts matching transactions to `POST /api/stream-webhook`, which writes the order tracker in Supabase. A duplicate signature is ignored.
+
 - **Network:** Solana devnet
-- **Dataset:** TODO(B)
-- **Filter logic:** TODO(B), e.g. transactions that touch program `7fnVUPd1…`, decoded into SeatSafe events (`docs/program.md § Events`)
-- **Destination:** TODO(B), e.g. a webhook into `app/api/…` that writes to Supabase
-- **Why:** TODO(B)
+- **Dataset:** Block
+- **Filter logic:** a JavaScript `main(stream)` keeps a transaction only when a log line contains program `7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy`. The filter is in [docs/backend.md](docs/backend.md).
+- **Destination:** `https://seat-safe-chi.vercel.app/api/stream-webhook`, header `x-webhook-secret`
+- **Why:** the tracker updates within about a second of a devnet purchase, without a refresh
+
+![SeatSafe QuickNode stream on Solana devnet](docs/quicknode-stream.png)
 
 The Stream also powers the **live protection ticker on Discover** ($ protected, scams auto-refunded, fair resales, scalpers blocked): each decoded event lands in Supabase (`/api/stats`), and Supabase Realtime pushes it to open pages within seconds (devnet resale → ticker in ~4 s). The Stream also triggers real-time notifications to buyers and sellers (e.g. "your ticket sold" or "your refund is back"): `lib/server/notify.ts` writes them as each event is applied, and the bell in the nav receives them over Supabase Realtime.
 
@@ -263,7 +266,7 @@ The API, Supabase schema, QuickNode stream, deadline cron, scam detector and sta
 
 - Apply `supabase/schema.sql` and, for the mock-shaped data, `supabase/seed.sql`.
 - `POST /api/stream-webhook` decodes Anchor logs for program `7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy` and moves orders forward only. Duplicate signatures are ignored.
-- QuickNode: Solana **devnet**, dataset **Logs**, destination `https://<vercel-host>/api/stream-webhook`, header `x-webhook-secret`. The filter is in `docs/backend.md`. The stream is what makes the tracker move without a refresh.
+- QuickNode stream **SeatSafe** is live on Solana **devnet**, dataset **Block**, destination `https://seat-safe-chi.vercel.app/api/stream-webhook`, header `x-webhook-secret`. The filter is in `docs/backend.md`. The stream is what makes the tracker move without a refresh. Screenshot: [docs/quicknode-stream.png](docs/quicknode-stream.png).
 - Vercel cron (`app/vercel.json`) calls `refund_expired` / `release_expired`, re-reads open escrows, and checks the relayer once a day, which is what the Hobby plan allows. Call those routes directly to run them during a demo.
 - `POST /api/chat` flags off-app payment, links and pressure. `POST /api/standing-orders` turns one English sentence into `{ eventId, quantity, maxPrice, minRating, deadline }`. A match at or above $75 waits for `POST /api/standing-orders/:id/approve` (the voice card). Below that, the relayer sends `fill_standing_order`.
 
