@@ -14,13 +14,13 @@ import { saveMeta } from "@/lib/event-meta";
 import { mockTx, useRunTx } from "@/lib/tx";
 import { useAsyncData } from "@/lib/use-chain";
 import { formatDate, formatUsd } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import type { Event } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/form";
+import { EventArt } from "@/components/EventArt";
 
 type ViewEvent = Event & Partial<Pick<ChainEvent, "supply" | "sold" | "priceUsd">>;
 
@@ -82,7 +82,8 @@ function EventDetails({
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-6 md:py-8">
       <Card className="gap-0 overflow-hidden p-0">
-        <div className={cn("relative h-32 md:h-44", event.imageGradient)}>
+        <div className="relative h-32 md:h-44">
+          <EventArt event={event} className="absolute inset-0" />
           <Badge className="absolute top-3 left-3 bg-black/50 text-white capitalize">{event.category}</Badge>
         </div>
         <div className="space-y-4 p-4 md:p-6">

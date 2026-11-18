@@ -93,39 +93,47 @@
 }
 
 .dark {
-  /* SeatSafe default theme: dark, high contrast, blue accent */
-  --background: oklch(0.13 0.01 265);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.18 0.012 265);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.18 0.012 265);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.62 0.21 260);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.25 0.015 265);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.25 0.015 265);
-  --muted-foreground: oklch(0.72 0.01 265);
-  --accent: oklch(0.25 0.015 265);
-  --accent-foreground: oklch(0.985 0 0);
+  /* SeatSafe theme (one palette for every page):
+     Onyx #000000 background, Onyx #141414 cards, Charcoal #2B2B2B tiles/inputs/borders,
+     Dark Azure #00638E primary, Light Azure #BFD8E3 (reduced opacity) secondary text,
+     Paper White #FFFFFF text. The branding gradient (#000000 → #004A6B → #00638E → #8CB9CC)
+     is used in exactly three places: the page glow, Discover's featured event, primary buttons. */
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #141414;
+  --card-foreground: #ffffff;
+  --popover: #141414;
+  --popover-foreground: #ffffff;
+  --primary: #00638e;
+  --primary-foreground: #ffffff;
+  --secondary: #2b2b2b;
+  --secondary-foreground: #ffffff;
+  --muted: #2b2b2b;
+  --muted-foreground: rgb(191 216 227 / 0.65);
+  --accent: #2b2b2b;
+  --accent-foreground: #ffffff;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.62 0.21 260);
+  --border: #2b2b2b;
+  --input: #2b2b2b;
+  --ring: #8cb9cc;
+  --brand-gradient: linear-gradient(135deg, #000000 0%, #004a6b 38%, #00638e 68%, #8cb9cc 100%);
+  --brand-button: linear-gradient(135deg, #004a6b 0%, #00638e 60%, #8cb9cc 150%);
+  --brand-glow: radial-gradient(ellipse 95% 62% at 50% -8%, #8cb9cc 0%, #00638e 22%, #004a6b 46%, #000000 82%);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.18 0.012 265);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.62 0.21 260);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.25 0.015 265);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.62 0.21 260);
-  --vault: oklch(0.65 0.2 260);
+  --sidebar: #141414;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #00638e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2b2b2b;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2b2b2b;
+  --sidebar-ring: #8cb9cc;
+  /* Status colours are for order status only. Vault is violet so it never reads as Dark Azure. */
+  --vault: oklch(0.7 0.17 295);
   --released: oklch(0.74 0.18 150);
   --transit: oklch(0.8 0.16 75);
   --disputed: oklch(0.68 0.21 25);
@@ -137,6 +145,10 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Branding gradient use #1 of 3: the same glow at the top of every page. */
+    background-image: var(--brand-glow);
+    background-repeat: no-repeat;
+    background-size: 100% 44rem;
   }
   html {
     @apply font-sans;

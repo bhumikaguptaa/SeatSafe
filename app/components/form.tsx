@@ -63,7 +63,7 @@ export function Toggle({
           onChange={(e) => onChange(e.target.checked)}
           className="peer sr-only"
         />
-        <span className="absolute inset-0 rounded-full bg-input transition-colors peer-checked:bg-vault peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50" />
+        <span className="absolute inset-0 rounded-full bg-input transition-colors peer-checked:bg-primary peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50" />
         <span className="absolute top-0.5 left-0.5 size-4 rounded-full bg-background transition-transform peer-checked:translate-x-4" />
       </span>
       <span className="grid gap-0.5">

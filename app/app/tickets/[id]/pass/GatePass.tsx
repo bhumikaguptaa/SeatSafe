@@ -14,9 +14,9 @@ import { ChevronLeft, ShieldCheck } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useEvents } from "@/lib/hooks";
 import { formatDate } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import type { Ticket } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EventArt } from "@/components/EventArt";
 
 const ROTATE_MS = 10_000;
 
@@ -66,7 +66,7 @@ function useNow(): number | null {
 function SeatCell({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-[13px] text-muted-foreground">{label}</p>
       <p className="truncate text-2xl font-bold tracking-tight">{value === "-" ? "—" : value}</p>
     </div>
   );
@@ -106,17 +106,16 @@ export function GatePass() {
         My tickets
       </Link>
 
-      <article className="overflow-hidden rounded-3xl border border-border bg-card shadow-2xl">
-        {/* Event art + details */}
-        <div className={cn("relative p-5 pb-6", event.imageGradient)}>
-          <div className="absolute inset-0 bg-linear-to-br from-white/25 via-white/0 to-transparent" />
-          <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
+      <article className="overflow-hidden rounded-3xl border border-border bg-card">
+        {/* Event art (palette shade + category icon) behind the event details */}
+        <div className="relative overflow-hidden p-5 pb-6">
+          <EventArt event={event} className="absolute inset-0" />
           <div className="relative">
             <div className="flex items-center justify-between gap-2">
-              <span className="rounded-full border border-white/20 bg-black/35 px-2.5 py-0.5 text-xs font-medium text-white backdrop-blur-md">
+              <span className="rounded-full bg-black/40 px-2.5 py-0.5 text-xs font-medium text-white">
                 {ticket.tier === 1 ? "SeatSafe ticket" : "Outside ticket"}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/35 px-2.5 py-0.5 text-xs font-medium text-white backdrop-blur-md">
+              <span className="inline-flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-0.5 text-xs font-medium text-white">
                 <ShieldCheck className="size-3.5" />
                 Protected
               </span>

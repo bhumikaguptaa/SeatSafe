@@ -7,7 +7,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        // Branding gradient use #2 of 3 (see globals.css).
+        default:
+          "[background-image:var(--brand-button)] bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgb(140_185_204/0.35)] hover:brightness-110",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
