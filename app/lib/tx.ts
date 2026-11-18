@@ -13,7 +13,7 @@
 // Privy API per docs.privy.io/wallets/using-wallets/solana/sign-a-transaction and
 // .../send-a-transaction (React SDK v3: hooks from "@privy-io/react-auth/solana").
 
-import { useCallback, useMemo } from "react";
+import { createElement, useCallback, useMemo, type ReactNode } from "react";
 import { PublicKey } from "@solana/web3.js";
 import { utils } from "@coral-xyz/anchor";
 import { useSignAndSendTransaction, useSignTransaction, useWallets } from "@privy-io/react-auth/solana";
@@ -178,6 +178,14 @@ export interface RunTxOptions {
   success: string;
   /** Values for specific error messages (e.g. the event's resale cap). */
   errorContext?: ErrorContext;
+  /** Extra content under the success message (e.g. Add to calendar links). */
+  successExtra?: ReactNode;
+}
+
+/** Toast description: the status line plus optional extra content. */
+function successDescription(line: string | undefined, extra?: ReactNode): ReactNode {
+  if (!extra) return line;
+  return createElement("div", null, line ? createElement("div", null, line) : null, extra);
 }
 
 /**
@@ -201,7 +209,8 @@ export function useRunTx() {
         );
         toast.success(opts.success, {
           id,
-          description: sent.sponsored ? "Gas paid by SeatSafe." : undefined,
+          description: successDescription(sent.sponsored ? "Gas paid by SeatSafe." : undefined, opts.successExtra),
+          duration: opts.successExtra ? 10_000 : undefined,
           action: { label: "View tx", onClick: () => window.open(sent.explorerUrl, "_blank", "noopener") },
         });
         return sent;
@@ -235,6 +244,6 @@ export async function mockTx(opts: RunTxOptions, error?: string): Promise<boolea
     toast.error(error, { id, description: "Mock mode: no transaction sent." });
     return false;
   }
-  toast.success(opts.success, { id, description: "Mock mode: no transaction sent." });
+  toast.success(opts.success, { id, description: successDescription("Mock mode: no transaction sent.", opts.successExtra), duration: opts.successExtra ? 10_000 : undefined });
   return true;
 }
