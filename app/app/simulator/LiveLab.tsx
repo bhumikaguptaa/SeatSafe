@@ -177,16 +177,35 @@ export function LiveLab() {
     if (s) setSnap(s);
   }, [read]);
 
+  // 1 s poll; on RPC errors (public devnet answers 429 under load) back off up to 8 s; pause while an action runs.
+  const busyRef = useRef(false);
+  const [rpcSlow, setRpcSlow] = useState(false);
+  const hasTarget = scenario === "fair" ? Boolean(mint) : Boolean(escrow);
   useEffect(() => {
-    const first = setTimeout(() => void refresh(), 0);
-    const id = setInterval(() => {
-      if (document.visibilityState === "visible") void refresh();
-    }, 1000);
-    return () => {
-      clearTimeout(first);
-      clearInterval(id);
+    let alive = true;
+    let delay = 1000;
+    let timer: ReturnType<typeof setTimeout>;
+    const loop = async () => {
+      if (!alive) return;
+      if (document.visibilityState === "visible" && !busyRef.current && hasTarget) {
+        const next = await read();
+        if (!alive) return;
+        if (next) {
+          setSnap(next);
+          delay = 1000;
+        } else {
+          delay = Math.min(8000, delay * 2);
+        }
+        setRpcSlow(delay > 1000);
+      }
+      timer = setTimeout(loop, delay);
     };
-  }, [refresh]);
+    timer = setTimeout(loop, 0);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [read, hasTarget]);
 
   // Order id for Realtime: escrow PDA (Tier 2) or listing PDA (Tier 1 swap order).
   const orderId = useMemo(() => {
@@ -270,6 +289,9 @@ export function LiveLab() {
 
   // ---- Running an action (both drivers) ----
   const [busy, setBusy] = useState<string | null>(null);
+  useEffect(() => {
+    busyRef.current = busy !== null;
+  }, [busy]);
   const [notice, setNotice] = useState<string | null>(null);
 
   const watchStream = useCallback(
@@ -362,6 +384,8 @@ export function LiveLab() {
       patchRun(id, (r) => {
         const at = x.blockTime ?? Date.now();
         let n: Run = { ...r, x };
+        // The signature exists before the block: stamp signing with the block time, not when the reply arrived.
+        n = layer(n, "sign", "done", Math.min(r.layers.sign.at ?? at, at));
         n = layer(n, "relayer", "done", at);
         n = layer(n, "program", "done", at);
         n = layer(n, "tokens", "done", at);
@@ -453,7 +477,7 @@ export function LiveLab() {
   const secondsLeft = d?.escrowState === "funded" && d.shipDeadline && now ? Math.max(0, Math.ceil((d.shipDeadline - now) / 1000)) : null;
   const lastBlocked = latest?.blocked && (now === 0 || now - latest.startedAt < 8000) ? latest.blocked : null;
   const banner = lastBlocked
-    ? { tone: "disputed" as const, title: "Blocked by the program", text: `${lastBlocked.message}${lastBlocked.errorName ? ` (${lastBlocked.errorName})` : ""}` }
+    ? { tone: "disputed" as const, title: "Blocked by the program", text: `${lastBlocked.message.replace(/^Blocked by the program:\s*/i, "")}${lastBlocked.errorName ? ` (${lastBlocked.errorName})` : ""}` }
     : scenario === "fair" && d?.ticket?.holder === "buyer"
       ? { tone: "released" as const, title: "Done in one transaction", text: "Ticket and payment swapped atomically. The ticket is frozen again in the buyer's wallet (real account state)." }
       : scenario === "scam" && d?.escrowState === "refunded"
@@ -563,7 +587,7 @@ export function LiveLab() {
                   </div>
                 </div>
                 <p className="mt-3 text-center text-[11px] text-white/50">
-                  {snap ? <>slot {snap.slot.toLocaleString()} · read {now ? Math.max(0, Math.round((now - snap.at) / 1000)) : 0}s ago</> : scenario === "fair" ? "Prepare a ticket to start." : "List an outside ticket to start."}
+                  {snap ? <>slot {snap.slot.toLocaleString()} · read {now ? Math.max(0, Math.round((now - snap.at) / 1000)) : 0}s ago{rpcSlow && <span className="text-transit"> · RPC busy, slowing down</span>}</> : scenario === "fair" ? "Prepare a ticket to start." : "List an outside ticket to start."}
                 </p>
 
                 {flights.map((f) => (
