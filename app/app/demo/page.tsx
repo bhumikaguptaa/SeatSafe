@@ -107,7 +107,7 @@ async function load(owner: string | null): Promise<DemoData> {
     ? { label: "Open resale listing", level: "ok", detail: `${resale.seat || "GA"} · ${formatUsd(resale.priceUsd)}` }
     : { label: "Open resale listing", level: "fail", detail: "None", fix: RESET });
   checks.push(escrow
-    ? { label: "Open escrow listing", level: "ok", detail: `${formatUsd(escrow.priceUsd)} + ${formatUsd(escrow.bondUsd)} bond` }
+    ? { label: "Open escrow listing", level: "ok", detail: `${formatUsd(escrow.priceUsd)}${escrow.bondUsd > 0 ? ` + ${formatUsd(escrow.bondUsd)} bond` : ""}` }
     : { label: "Open escrow listing", level: "fail", detail: "None", fix: RESET });
 
   // Stream freshness (newest order_events row).
@@ -276,7 +276,7 @@ export default function DemoPage() {
           <Step
             n={4}
             title="Scam auto-refund (escrow)"
-            say="Outside ticket: the money waits in a program vault. Seller never ships, buyer gets money + bond back."
+            say="Outside ticket: the money waits in a program vault. Seller never ships, the buyer gets it all back automatically."
             expect="/orders tracker HELD with countdown → Claim refund → “your $ is back” notification, ticker refunds +1"
             ready={step(Boolean(d.escrow))}
             links={ev ? [{ label: "Open escrow listing", href: `/events/${ev.id}` }] : []}

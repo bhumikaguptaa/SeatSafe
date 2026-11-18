@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageShell } from "@/components/PageShell";
 import { OrderTracker } from "./OrderTracker";
 import { OrderChat } from "@/components/OrderChat";
+import { OrderVault } from "@/components/OrderVault"; // added by A: live escrow vault (real chain data)
 
 export default function OrderPage() {
   return (
@@ -15,6 +16,7 @@ export default function OrderPage() {
     >
       <Suspense fallback={<Skeleton className="h-72 rounded-2xl" />}>
         {/* Real devnet actions (A's useOrderActions) are wired into the tracker's buttons. */}
+        <OrderVault /> {/* added by A: live vault + Got my ticket / Claim refund */}
         <OrderTracker />
         <OrderChat />
       </Suspense>

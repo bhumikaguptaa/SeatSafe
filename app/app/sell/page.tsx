@@ -6,12 +6,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Loader2, Send, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
 import { PublicKey } from "@solana/web3.js";
 import { events as mockEvents } from "@/lib/mock";
-import { getEvents, getMyEscrowSales, USE_MOCK, type ChainEscrow } from "@/lib/chain";
-import { createEscrowListing, markSent } from "@/lib/program";
+import { chainProgram, getEvents, getMyEscrowSales, USE_MOCK, type ChainEscrow } from "@/lib/chain";
+import { createEscrowListing, markSent, releaseExpired } from "@/lib/program";
 import { saveMeta } from "@/lib/event-meta";
-import { mockTx, useRunTx, useTxWallet } from "@/lib/tx";
+import { mockTx, sendWithRelayer, useRunTx, useTxWallet } from "@/lib/tx";
+import { programErrorName } from "@/lib/errors";
 import { useAsyncData, useNow } from "@/lib/use-chain";
 import { formatDate, formatUsd } from "@/lib/format";
 import type { Event } from "@/lib/types";
@@ -40,8 +42,13 @@ export default function SellPage() {
       <h1 className="text-2xl font-bold tracking-tight">Sell an outside ticket</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Got a ticket from another site? List it here. The buyer&apos;s payment waits in a SeatSafe vault until they
-        confirm it works. Your bond shows buyers you&apos;re serious. Selling a SeatSafe ticket?{" "}
+        confirm it works. Selling a SeatSafe ticket?{" "}
         <Link href="/tickets" className="underline">Resell it from My tickets</Link>.
+      </p>
+
+      <p className="mt-3 rounded-xl border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
+        <b className="text-foreground">Protects both sides.</b> The buyer is refunded automatically if you never send the ticket.
+        You&apos;re paid automatically if the buyer goes silent after you send it. Disputes go to an arbiter.
       </p>
 
       <ListingForm events={events.data ?? []} loadingEvents={events.loading} onListed={sales.refresh} />
@@ -85,7 +92,6 @@ function ListingForm({
   const [eventId, setEventId] = useState("");
   const [seat, setSeat] = useState("");
   const [price, setPrice] = useState("");
-  const [bond, setBond] = useState("");
   const [shipHours, setShipHours] = useState("24");
   const [confirmHours, setConfirmHours] = useState("24");
   const [demo, setDemo] = useState(true);
@@ -93,7 +99,8 @@ function ListingForm({
 
   const selectedEvent = eventId || events[0]?.id || "";
   const p = Number(price);
-  const b = bond === "" ? Math.round(p * 0.1 * 100) / 100 : Number(bond);
+  // Bond is 0 (Nov 19): create_escrow_listing only requires price > 0 and windows > 0 (escrow.rs:76-80).
+  const b = 0;
   const shipSecs = demo ? DEMO_WINDOW : Math.round(Number(shipHours) * HOUR);
   const confirmSecs = demo ? DEMO_WINDOW : Math.round(Number(confirmHours) * HOUR);
   const valid = selectedEvent && seat.trim() && p > 0 && b >= 0 && shipSecs > 0 && confirmSecs > 0;
@@ -102,7 +109,7 @@ function ListingForm({
     e.preventDefault();
     if (!valid) return;
     setBusy(true);
-    const opts = { pending: "Posting your bond and listing…", success: "Listed! Buyers can now pay into escrow." };
+    const opts = { pending: "Listing with escrow protection…", success: "Listed! Buyers can now pay into escrow." };
     if (USE_MOCK) {
       await mockTx(opts);
     } else {
@@ -114,7 +121,6 @@ function ListingForm({
         await saveMeta({ kind: "escrow", id: sent.address.toBase58(), data: { eventId: selectedEvent, seat: seat.trim() } });
         setSeat("");
         setPrice("");
-        setBond("");
         await onListed();
       }
     }
@@ -140,9 +146,6 @@ function ListingForm({
         <Field label="Price (USD)" htmlFor="sell-price">
           <Input id="sell-price" type="number" inputMode="decimal" min="0" step="0.01" placeholder="90" value={price} onChange={(e) => setPrice(e.target.value)} />
         </Field>
-        <Field label="Seller bond (USD)" htmlFor="sell-bond" hint="Refunded when the sale completes. Default 10%.">
-          <Input id="sell-bond" type="number" inputMode="decimal" min="0" step="0.01" placeholder={p > 0 ? String(b) : "9"} value={bond} onChange={(e) => setBond(e.target.value)} />
-        </Field>
         <div className="sm:col-span-2">
           <Toggle
             id="sell-demo"
@@ -164,7 +167,7 @@ function ListingForm({
         )}
         <Button type="submit" className="h-10 sm:col-span-2" disabled={!valid || busy}>
           {busy ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
-          List with {p > 0 ? `${formatUsd(b)} bond` : "escrow protection"}
+          List with escrow protection
         </Button>
       </form>
     </Card>
@@ -184,7 +187,7 @@ const STATE_LABEL: Record<ChainEscrow["state"], { text: string; className: strin
 };
 
 function SaleRow({ sale, events, onDone }: { sale: ChainEscrow; events: Event[]; onDone: () => Promise<void> }) {
-  const { run } = useRunTx();
+  const { run, wallet } = useRunTx();
   const [busy, setBusy] = useState(false);
   const ev = events.find((e) => e.id === sale.eventId);
   const label = STATE_LABEL[sale.state];
@@ -202,16 +205,47 @@ function SaleRow({ sale, events, onDone }: { sale: ChainEscrow; events: Event[];
     setBusy(false);
   };
 
+  // Seller asks for the money early: a REAL release_expired signed by the seller. Before the buyer's confirm
+  // window ends the program refuses (InvalidState / DeadlineNotReached); after it, this is the real auto-payout.
+  const payout = async () => {
+    if (!wallet) {
+      toast.error("Log in first.");
+      return;
+    }
+    setBusy(true);
+    const id = toast.loading("Asking the vault to pay you…");
+    try {
+      const sent = await sendWithRelayer((payer) => releaseExpired({ program: chainProgram(), user: wallet.address, payer }, { escrow: new PublicKey(sale.id) }), wallet);
+      toast.success("Paid out: the buyer didn't respond in time.", { id, action: { label: "View tx", onClick: () => window.open(sent.explorerUrl, "_blank", "noopener") } });
+      await onDone();
+    } catch (err) {
+      const name = programErrorName(err);
+      toast.error("Blocked by the program: only the buyer can release this money", {
+        id,
+        description: `${name ?? "Rejected"}: it pays you automatically once the buyer confirms, or after their confirm window ends.`,
+      });
+    }
+    setBusy(false);
+  };
+
   return (
     <li className="rounded-xl border border-border p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate font-medium">{ev?.title ?? "Outside ticket"}</p>
           <p className="truncate text-xs text-muted-foreground">
-            {sale.seat || "Seat not recorded"} · {formatUsd(sale.priceUsd)} · bond {formatUsd(sale.bondUsd)}
+            {sale.seat || "Seat not recorded"} · {formatUsd(sale.priceUsd)}
+            {sale.bondUsd > 0 && <> · bond {formatUsd(sale.bondUsd)}</>}
           </p>
           {sale.state === "HELD" && sale.shipDeadline && (
-            <p className="text-xs text-muted-foreground">Send by {formatDate(sale.shipDeadline)}</p>
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium text-vault">Payment locked in vault</span> · send by {formatDate(sale.shipDeadline)}
+            </p>
+          )}
+          {sale.state === "IN_TRANSIT" && sale.confirmDeadline && (
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium text-vault">Payment locked in vault</span> · paid automatically after {formatDate(sale.confirmDeadline)} if the buyer doesn&apos;t respond
+            </p>
           )}
         </div>
         <Badge variant="outline" className={label.className}>{label.text}</Badge>
@@ -222,6 +256,11 @@ function SaleRow({ sale, events, onDone }: { sale: ChainEscrow; events: Event[];
             <Button size="sm" disabled={busy || shipPassed} onClick={send}>
               {busy ? <Loader2 className="animate-spin" /> : <Send />}
               {shipPassed ? "Ship window passed" : "Mark as sent"}
+            </Button>
+          )}
+          {(sale.state === "HELD" || sale.state === "IN_TRANSIT") && (
+            <Button size="sm" variant="outline" disabled={busy} onClick={payout} title="Asks the program to release the money to you now">
+              {busy ? <Loader2 className="animate-spin" /> : null} Request payout now
             </Button>
           )}
           <Link href={`/orders/${sale.id}`} className="text-sm underline underline-offset-4 self-center">

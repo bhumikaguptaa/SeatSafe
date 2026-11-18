@@ -4,12 +4,12 @@
 //   cd program && anchor run reset-demo --provider.cluster devnet
 //   Faster RPC: anchor run reset-demo --provider.cluster https://<your-devnet-endpoint>
 //
-// Seller = ../.keys/seed-seller.json (signs; needs 12 USDC: $10 ticket + $2 bond).
+// Seller = ../.keys/seed-seller.json (signs; needs 10 USDC: the $10 ticket; escrow bond is 0).
 // Payer  = deployer (ANCHOR_WALLET): pays every fee and rent.
 // 1. Buys 1 primary ticket ($10)               -> new ticket mint (next seat number)
 // 2. Lists it for resale at $14 (cap $15)      -> new listing PDA (one per mint)
 // 3. Creates an outside-ticket escrow listing  -> new escrow PDA (order_id = Date.now())
-//    $20, $2 bond, 60-second ship/confirm windows
+//    $20, no bond, 60-second ship/confirm windows
 // 4. Adds the escrow's seat to ../app/lib/event-meta.json (commit it so Vercel shows the seat).
 // Every tx: fresh blockhash, "confirmed", 60 s timeout, one retry. Never prints secret keys.
 
@@ -24,7 +24,8 @@ import { Seatsafe } from "../target/types/seatsafe";
 
 const EVENT = new PublicKey("EMhrDn2puUvJac9PZ15CCTUftj2Axv6E7wp81oV1RzxE"); // Battle of the Bands: $10, cap $15
 const RESALE_PRICE = 14;
-const ESCROW = { price: 20, bond: 2, windowSecs: 60, seat: "Lawn GA (outside ticket)" };
+// bond 0: create_escrow_listing only requires price > 0 and windows > 0 (escrow.rs:76-80)
+const ESCROW = { price: 20, bond: 0, windowSecs: 60, seat: "Lawn GA (outside ticket)" };
 const SELLER_FILE = path.resolve(__dirname, "../../.keys/seed-seller.json");
 const META_FILE = path.resolve(__dirname, "../../app/lib/event-meta.json");
 const TIMEOUT_MS = 60_000;
@@ -156,7 +157,7 @@ async function main() {
     resalePrice: `$${RESALE_PRICE}`,
     escrow: escrow.toBase58(),
     escrowOrderId: orderId,
-    escrowTerms: `$${ESCROW.price}, bond $${ESCROW.bond}, ${ESCROW.windowSecs}s windows`,
+    escrowTerms: `$${ESCROW.price}, no bond, ${ESCROW.windowSecs}s windows`,
     signatures: { buy_primary: buySig, list_resale: listSig, create_escrow_listing: escrowSig },
     orderPage: `/orders/${escrow.toBase58()}`,
   });

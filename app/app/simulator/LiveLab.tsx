@@ -39,7 +39,7 @@ type Anchor = "seller" | "buyer" | "vault" | "seatsafe";
 const ANCHORS: Record<Anchor, Point> = { seller: { x: 17, y: 62 }, buyer: { x: 83, y: 62 }, vault: { x: 50, y: 42 }, seatsafe: { x: 60, y: 95 } };
 const EVENT_ID = Object.entries((bundledMeta as { events?: Record<string, { title?: string }> }).events ?? {}).find(([, m]) => /battle of the bands/i.test(m.title ?? ""))?.[0] ?? "";
 const EVENT_TITLE = "Battle of the Bands";
-const PRICE = { over: 50, resale: 14, escrow: 20, bond: 2, windowSecs: 60 };
+const PRICE = { over: 50, resale: 14, escrow: 20, bond: 0, windowSecs: 60 }; // bond 0 (escrow.rs:76-80)
 
 interface FlightSpec {
   id: string;
@@ -264,9 +264,9 @@ export function LiveLab() {
       } else {
         const a = prev.escrowState ?? null;
         const b = snap.escrowState ?? null;
-        if (!a && b === "listed") f.push({ id: `c-bond-${snap.slot}`, kind: "coin", amount: snap.vaultUsd, label: "seller bond", tone: "transit", from: "seller", to: "vault" });
+        if (!a && b === "listed" && snap.vaultUsd > 0) f.push({ id: `c-bond-${snap.slot}`, kind: "coin", amount: snap.vaultUsd, label: "seller bond", tone: "transit", from: "seller", to: "vault" });
         if (a === "listed" && b === "funded") f.push({ id: `c-pay-${snap.slot}`, kind: "coin", amount: snap.vaultUsd - prev.vaultUsd, label: "buyer pays", from: "buyer", to: "vault" });
-        if (a === "funded" && b === "refunded") f.push({ id: `c-refund-${snap.slot}`, kind: "coin", amount: prev.vaultUsd, label: "refund + bond", tone: "released", from: "vault", to: "buyer" });
+        if (a === "funded" && b === "refunded") f.push({ id: `c-refund-${snap.slot}`, kind: "coin", amount: prev.vaultUsd, label: prev.bondUsd ? "refund + bond" : "full refund", tone: "released", from: "vault", to: "buyer" });
         if (a === "funded" && b === "sent") f.push({ id: `t-sent-${snap.slot}`, kind: "ticket", from: "seller", to: "buyer", outside: true });
         if ((a === "sent" || a === "funded") && b === "completed") f.push({ id: `c-paid-${snap.slot}`, kind: "coin", amount: prev.vaultUsd, label: "to seller", tone: "released", from: "vault", to: "seller" });
       }
@@ -433,7 +433,7 @@ export function LiveLab() {
     const st = s?.escrowState ?? null;
     const deadlinePassed = Boolean(s?.shipDeadline && now && now > s.shipDeadline);
     return [
-      { key: "list-escrow", label: `List outside ticket ${money(PRICE.escrow)} + ${money(PRICE.bond)} bond`, role: "seller", presenter: "b_list", enabled: !escrow || st === "refunded" || st === "completed", why: "an order is already running", stack: ["anchor", "escrow", "relayer"], build: (c) => createEscrowListing(c, { priceUsd: PRICE.escrow, bondUsd: PRICE.bond, shipWindowSecs: PRICE.windowSecs, confirmWindowSecs: PRICE.windowSecs }) },
+      { key: "list-escrow", label: `List outside ticket ${money(PRICE.escrow)}${PRICE.bond ? ` + ${money(PRICE.bond)} bond` : ""}`, role: "seller", presenter: "b_list", enabled: !escrow || st === "refunded" || st === "completed", why: "an order is already running", stack: ["anchor", "escrow", "relayer"], build: (c) => createEscrowListing(c, { priceUsd: PRICE.escrow, bondUsd: PRICE.bond, shipWindowSecs: PRICE.windowSecs, confirmWindowSecs: PRICE.windowSecs }) },
       { key: "pay", label: `Pay ${money(s?.priceUsd ?? PRICE.escrow)} into the vault`, role: "buyer", presenter: "b_fund", enabled: st === "listed", why: "waits for the listing", stack: ["anchor", "escrow", "relayer"], build: (c) => fundEscrow(c, { escrow: new PublicKey(escrow!) }) },
       { key: "withdraw", label: "Try to withdraw the money", role: "seller", expectFail: true, presenter: "b_steal", enabled: st === "funded", why: "after the buyer pays", stack: ["anchor", "escrow"], build: (c) => releaseExpired(c, { escrow: new PublicKey(escrow!) }) },
       { key: "refund", label: deadlinePassed ? "Claim refund" : "Claim refund (too early)", role: "buyer", presenter: "b_refund", enabled: st === "funded", why: "after the buyer pays", stack: ["anchor", "escrow", "relayer"], build: (c) => refundExpired(c, { escrow: new PublicKey(escrow!) }) },
@@ -481,7 +481,7 @@ export function LiveLab() {
     : scenario === "fair" && d?.ticket?.holder === "buyer"
       ? { tone: "released" as const, title: "Done in one transaction", text: "Ticket and payment swapped atomically. The ticket is frozen again in the buyer's wallet (real account state)." }
       : scenario === "scam" && d?.escrowState === "refunded"
-        ? { tone: "released" as const, title: "Scam stopped", text: `The vault paid the buyer back ${money((d.priceUsd ?? 0) + (d.bondUsd ?? 0))}, including the seller's bond.` }
+        ? { tone: "released" as const, title: "Scam stopped", text: `The vault paid the buyer back ${money((d.priceUsd ?? 0) + (d.bondUsd ?? 0))}${(d.bondUsd ?? 0) > 0 ? ", including the seller's bond" : ", in full"}.` }
         : null;
 
   const myRoleActions = driver === "presenter" ? actions : actions.filter((a) => a.role === role);
@@ -493,7 +493,7 @@ export function LiveLab() {
     driver === "users" && role
       ? scenario === "fair"
         ? role === "seller" ? "Seller needs a Battle of the Bands ticket (Prepare buys one for $10)." : `Buyer needs ${money(PRICE.resale)} USDC.`
-        : role === "seller" ? `Seller needs ${money(PRICE.bond)} USDC for the bond.` : `Buyer needs ${money(PRICE.escrow)} USDC.`
+        : role === "seller" ? "Seller needs no USDC to list (no bond)." : `Buyer needs ${money(PRICE.escrow)} USDC.`
       : null;
 
   return (

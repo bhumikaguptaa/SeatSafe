@@ -270,12 +270,12 @@ function ListingRow({ listing, event, onDone }: { listing: ChainListing; event: 
         <p className="truncate text-xs text-muted-foreground">
           <span
             className="mr-1.5 inline-flex items-center gap-0.5 rounded-full bg-vault/15 px-1.5 py-px text-[10px] font-semibold text-vault"
-            title={listing.tier === 1 ? "Ticket and payment swap in one transaction, at or under the artist's cap." : "Your payment waits in a SeatSafe vault until you confirm the ticket; the seller's bond is yours if they don't deliver."}
+            title={listing.tier === 1 ? "Ticket and payment swap in one transaction, at or under the artist's cap." : "Your payment waits in a SeatSafe vault until you confirm the ticket; no ticket by the deadline, automatic refund."}
           >
-            <ShieldCheck className="size-3" aria-hidden /> {listing.tier === 1 ? "Atomic swap" : "Escrow + bond"}
+            <ShieldCheck className="size-3" aria-hidden /> {listing.tier === 1 ? "Atomic swap" : "Escrow protected"}
           </span>
           Seller {listing.sellerName}
-          {listing.tier === 2 && ` · ${formatUsd(listing.bondUsd)} seller bond`}
+          {listing.tier === 2 && listing.bondUsd > 0 && ` · ${formatUsd(listing.bondUsd)} seller bond`}
         </p>
       </div>
       <div className="text-right">
