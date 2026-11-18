@@ -117,3 +117,22 @@ Not yet clicked in the browser: **a** (`/creator` create event) and a second Pri
 bought. Re-run `cd program && anchor run seed-devnet --provider.cluster devnet` won't recreate them (it's
 idempotent on the seller's existing tickets/escrow); list a ticket at $14 from `/tickets` and a new outside
 ticket from `/sell` instead.
+
+## 4. In-person mode (Solana Pay at the gate)
+
+Two devices: the **seller's laptop** shows the QR, the **buyer's phone** scans it. Use the deployed app
+(https://seat-safe-chi.vercel.app); the phone's camera needs HTTPS.
+
+| # | Who / where | Do | Expect |
+| --- | --- | --- | --- |
+| g1 | Seller (wallet 1) on laptop, `/tickets` | On an unlisted Battle of the Bands ticket: **Sell in person** → price **14** (prefilled $10, "Max $15") → **Show QR** | Toast "Listed for $14.00", then a full-screen QR with seat, price and "Waiting for the buyer…" |
+| g1b | (optional) same | Try price **50** first | Red cap error, no QR (same `AboveResaleCap` as section 1 d) |
+| g2 | Buyer (wallet 2) on phone, logged in, `/scan` (**Scan to buy** in the bottom bar) | Allow the camera, point it at the laptop QR | Confirm card: "Protected by SeatSafe · Buy Lawn GA n for $14.00", event and date, "Gas paid by SeatSafe" |
+| g3 | Buyer | **Buy for $14.00** → approve the Privy signature | Toast "Ticket bought!" with View tx + Add to calendar; phone goes to `/tickets` with the ticket |
+| g4 | Seller laptop | Nothing (polls every 2 s) | Flips to **"Sold! $13.58 received"** with a View transaction link |
+
+No camera, or rehearsing alone: on the QR screen tap **Copy link** and paste the `solana:` link into
+`/scan` on the other device (or another browser profile logged in as wallet 2). An already-listed ticket has
+**Show QR** on `/tickets` to bring the QR back.
+External wallet: Phantom (devnet) can scan the same QR; the buyer needs devnet USDC, no SOL.
+Scripted proof: `cd app && APP_URL=<app url> npm run check:pay` (needs an open seed-seller listing; `reset-demo` makes one).
