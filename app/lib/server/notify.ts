@@ -5,6 +5,9 @@
 // Titles never contain full wallet addresses.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { PublicKey } from "@solana/web3.js";
+import { chainProgram } from "@/lib/chain";
+import { pdas } from "@/lib/program";
 import { formatDate } from "@/lib/format";
 import bundledMeta from "@/lib/event-meta.json";
 import type { DecodedEvent } from "@/lib/server/apply-events";
@@ -75,7 +78,15 @@ export async function notificationsFor(db: SupabaseClient, ev: DecodedEvent, sig
     case "TicketSwapped": {
       const title = await eventTitle(db, key(d, "event"));
       const { data: t } = await db.from("tickets").select("seat").eq("id", key(d, "ticket_mint")).maybeSingle();
-      const seat = (t?.seat as string | undefined) || "Your ticket";
+      // Tickets minted before the Stream existed have no row: read the seat from the onchain TicketRecord.
+      let seat = (t?.seat as string | undefined) || "";
+      if (!seat) {
+        const program = chainProgram();
+        const record = await program.account.ticketRecord
+          .fetchNullable(pdas(program.programId).ticketRecord(new PublicKey(key(d, "ticket_mint"))))
+          .catch(() => null);
+        seat = record?.seat || "Your ticket";
+      }
       out.push(row(key(d, "seller"), "sold", `Your ticket sold: ${money(usd(d, "seller_amount"))} received`, `Resold at ${money(usd(d, "price"))}${suffix(title)}. Paid in the same transaction.`, "/tickets"));
       out.push(row(key(d, "buyer"), "bought", `Ticket bought: ${seat}${suffix(title)}`, "It's in My tickets. Add it to your calendar from there.", "/tickets"));
       break;
