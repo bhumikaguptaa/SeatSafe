@@ -558,4 +558,44 @@ export async function closeStandingOrder(
   return toTx(ctx, [ix], { address: args.standingOrder });
 }
 
+/**
+ * Drafted by D for the in-browser agent crank; A to review. Mirrors swapResale, but pays from the
+ * standing order's budget vault and sends the ticket to the order's owner. `user` signs as the
+ * crank (any signer may; the program checks every rule). Seller/organizer/treasury USDC ATAs
+ * resolve from the IDL like in swapResale.
+ */
+export async function fillStandingOrder(
+  ctx: TxCtx,
+  args: { standingOrder: PublicKey; ticketMint: PublicKey },
+): Promise<BuiltTx> {
+  const { program, user, payer } = ctx;
+  const cfg = await getConfig(program);
+  const so = await program.account.standingOrder.fetch(args.standingOrder);
+  const listing = pdas(program.programId).listing(args.ticketMint);
+  const l = await program.account.listing.fetch(listing);
+  const ev = await program.account.event.fetch(l.event);
+  const ix = await program.methods
+    .fillStandingOrder()
+    .accountsPartial({
+      payer,
+      crank: user,
+      standingOrder: args.standingOrder,
+      owner: so.owner,
+      ticketMint: args.ticketMint,
+      listing,
+      event: l.event,
+      seller: l.seller,
+      organizer: ev.organizer,
+      treasury: cfg.treasury,
+      usdcMint: cfg.usdc.mint,
+      budgetVault: vaults.budget(cfg.usdc, args.standingOrder),
+      listingVault: ticketAta(args.ticketMint, listing),
+      ownerTicketAccount: ticketAta(args.ticketMint, so.owner),
+      tokenProgram: cfg.usdc.tokenProgram,
+      ticketTokenProgram: TOKEN_2022_PROGRAM_ID,
+    })
+    .instruction();
+  return toTx(ctx, [ix], { computeUnits: HEAVY_CU, address: args.ticketMint });
+}
+
 export { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID };

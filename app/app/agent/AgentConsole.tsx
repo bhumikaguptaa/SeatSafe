@@ -36,6 +36,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { VoiceApproval } from "@/components/VoiceApproval";
 import { useAgentDemo, type AgentLogEntry, type ParsedRules } from "./useAgentDemo";
 import { useAgentChain } from "./useAgentChain";
+import { useAgentCrank } from "./useAgentCrank";
 
 const SUGGESTIONS = [
   "2 tickets for UT vs A&M under $90, 4+ star sellers, before Friday",
@@ -129,6 +130,83 @@ function RulesGrid({ rules }: { rules: ParsedRules }) {
   );
 }
 
+/** Real mode only: the in-browser crank's status, live decision log and "Check now". */
+function AgentRunCard({ crank }: { crank: ReturnType<typeof useAgentCrank> }) {
+  const busy = crank.checking || crank.filling || crank.pending !== null;
+  return (
+    <section className="rounded-3xl border border-border bg-card p-5 sm:p-6">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-base font-semibold">
+          Your agent
+          {crank.active && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
+              <motion.span
+                className="size-1.5 rounded-full bg-foreground"
+                animate={{ opacity: [1, 0.2, 1] }}
+                transition={{ duration: 1.2, repeat: Infinity }}
+              />
+              Live
+            </span>
+          )}
+        </h2>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-full"
+          disabled={!crank.active || busy}
+          onClick={crank.checkNow}
+        >
+          {crank.checking ? <Loader2 className="animate-spin" /> : <Search />}
+          Check now
+        </Button>
+      </div>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        Runs in this browser while this page is open. Checks resale listings every 10 s and asks you before
+        buying.
+      </p>
+
+      {!crank.active && crank.log.length === 0 ? (
+        <p className="mt-4 text-sm text-muted-foreground">
+          No open standing orders. Lock a budget above and your agent starts watching.
+        </p>
+      ) : (
+        <ol className="mt-3 divide-y divide-border">
+          <AnimatePresence initial={false}>
+            {[...crank.log].reverse().map((entry) => {
+              const Icon = LOG_ICON[entry.kind];
+              return (
+                <motion.li
+                  key={entry.id}
+                  layout
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-start gap-3 py-3"
+                >
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                    <Icon className="size-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm">{entry.message}</p>
+                    <p className="text-xs text-muted-foreground">{formatTime(entry.at)}</p>
+                  </div>
+                </motion.li>
+              );
+            })}
+          </AnimatePresence>
+          {(crank.checking || crank.filling) && (
+            <li className="flex items-center gap-3 py-3 text-sm text-muted-foreground">
+              <span className="flex size-9 items-center justify-center">
+                <Loader2 className="size-4 animate-spin" />
+              </span>
+              {crank.filling ? "Buying…" : "Checking listings…"}
+            </li>
+          )}
+        </ol>
+      )}
+    </section>
+  );
+}
+
 const ORDER_STATUS: Record<StandingOrder["status"], { label: string; className: string }> = {
   OPEN: { label: "Open", className: "border-vault text-vault" },
   FILLED: { label: "Filled", className: "border-released text-released" },
@@ -164,7 +242,8 @@ function StandingOrdersCard({
           {sorted.map((o) => {
             const status = ORDER_STATUS[o.status];
             const title = events.find((e) => e.id === o.eventId)?.title ?? `Event ${o.eventId.slice(0, 4)}…${o.eventId.slice(-4)}`;
-            const closable = o.status === "OPEN" || o.status === "EXPIRED";
+            const leftover = o.status === "FILLED" ? (chain.leftoverUsd[o.id] ?? 0) : 0;
+            const closable = o.status === "OPEN" || o.status === "EXPIRED" || leftover > 0;
             const closing = chain.busy === o.id;
             return (
               <li key={o.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
@@ -174,6 +253,9 @@ function StandingOrdersCard({
                     {o.quantity} × up to {formatUsd(o.maxPriceUsd)} · {formatUsd(o.budgetUsd)} budget · until{" "}
                     {formatDate(o.deadline)}
                   </p>
+                  {leftover > 0 && (
+                    <p className="text-xs text-muted-foreground">{formatUsd(leftover)} left in your vault</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={cn("rounded-full border px-2.5 py-0.5 text-xs font-medium", status.className)}>
@@ -207,6 +289,12 @@ export function AgentConsole() {
   const { phase, rules, log, spentUsd, proposal } = agent;
 
   const chain = useAgentChain();
+  const crank = useAgentCrank({
+    me: chain.me,
+    orders: chain.orders,
+    events: agent.events,
+    refreshOrders: chain.refresh,
+  });
 
   const ready = rules?.event && rules.maxPriceUsd !== null && rules.budgetUsd !== null;
   const started = phase === "running" || phase === "awaiting" || phase === "filled" || phase === "locked";
@@ -351,7 +439,7 @@ export function AgentConsole() {
                 {phase === "locked" ? (
                   <p className="mt-4 flex items-baseline gap-2">
                     <span className="text-5xl font-bold tracking-tight tabular-nums">{formatUsd(rules.budgetUsd)}</span>
-                    <span className="text-muted-foreground">locked · 0 of {rules.quantity} filled</span>
+                    <span className="text-muted-foreground">locked</span>
                   </p>
                 ) : (
                   <p className="mt-4 flex items-baseline gap-2">
@@ -369,91 +457,121 @@ export function AgentConsole() {
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">
                   {phase === "locked"
-                    ? "Locked in your SeatSafe vault on devnet. Use Close & refund under Your standing orders to get it back."
+                    ? "Locked in your SeatSafe vault on devnet. Your agent checks listings every 10 s while this page is open and asks you before it buys."
                     : "Locked in your SeatSafe vault. Anything unused comes back to you when the order closes."}
                 </p>
               </motion.section>
             )}
           </div>
 
-          {/* Live decision log. */}
-          <section className="rounded-3xl border border-border bg-card p-5 sm:p-6">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="text-base font-semibold">Decision log</h2>
-              {phase === "running" && (
-                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <motion.span
-                    className="size-1.5 rounded-full bg-foreground"
-                    animate={{ opacity: [1, 0.2, 1] }}
-                    transition={{ duration: 1.2, repeat: Infinity }}
-                  />
-                  Live
-                </span>
-              )}
-            </div>
-
-            {phase === "locked" ? (
-              <p className="text-sm text-muted-foreground">
-                Your budget is locked on devnet, but the agent isn&apos;t running there yet, so it won&apos;t scan
-                listings or buy anything. Its decisions will show up here once it does.
-              </p>
-            ) : log.length === 0 && phase !== "running" ? (
-              <p className="text-sm text-muted-foreground">
-                Approve your rules to start the agent. Every decision it makes shows up here.
-              </p>
-            ) : (
-              <ol className="divide-y divide-border">
-                <AnimatePresence initial={false}>
-                  {[...log].reverse().map((entry) => {
-                    const Icon = LOG_ICON[entry.kind];
-                    return (
-                      <motion.li
-                        key={entry.id}
-                        layout
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex items-start gap-3 py-3"
-                      >
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-                          <Icon className="size-4" />
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-sm">{entry.message}</p>
-                          <p className="text-xs text-muted-foreground">{formatTime(entry.at)}</p>
-                        </div>
-                      </motion.li>
-                    );
-                  })}
-                </AnimatePresence>
+          {/* Simulated decision log (mock mode). Real mode shows AgentRunCard below. */}
+          {USE_MOCK && (
+            <section className="rounded-3xl border border-border bg-card p-5 sm:p-6">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="text-base font-semibold">Decision log</h2>
                 {phase === "running" && (
-                  <li className="flex items-center gap-3 py-3 text-sm text-muted-foreground">
-                    <span className="flex size-9 items-center justify-center">
-                      <Loader2 className="size-4 animate-spin" />
-                    </span>
-                    Scanning listings…
-                  </li>
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <motion.span
+                      className="size-1.5 rounded-full bg-foreground"
+                      animate={{ opacity: [1, 0.2, 1] }}
+                      transition={{ duration: 1.2, repeat: Infinity }}
+                    />
+                    Live
+                  </span>
                 )}
-              </ol>
-            )}
-          </section>
+              </div>
+  
+              {log.length === 0 && phase !== "running" ? (
+                <p className="text-sm text-muted-foreground">
+                  Approve your rules to start the agent. Every decision it makes shows up here.
+                </p>
+              ) : (
+                <ol className="divide-y divide-border">
+                  <AnimatePresence initial={false}>
+                    {[...log].reverse().map((entry) => {
+                      const Icon = LOG_ICON[entry.kind];
+                      return (
+                        <motion.li
+                          key={entry.id}
+                          layout
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex items-start gap-3 py-3"
+                        >
+                          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                            <Icon className="size-4" />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm">{entry.message}</p>
+                            <p className="text-xs text-muted-foreground">{formatTime(entry.at)}</p>
+                          </div>
+                        </motion.li>
+                      );
+                    })}
+                  </AnimatePresence>
+                  {phase === "running" && (
+                    <li className="flex items-center gap-3 py-3 text-sm text-muted-foreground">
+                      <span className="flex size-9 items-center justify-center">
+                        <Loader2 className="size-4 animate-spin" />
+                      </span>
+                      Scanning listings…
+                    </li>
+                  )}
+                </ol>
+              )}
+            </section>
+          )}
         </div>
       )}
 
+      {!USE_MOCK && chain.me && <AgentRunCard crank={crank} />}
       {!USE_MOCK && <StandingOrdersCard chain={chain} events={agent.events} />}
 
-      <VoiceApproval
-        request={
-          proposal && rules?.event
-            ? {
-                prompt: `Found ${proposal.quantity} ${proposal.quantity === 1 ? "ticket" : "tickets"} for ${rules.event.title} at ${formatUsd(proposal.priceUsd)} each. Buy them?`,
-                totalUsd: proposal.totalUsd,
-                detail: `${proposal.section} · seller ${proposal.sellerRating}★ · paid from your budget vault`,
-              }
-            : null
-        }
-        onApprove={agent.approveFill}
-        onDecline={agent.declineFill}
-      />
+      {USE_MOCK ? (
+        <VoiceApproval
+          request={
+            proposal && rules?.event
+              ? {
+                  prompt: `Found ${proposal.quantity} ${proposal.quantity === 1 ? "ticket" : "tickets"} for ${rules.event.title} at ${formatUsd(proposal.priceUsd)} each. Buy them?`,
+                  totalUsd: proposal.totalUsd,
+                  detail: `${proposal.section} · seller ${proposal.sellerRating}★ · paid from your budget vault`,
+                  voice: {
+                    event_title: rules.event.title,
+                    seat: proposal.section,
+                    price: `${formatUsd(proposal.priceUsd)} each`,
+                    max_price: formatUsd(rules.maxPriceUsd ?? proposal.priceUsd),
+                    seller_rating: `${proposal.sellerRating} stars`,
+                    quantity: proposal.quantity,
+                  },
+                }
+              : null
+          }
+          onApprove={agent.approveFill}
+          onDecline={agent.declineFill}
+        />
+      ) : (
+        <VoiceApproval
+          request={
+            crank.pending
+              ? {
+                  prompt: `Found a ticket for ${crank.pending.eventTitle} at ${formatUsd(crank.pending.listing.priceUsd)} (your max is ${formatUsd(crank.pending.order.maxPriceUsd)}). Buy it?`,
+                  totalUsd: crank.pending.listing.priceUsd,
+                  detail: `${crank.pending.listing.seat || "Seat on the ticket"} · seller ${crank.pending.listing.sellerName} · paid from your budget vault`,
+                  voice: {
+                    event_title: crank.pending.eventTitle,
+                    seat: crank.pending.listing.seat || "general admission",
+                    price: formatUsd(crank.pending.listing.priceUsd),
+                    max_price: formatUsd(crank.pending.order.maxPriceUsd),
+                    seller_rating: "not rated yet",
+                    quantity: 1,
+                  },
+                }
+              : null
+          }
+          onApprove={crank.approve}
+          onDecline={crank.decline}
+        />
+      )}
     </div>
   );
 }

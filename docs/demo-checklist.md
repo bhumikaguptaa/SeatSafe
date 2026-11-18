@@ -96,3 +96,24 @@ can't be scripted): step a (`/creator`), b–f3 through the UI with real Privy w
 the friendly over-cap error toast, the escrow countdown/Claim refund UI, and the "Gas paid by
 SeatSafe" toasts. The script covers the same on-chain logic, but not the HTTP hop to `/api/relay`
 (that hop is covered separately by `npm run check:relay`).
+
+### Browser proof with a real Privy wallet (2026-11-17)
+
+Wallet 1 = `Hh7qBYYz4HaNfjevedBabsKRAtgC6RWXzqhPWYoZnJgq` (Privy login on localhost). Fee payer on every tx is the
+relayer `7r2SszeU…`; wallet 1 only signs and stayed at **0 SOL** throughout.
+
+| # | Step | Tx | Result |
+| --- | --- | --- | --- |
+| b | Buy ticket $10 | [472KgZeR…](https://explorer.solana.com/tx/472KgZeRUbP6zAchNjvjCv4uqguxQR6EBJMH1tYHySTHv952nBRQurFU6bQbMPuWb9dCW3RFeAaVYJQcvNnXT9vP?cluster=devnet) | ✅ USDC 30 → 20 |
+| e1 | List own ticket at $14 | [4kf8Kds4…](https://explorer.solana.com/tx/4kf8Kds4LEAja36CswkSFf5rHoibgcqawyFBo7zg9KT7E6P7imotbT8k1o1etuRmdaWd1R2KkrXaBydGhjxmiGbx?cluster=devnet) | ✅ (later cancelled) |
+| d | Resell at $50 | rejected before signing (simulation) | ✅ `AboveResaleCap` toast, no tx |
+| e2 | Buy the seed seller's $14 listing (swap) | [5nsoeBfa…](https://explorer.solana.com/tx/5nsoeBfa1r2PgJTQQPAVC1CCMqbemGdL79YpWZ2bypchVfucaJdu8bDnKStfZmyAjXnkWtz8sVkgaEs2K8yFSQUf?cluster=devnet) | ✅ seller +$13.58, treasury +$0.42 |
+| f1 | Buy with escrow protection $20 | [C51PcMoB…](https://explorer.solana.com/tx/C51PcMoBFrSEhvpL4kE7wBDTeRQ4L1wrBTwQ52ZkmUefxdrR4HvC43SrYLBEgxheQML7ZzYq5iJQ3t2frq9pTQJ?cluster=devnet) | ✅ vault 2 → 22 |
+| f3 | Claim refund after 60 s | [3ouPnZX8…](https://explorer.solana.com/tx/3ouPnZX8ELgXye5jAkHazTwkFZGHMJqhuoY2h3mVcGSe9jytqbgcbNFrjy9pQkr7CsNoazrw5UpxDJjUWXbwmJYR?cluster=devnet) | ✅ wallet 1 +$22 |
+
+Not yet clicked in the browser: **a** (`/creator` create event) and a second Privy login (wallet 2).
+
+**Before the live demo:** the seeded $20 escrow (`3gPLQ…`) is now refunded, and the seed seller's $14 listing was
+bought. Re-run `cd program && anchor run seed-devnet --provider.cluster devnet` won't recreate them (it's
+idempotent on the seller's existing tickets/escrow); list a ticket at $14 from `/tickets` and a new outside
+ticket from `/sell` instead.
