@@ -87,6 +87,8 @@ export interface StepContext {
   escrow?: string;
 }
 export interface StepResult {
+  /** Program log lines of a rejected (simulated) transaction. */
+  logs?: string[];
   ok: boolean;
   signature?: string;
   /** Program error name for expected rejections (AboveResaleCap, InvalidState, ...). */
@@ -108,13 +110,14 @@ function explain(action: LiveAction, err: unknown): string {
   return friendlyError(err, { resaleCapUsd: 15 }).message;
 }
 
-async function sendAs(w: SimWallets, signer: Keypair, built: P.BuiltTx, action: LiveAction): Promise<{ ok: boolean; signature?: string; errorName?: string; message?: string }> {
+async function sendAs(w: SimWallets, signer: Keypair, built: P.BuiltTx, action: LiveAction): Promise<{ ok: boolean; signature?: string; errorName?: string; message?: string; logs?: string[] }> {
   const verdict = checkRelayTx(built.tx, w.relayer.publicKey, programId(), { requireOtherSignatures: false });
   if (!verdict.ok) return { ok: false, message: `Rejected by relay policy: ${verdict.reason}` };
   const sim = await connection.simulateTransaction(built.tx, { sigVerify: false });
   if (sim.value.err) {
     const err = new TxError("Simulation failed", sim.value.logs ?? []);
-    return { ok: false, errorName: programErrorName(err), message: explain(action, err) };
+    // Logs let the Live Lab X-ray show the program's own error line.
+    return { ok: false, errorName: programErrorName(err), message: explain(action, err), logs: (sim.value.logs ?? []).filter((l) => /Program log|failed|Error/.test(l)).slice(-6) };
   }
   built.tx.sign([signer, w.relayer]);
   const signature = await connection.sendRawTransaction(built.tx.serialize(), { preflightCommitment: "confirmed" });
