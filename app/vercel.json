@@ -1,7 +1,7 @@
 {
   "crons": [
-    { "path": "/api/cron/deadlines", "schedule": "* * * * *" },
-    { "path": "/api/cron/reconcile", "schedule": "*/5 * * * *" },
-    { "path": "/api/cron/relayer", "schedule": "*/5 * * * *" }
+    { "path": "/api/cron/deadlines", "schedule": "0 15 * * *" },
+    { "path": "/api/cron/reconcile", "schedule": "0 16 * * *" },
+    { "path": "/api/cron/relayer", "schedule": "0 17 * * *" }
   ]
 }

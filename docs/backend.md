@@ -15,9 +15,9 @@ The program is the only thing that can move money. This service reads events, as
 | Chat | `POST /api/chat`, `GET /api/chat?orderId=` |
 | Standing orders | `POST /api/standing-orders`, `GET /api/standing-orders/:id`, `POST /api/standing-orders/:id/approve`, `POST /api/standing-orders/:id/decline` |
 | Decision log | `GET /api/agent-log/:id` |
-| Deadlines | `GET /api/cron/deadlines` every minute |
-| Reconciliation | `GET /api/cron/reconcile` every 5 minutes |
-| Relayer balance | `GET /api/cron/relayer` every 5 minutes, alerts under 1 devnet SOL |
+| Deadlines | `GET /api/cron/deadlines` once a day (Hobby). Call the route to run it during a demo |
+| Reconciliation | `GET /api/cron/reconcile` once a day |
+| Relayer balance | `GET /api/cron/relayer` once a day, alerts under 1 devnet SOL |
 | Dispute summary | `POST /api/disputes/summarize` |
 | Gas sponsorship | `POST /api/relay`, 20 requests per IP per minute |
 
@@ -112,7 +112,7 @@ Set `DEMO_DEADLINES=true` when the client should be told to use 60-second window
 
 `GET /api/cron/relayer` reads the relayer balance. Under 1 SOL it writes `relayer_alerts` (at most once an hour) and, if `ALERT_WEBHOOK_URL` is set, POSTs `{ "text" }` there.
 
-Vercel cron is declared in `app/vercel.json`. Set the project root to `app/`, and set `CRON_SECRET` in Vercel. Vercel sends it as `Authorization: Bearer <CRON_SECRET>`.
+Vercel cron is declared in `app/vercel.json`. On the Hobby plan each job runs once a day, so the schedules are `0 15 * * *`, `0 16 * * *`, and `0 17 * * *` UTC. A Pro plan can use a per-minute schedule. Set the project root to `app/`, and set `CRON_SECRET` in Vercel. Vercel sends it as `Authorization: Bearer <CRON_SECRET>`. For the demo, call `GET /api/cron/deadlines` with that header instead of waiting for the daily run.
 
 `GET /api/cron/reconcile` re-reads escrow accounts and repairs any Supabase row that is behind the chain, then runs the matcher over active Tier 1 listings in case a webhook was missed.
 

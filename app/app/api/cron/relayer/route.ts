@@ -1,4 +1,4 @@
-// GET /api/cron/relayer — alert when the fee-payer wallet drops under 1 devnet SOL.
+// GET /api/cron/relayer — once a day on the Hobby plan. Alert when the fee-payer wallet drops under 1 devnet SOL.
 // At most one alert row per hour, so a low balance does not fill the table.
 
 import { connection as dynamicRequest, NextResponse, type NextRequest } from "next/server";

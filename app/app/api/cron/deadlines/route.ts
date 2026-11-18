@@ -1,4 +1,4 @@
-// GET /api/cron/deadlines — Vercel Cron, every minute.
+// GET /api/cron/deadlines — Vercel Cron, once a day on the Hobby plan.
 // Calls refund_expired, release_expired and close_standing_order for accounts past their deadline.
 
 import { connection as dynamicRequest, NextResponse, type NextRequest } from "next/server";

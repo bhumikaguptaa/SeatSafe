@@ -1,4 +1,4 @@
-// GET /api/cron/reconcile — every 5 minutes. Repair rows the stream missed, then match listings.
+// GET /api/cron/reconcile — once a day on the Hobby plan. Repair rows the stream missed, then match listings.
 
 import { connection as dynamicRequest, NextResponse, type NextRequest } from "next/server";
 import { cronAuthorized } from "@/lib/server/auth";
