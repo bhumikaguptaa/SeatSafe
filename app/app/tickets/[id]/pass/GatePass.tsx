@@ -14,9 +14,9 @@ import { ChevronLeft, ShieldCheck } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useEvents } from "@/lib/hooks";
 import { formatDate } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import type { Ticket } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { GlassHero } from "@/components/GlassHero";
 
 const ROTATE_MS = 10_000;
 
@@ -66,7 +66,7 @@ function useNow(): number | null {
 function SeatCell({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-[13px] text-muted-foreground">{label}</p>
       <p className="truncate text-2xl font-bold tracking-tight">{value === "-" ? "—" : value}</p>
     </div>
   );
@@ -83,7 +83,7 @@ export function GatePass() {
   if (loading) return <Skeleton className="mx-auto h-[36rem] w-full max-w-sm rounded-3xl" />;
   if (!ticket || !event) {
     return (
-      <div className="mx-auto max-w-sm rounded-3xl border border-border bg-card p-6 text-center">
+      <div className="mx-auto max-w-sm rounded-3xl glass p-6 text-center">
         <p className="font-semibold">No pass for this ticket</p>
         <p className="mt-1 text-sm text-muted-foreground">It isn&apos;t one of your tickets, or it was resold.</p>
         <Link href="/tickets" className="mt-4 inline-block text-sm underline underline-offset-4">
@@ -106,17 +106,15 @@ export function GatePass() {
         My tickets
       </Link>
 
-      <article className="overflow-hidden rounded-3xl border border-border bg-card shadow-2xl">
-        {/* Event art + details */}
-        <div className={cn("relative p-5 pb-6", event.imageGradient)}>
-          <div className="absolute inset-0 bg-linear-to-br from-white/25 via-white/0 to-transparent" />
-          <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
+      <GlassHero as="article">
+        {/* Event details on the hero glass (soft light blobs show through) */}
+        <div className="relative overflow-hidden p-5 pb-6">
           <div className="relative">
             <div className="flex items-center justify-between gap-2">
-              <span className="rounded-full border border-white/20 bg-black/35 px-2.5 py-0.5 text-xs font-medium text-white backdrop-blur-md">
+              <span className="rounded-full bg-black/40 px-2.5 py-0.5 text-xs font-medium text-white">
                 {ticket.tier === 1 ? "SeatSafe ticket" : "Outside ticket"}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/35 px-2.5 py-0.5 text-xs font-medium text-white backdrop-blur-md">
+              <span className="inline-flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-0.5 text-xs font-medium text-white">
                 <ShieldCheck className="size-3.5" />
                 Protected
               </span>
@@ -188,7 +186,7 @@ export function GatePass() {
             The code changes every 10 seconds, so screenshots won&apos;t get in. Show this screen at the gate.
           </p>
         </div>
-      </article>
+      </GlassHero>
     </div>
   );
 }

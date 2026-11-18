@@ -116,7 +116,7 @@ export function OrderChat() {
   }
 
   return (
-    <section className="mt-4 rounded-2xl border border-border bg-card p-5 sm:p-6">
+    <section className="mt-4 surface-solid rounded-2xl p-5 sm:p-6">
       <h2 className="text-base font-semibold">Chat with the {counterpart}</h2>
       <p className="mt-0.5 text-xs text-muted-foreground">
         Messages stay with this order. SeatSafe never asks you to pay outside the app.
@@ -162,7 +162,7 @@ export function OrderChat() {
               <div
                 className={cn(
                   "max-w-[85%] rounded-2xl px-3.5 py-2 text-sm",
-                  mine ? "rounded-br-md bg-secondary" : "rounded-bl-md border border-border bg-background/50",
+                  mine ? "rounded-br-md bg-secondary" : "rounded-bl-md border border-border bg-muted",
                   risky && "border border-disputed",
                 )}
               >
@@ -185,7 +185,7 @@ export function OrderChat() {
       <form
         onSubmit={onSubmit}
         className={cn(
-          "mt-4 flex items-center gap-2 rounded-full border bg-background/60 py-1.5 pr-1.5 pl-4 focus-within:border-ring",
+          "mt-4 flex items-center gap-2 rounded-full border bg-muted py-1.5 pr-1.5 pl-4 focus-within:border-ring",
           draftRisk ? "border-disputed" : "border-border",
         )}
       >

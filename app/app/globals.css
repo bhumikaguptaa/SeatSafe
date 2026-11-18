@@ -4,6 +4,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Glass surface (Finora-style): translucent white, blurred backdrop, 1px light border, lit top edge. */
+@utility glass {
+  background-color: rgb(255 255 255 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  backdrop-filter: blur(20px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    0 12px 32px -14px rgb(2 6 15 / 0.65);
+}
+
 @theme inline {
   --color-vault: var(--vault);
   --color-released: var(--released);
@@ -93,39 +103,58 @@
 }
 
 .dark {
-  /* SeatSafe default theme: dark, high contrast, blue accent */
-  --background: oklch(0.13 0.01 265);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.18 0.012 265);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.18 0.012 265);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.62 0.21 260);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.25 0.015 265);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.25 0.015 265);
-  --muted-foreground: oklch(0.72 0.01 265);
-  --accent: oklch(0.25 0.015 265);
-  --accent-foreground: oklch(0.985 0 0);
+  /* SeatSafe theme, after the Finora glass cards + voice-agent inspo (colours measured from the images):
+     a fixed full-page gradient from light blue (#a4bdfd) through royal (#3d6cf0) and navy (#12265a)
+     to near-black (#02060f), one blurred off-centre light blob near the top, and fine grain.
+     Surfaces are glass: translucent white over the gradient, so lower cards read as darker navy glass.
+     Onyx/Charcoal-dark (#02060f, #0b1430) are kept for the darkest areas (page bottom, popovers, tab bar). */
+  --background: #02060f;
+  --foreground: #ffffff;
+  --card: rgb(255 255 255 / 0.08);
+  --card-foreground: #ffffff;
+  --popover: #0b1430;
+  --popover-foreground: #ffffff;
+  --primary: #2f6bea;
+  --primary-foreground: #ffffff;
+  --secondary: rgb(255 255 255 / 0.1);
+  --secondary-foreground: #ffffff;
+  --muted: rgb(255 255 255 / 0.09);
+  --muted-foreground: rgb(232 239 255 / 0.82);
+  --accent: rgb(255 255 255 / 0.1);
+  --accent-foreground: #ffffff;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.62 0.21 260);
+  --border: rgb(255 255 255 / 0.14);
+  --input: rgb(255 255 255 / 0.16);
+  --ring: #a4bdfd;
+  --page-gradient: linear-gradient(
+    180deg,
+    #a4bdfd 0%,
+    #84a3f9 5%,
+    #4f7af0 12%,
+    #3561d6 20%,
+    #2849a6 31%,
+    #1b3378 44%,
+    #0c1a44 60%,
+    #050c22 78%,
+    #02060f 100%
+  );
+  --page-blob: radial-gradient(38% 26% at 68% 16%, rgb(214 226 255 / 0.85) 0%, rgb(143 171 252 / 0.45) 45%, transparent 75%);
+  --brand-button: linear-gradient(180deg, #4a82f5 0%, #2f6bea 55%, #2055e9 100%);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.18 0.012 265);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.62 0.21 260);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.25 0.015 265);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.62 0.21 260);
-  --vault: oklch(0.65 0.2 260);
+  --sidebar: #141414;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #00638e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2b2b2b;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2b2b2b;
+  --sidebar-ring: #8cb9cc;
+  /* Status colours are for order status only. Vault is orchid so it never reads as the royal-blue UI. */
+  --vault: oklch(0.74 0.17 320);
   --released: oklch(0.74 0.18 150);
   --transit: oklch(0.8 0.16 75);
   --disputed: oklch(0.68 0.21 25);
@@ -138,7 +167,70 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Fixed full-page background (pseudo-elements stay put while scrolling, also on iOS Safari):
+     ::before = the vertical gradient + the blurred off-centre light blob; ::after = fine grain. */
+  body::before,
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+  }
+  body::before {
+    z-index: -2;
+    background-image: var(--page-blob), var(--page-gradient);
+  }
+  body::after {
+    z-index: -1;
+    opacity: 0.5;
+    mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  /* shadcn Card (used across A's pages) gets the same glass treatment as the `glass` utility. */
+  [data-slot="card"] {
+    backdrop-filter: blur(20px) saturate(140%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.22),
+      0 12px 32px -14px rgb(2 6 15 / 0.65);
+  }
   html {
     @apply font-sans;
   }
+}
+/* ---------------------------------------------------------------------------
+   SOLID surface: forms and text-heavy / important info (Creator, Sell, Resell dialog, checkout,
+   order details/timeline/actions, chat, agent rules/log, My tickets). Near-black and almost opaque so
+   the gradient does not show through; neutral greys inside (no blue tint); blue stays on primary buttons.
+   Use <Card variant="solid"> or the `surface-solid` class. GLASS (default Card, `glass`) stays for
+   visual/browsing surfaces. Unlayered on purpose so it wins over Tailwind's bg and ring utilities.
+   --------------------------------------------------------------------------- */
+.surface-solid,
+[data-slot="dialog-content"] {
+  --card: #121316;
+  --popover: #121316;
+  --muted: #1c1d22;
+  --secondary: #1c1d22;
+  --accent: #1c1d22;
+  --input: #2e3038;
+  --border: rgb(255 255 255 / 0.09);
+  --muted-foreground: #9b9da6;
+  --ring: rgb(255 255 255 / 0.4);
+  background-color: rgb(18 19 22 / 0.95);
+  background-image: none;
+  backdrop-filter: none;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.09);
+}
+.surface-solid :is([data-slot="input"], select, textarea),
+[data-slot="dialog-content"] :is([data-slot="input"], select, textarea) {
+  background-color: #1c1d22;
+  border-color: #2e3038;
+  color: #ffffff;
+}
+.surface-solid :is([data-slot="input"], textarea)::placeholder,
+[data-slot="dialog-content"] :is([data-slot="input"], textarea)::placeholder {
+  color: #6e7079;
+}
+/* Toggles inside solid surfaces: neutral, not blue (blue is for the primary button only). */
+.surface-solid input[role="switch"]:checked + span {
+  background-color: #e6e7eb;
 }

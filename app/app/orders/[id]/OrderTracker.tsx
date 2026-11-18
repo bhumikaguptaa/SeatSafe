@@ -33,6 +33,7 @@ import { formatCountdown, formatDate, formatUsd } from "@/lib/format";
 import type { OrderEvent, OrderState, Tier } from "@/lib/types";
 import { useOrderActions } from "@/components/OrderActions";
 import { Button } from "@/components/ui/button";
+import { GlassHero } from "@/components/GlassHero";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const STATES: OrderState[] = [
@@ -207,7 +208,7 @@ export function OrderTracker() {
   return (
     <div className="space-y-4">
       {/* Hero: the amount is the focal point; status lives in the outlined pill and the coin. */}
-      <section className="rounded-2xl border border-border bg-card bg-linear-to-b from-foreground/[0.04] to-transparent p-5 sm:p-6">
+      <section>
         <div className="flex items-center justify-between gap-3">
           <span
             className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${tone.border} ${tone.text}`}
@@ -221,8 +222,8 @@ export function OrderTracker() {
           </span>
         </div>
 
-        <p className="mt-5 text-sm text-muted-foreground">Order amount</p>
-        <p className="text-5xl font-bold tracking-tight tabular-nums">{formatUsd(view.amount)}</p>
+        <p className="mt-5 text-[15px] text-muted-foreground">Order amount</p>
+        <p className="mt-1 text-[46px] leading-none font-bold tracking-tight tabular-nums">{formatUsd(view.amount)}</p>
         <AnimatePresence mode="wait" initial={false}>
           <motion.p
             key={view.state}
@@ -230,97 +231,102 @@ export function OrderTracker() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.2 }}
-            className={`mt-1 text-sm font-medium ${tone.text}`}
+            className={`mt-2 text-[15px] font-semibold ${tone.text}`}
           >
             {ui.title}
           </motion.p>
         </AnimatePresence>
 
-        <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
-          {SPOTS.map((s) => {
-            const here = s.id === ui.spot;
-            const Icon = s.icon;
-            return (
-              <div
-                key={s.id}
-                className={`flex h-32 flex-col items-center justify-center gap-2 rounded-2xl border bg-background/50 transition-colors ${
-                  here ? tone.border : "border-border"
-                }`}
-              >
-                <div className="flex size-14 items-center justify-center">
-                  {here ? (
-                    <motion.div
-                      layoutId="escrow-coin"
-                      transition={{ type: "spring", stiffness: 260, damping: 24 }}
-                      className={`flex size-14 items-center justify-center rounded-full border-2 bg-card text-[11px] font-semibold tabular-nums ${tone.border} ${tone.text} ${tone.glow}`}
-                    >
-                      {view.state === "DISPUTED" ? (
-                        <motion.span
-                          animate={{ scale: [1, 1.12, 1] }}
-                          transition={{ duration: 1.2, repeat: Infinity }}
-                        >
-                          {formatUsd(view.amount)}
-                        </motion.span>
-                      ) : (
-                        formatUsd(view.amount)
-                      )}
-                    </motion.div>
-                  ) : (
-                    <span className="flex size-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-                      <Icon className="size-5" />
-                    </span>
-                  )}
-                </div>
-                <span className={`text-xs font-medium ${here ? tone.text : "text-muted-foreground"}`}>
-                  {s.label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        {ui.countdown && view.deadline && (
-          <div className={`mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl px-4 py-3 ${tone.tint}`}>
-            <span className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="size-4" />
-              {ui.countdown}
-            </span>
-            <span className="text-right">
-              <span className={`font-mono text-lg font-semibold tabular-nums ${tone.text}`}>
-                {msLeft === null ? "--" : formatCountdown(msLeft)}
-              </span>
-              <span className="block text-xs text-muted-foreground">by {formatDate(view.deadline)}</span>
-            </span>
-          </div>
-        )}
-
-        {available.length > 0 && (
-          <div className="mt-5 space-y-2">
-            {available.map((a) => {
-              const Icon = a.icon;
+        {/* Hero glass card: where the money is. */}
+        <GlassHero as="div" className="mt-6 p-4 sm:p-5">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {SPOTS.map((s) => {
+              const here = s.id === ui.spot;
+              const Icon = s.icon;
               return (
-                <Button
-                  key={a.key}
-                  size="lg"
-                  variant={a.primary ? "default" : "outline"}
-                  className="h-12 w-full rounded-xl text-base"
-                  disabled={busy !== null}
-                  onClick={a.run}
-                >
-                  {busy === a.key ? <Loader2 className="animate-spin" /> : <Icon />}
-                  {a.label}
-                </Button>
+                <div key={s.id} className="flex flex-col items-center gap-2">
+                  <div
+                    className={`flex h-24 w-full items-center justify-center rounded-2xl border bg-muted/60 transition-colors ${
+                      here ? tone.border : "border-border"
+                    }`}
+                  >
+                    {here ? (
+                      <motion.div
+                        layoutId="escrow-coin"
+                        transition={{ type: "spring", stiffness: 260, damping: 24 }}
+                        className={`flex size-14 items-center justify-center rounded-full border-2 bg-[#0b1430]/80 text-[11px] font-semibold tabular-nums ${tone.border} ${tone.text} ${tone.glow}`}
+                      >
+                        {view.state === "DISPUTED" ? (
+                          <motion.span
+                            animate={{ scale: [1, 1.12, 1] }}
+                            transition={{ duration: 1.2, repeat: Infinity }}
+                          >
+                            {formatUsd(view.amount)}
+                          </motion.span>
+                        ) : (
+                          formatUsd(view.amount)
+                        )}
+                      </motion.div>
+                    ) : (
+                      <Icon className="size-6 text-muted-foreground" />
+                    )}
+                  </div>
+                  <span className={`text-[13px] font-semibold ${here ? tone.text : "text-muted-foreground"}`}>
+                    {s.label}
+                  </span>
+                </div>
               );
             })}
+          </div>
+        </GlassHero>
+
+        {/* Solid card: the deadline and the next action (important info, no gradient behind it). */}
+        {((ui.countdown && view.deadline) || available.length > 0) && (
+          <div className="surface-solid mt-4 space-y-4 rounded-3xl p-4 sm:p-5">
+            {ui.countdown && view.deadline && (
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="flex items-center gap-2 text-[15px] text-muted-foreground">
+                  <Clock className="size-4" />
+                  {ui.countdown}
+                </span>
+                <span className="text-right">
+                  <span className={`text-xl font-bold tabular-nums ${tone.text}`}>
+                    {msLeft === null ? "--" : formatCountdown(msLeft)}
+                  </span>
+                  <span className="block text-[13px] text-muted-foreground">by {formatDate(view.deadline)}</span>
+                </span>
+              </div>
+            )}
+
+            {available.length > 0 && (
+              <div className="space-y-2">
+                {available.map((a) => {
+                  const Icon = a.icon;
+                  return (
+                    <Button
+                      key={a.key}
+                      size="lg"
+                      variant={a.primary ? "default" : "outline"}
+                      className="h-12 w-full rounded-2xl text-[15px] font-semibold"
+                      disabled={busy !== null}
+                      onClick={a.run}
+                    >
+                      {busy === a.key ? <Loader2 className="animate-spin" /> : <Icon />}
+                      {a.label}
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </section>
 
       {/* Activity, newest first. */}
       {latestFirst.length > 0 && (
-        <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-          <h2 className="text-base font-semibold">Activity</h2>
-          <ol className="mt-3 divide-y divide-border">
+        <section className="pt-2">
+          <h2 className="text-lg font-bold">Activity</h2>
+          <ol className="mt-3 space-y-3">
             {latestFirst.map((e) => {
               const Icon = EVENT_ICON[e.type];
               return (
@@ -329,14 +335,14 @@ export function OrderTracker() {
                   layout
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-start gap-3 py-3"
+                  className="flex items-center gap-3.5 surface-solid rounded-2xl p-4"
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-                    <Icon className="size-4" />
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                    <Icon className="size-[18px]" />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium">{e.message}</p>
-                    <p className="text-xs text-muted-foreground">{formatDate(e.at)}</p>
+                    <p className="text-[15px] leading-snug font-semibold">{e.message}</p>
+                    <p className="mt-0.5 text-[13px] text-muted-foreground">{formatDate(e.at)}</p>
                   </div>
                 </motion.li>
               );

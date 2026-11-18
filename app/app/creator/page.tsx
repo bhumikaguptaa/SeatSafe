@@ -108,7 +108,7 @@ export default function CreatorPage() {
         </div>
       )}
 
-      <Card className="mt-6 p-4 md:p-6">
+      <Card variant="solid" className="mt-6 p-4 md:p-6">
         <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
           <Field label="Title" htmlFor="c-title" className="sm:col-span-2">
             <Input id="c-title" placeholder="Neon Harbor: Midnight Tides Tour" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />

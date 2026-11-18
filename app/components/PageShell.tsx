@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
-// Owner: D. Page frame for D's pages: soft blue glow at the top, header, centered content.
-// The glow uses `primary` (the accent), never the status tokens.
+// Owner: D. Page frame for D's pages: header + centred content. Colours and the top glow come from
+// the one global theme in app/globals.css (no page-specific theme).
 
 export function PageShell({
   title,
@@ -11,19 +11,15 @@ export function PageShell({
 }: {
   title: string;
   description?: string;
-  /** narrow = single-column screens (tracker, pass), wide = grids (Discover) */
+  /** narrow = single-column screens (tracker, agent), wide = grids (Discover) */
   width?: "narrow" | "wide";
   children?: ReactNode;
 }) {
   return (
-    <section className="relative isolate flex-1">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[28rem] bg-[radial-gradient(70%_100%_at_50%_0%,color-mix(in_oklch,var(--primary)_28%,transparent),transparent)]"
-      />
-      <div className={`mx-auto w-full px-4 py-8 ${width === "narrow" ? "max-w-2xl" : "max-w-6xl"}`}>
-        <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+    <section className="flex-1">
+      <div className={`mx-auto w-full px-5 pt-8 pb-10 ${width === "narrow" ? "max-w-2xl" : "max-w-6xl"}`}>
+        <h1 className="text-[26px] leading-tight font-bold tracking-tight">{title}</h1>
+        {description && <p className="mt-1 text-[15px] text-muted-foreground">{description}</p>}
         {children && <div className="mt-6">{children}</div>}
       </div>
     </section>

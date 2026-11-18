@@ -77,16 +77,16 @@ function RuleCard({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-2xl border bg-background/50 p-3",
+        "flex items-center gap-3 rounded-2xl border bg-muted p-3",
         missing ? "border-dashed border-border" : "border-border",
       )}
     >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-muted-foreground">
         <Icon className="size-4" />
       </span>
       <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className={cn("truncate text-sm font-semibold", missing && "font-normal text-muted-foreground")}>
+        <p className="text-[13px] text-muted-foreground">{label}</p>
+        <p className={cn("truncate text-[15px] font-semibold", missing && "font-normal text-muted-foreground")}>
           {value}
         </p>
       </div>
@@ -134,7 +134,7 @@ function RulesGrid({ rules }: { rules: ParsedRules }) {
 function AgentRunCard({ crank }: { crank: ReturnType<typeof useAgentCrank> }) {
   const busy = crank.checking || crank.filling || crank.pending !== null;
   return (
-    <section className="rounded-3xl border border-border bg-card p-5 sm:p-6">
+    <section className="surface-solid rounded-3xl p-5 sm:p-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-base font-semibold">
           Your agent
@@ -186,8 +186,8 @@ function AgentRunCard({ crank }: { crank: ReturnType<typeof useAgentCrank> }) {
                     <Icon className="size-4" />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-sm">{entry.message}</p>
-                    <p className="text-xs text-muted-foreground">{formatTime(entry.at)}</p>
+                    <p className="text-[15px]">{entry.message}</p>
+                    <p className="text-[13px] text-muted-foreground">{formatTime(entry.at)}</p>
                   </div>
                 </motion.li>
               );
@@ -225,8 +225,8 @@ function StandingOrdersCard({
   const sorted = [...chain.orders].sort((a, b) => b.deadline.localeCompare(a.deadline));
 
   return (
-    <section className="rounded-3xl border border-border bg-card p-5 sm:p-6">
-      <h2 className="text-base font-semibold">Your standing orders</h2>
+    <section className="surface-solid rounded-3xl p-5 sm:p-6">
+      <h2 className="text-lg font-bold">Your standing orders</h2>
       <p className="mt-0.5 text-xs text-muted-foreground">
         Live on devnet. Seller-rating rules aren&apos;t stored onchain yet, so they aren&apos;t enforced.
       </p>
@@ -318,9 +318,9 @@ export function AgentConsole() {
   return (
     <div className="space-y-4">
       {/* Prompt: plain-English request, like the voice-assistant home screen. */}
-      <section className="rounded-3xl border border-border bg-card bg-linear-to-b from-foreground/[0.04] to-transparent p-5 sm:p-6">
-        <h2 className="text-2xl font-bold tracking-tight">What should your agent buy?</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <section className="pb-2">
+        <h2 className="text-[28px] leading-tight font-bold tracking-tight">What should your agent buy?</h2>
+        <p className="mt-2 text-[15px] text-muted-foreground">
           Say it in plain English. Your agent only buys inside the rules you approve, from a budget you lock.
         </p>
 
@@ -330,9 +330,11 @@ export function AgentConsole() {
               key={s}
               type="button"
               onClick={() => setText(s)}
-              className="w-56 shrink-0 rounded-2xl border border-border bg-background/50 p-3 text-left text-xs text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+              className="w-48 shrink-0 rounded-2xl glass p-3.5 text-left text-[13px] leading-snug text-foreground/85 transition-colors hover:border-muted-foreground/40"
             >
-              <Sparkles className="mb-2 size-4" />
+              <span className="mb-3 flex size-8 items-center justify-center rounded-full bg-muted">
+                <Sparkles className="size-4 text-muted-foreground" />
+              </span>
               {s}
             </button>
           ))}
@@ -340,7 +342,7 @@ export function AgentConsole() {
 
         <form
           onSubmit={onSubmit}
-          className="mt-4 flex items-center gap-2 rounded-full border border-border bg-background/60 py-1.5 pr-1.5 pl-4 focus-within:border-ring"
+          className="mt-4 flex items-center gap-2 rounded-full glass py-1.5 pr-1.5 pl-5 focus-within:border-ring"
         >
           <label htmlFor="agent-request" className="sr-only">
             Your request
@@ -350,13 +352,13 @@ export function AgentConsole() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="2 tickets for UT vs A&M under $90, 4+ star sellers, before Friday"
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            className="h-10 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
           />
           <Button
             type="submit"
             size="icon"
             variant={phase === "idle" ? "default" : "outline"}
-            className="size-10 shrink-0 rounded-full"
+            className="size-11 shrink-0 rounded-full"
             aria-label="Read my request"
             disabled={!text.trim() || agent.eventsLoading}
           >
@@ -371,9 +373,9 @@ export function AgentConsole() {
         <div className="space-y-4">
           <div className="space-y-4">
             {/* Parsed rules, approved with one tap. */}
-            <section className="rounded-3xl border border-border bg-card p-5 sm:p-6">
+            <section className="surface-solid rounded-3xl p-5 sm:p-6">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="text-base font-semibold">Your rules</h2>
+                <h2 className="text-lg font-bold">Your rules</h2>
                 {started ? (
                   <span className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium">
                     <Check className="size-3.5" />
@@ -390,7 +392,7 @@ export function AgentConsole() {
                 <div className="mt-5">
                   <Button
                     size="lg"
-                    className="h-12 w-full rounded-xl text-base"
+                    className="h-12 w-full rounded-2xl text-[15px] font-semibold"
                     disabled={!ready || needsLogin || locking}
                     onClick={onApproveRules}
                   >
@@ -420,7 +422,7 @@ export function AgentConsole() {
               <motion.section
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-3xl border border-border bg-card p-5 sm:p-6"
+                className="surface-solid rounded-3xl p-5 sm:p-6"
               >
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -466,9 +468,9 @@ export function AgentConsole() {
 
           {/* Simulated decision log (mock mode). Real mode shows AgentRunCard below. */}
           {USE_MOCK && (
-            <section className="rounded-3xl border border-border bg-card p-5 sm:p-6">
+            <section className="surface-solid rounded-3xl p-5 sm:p-6">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <h2 className="text-base font-semibold">Decision log</h2>
+                <h2 className="text-lg font-bold">Decision log</h2>
                 {phase === "running" && (
                   <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                     <motion.span
@@ -502,8 +504,8 @@ export function AgentConsole() {
                             <Icon className="size-4" />
                           </span>
                           <div className="min-w-0">
-                            <p className="text-sm">{entry.message}</p>
-                            <p className="text-xs text-muted-foreground">{formatTime(entry.at)}</p>
+                            <p className="text-[15px]">{entry.message}</p>
+                            <p className="text-[13px] text-muted-foreground">{formatTime(entry.at)}</p>
                           </div>
                         </motion.li>
                       );
