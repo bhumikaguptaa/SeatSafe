@@ -1,39 +1,27 @@
 "use client";
 
 // Owner: D. Buyer/seller chat on /orders/[id] with scam-risk warnings.
-// The order (and who's buyer/seller) comes from useOrder(id). Messages are DEMO data seeded here,
-// because lib/hooks.ts has no chat hook yet. TODO(B): add useOrderChat(orderId) (Supabase + Realtime)
-// returning ChatMessage[] and a send(), then replace useOrderChatDemo below.
-// Risk is a simple keyword check for now: off-platform payment apps and links.
+// Mock mode keeps the seeded demo thread. Real mode uses useOrderChat, which reads Supabase
+// and posts through /api/chat so the scam detector can flag the message.
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowUp, ShieldAlert } from "lucide-react";
-import { useOrder } from "@/lib/hooks";
+import { USE_MOCK, useOrder, useOrderChat } from "@/lib/hooks";
 import { formatDate } from "@/lib/format";
+import { assessMessageRisk } from "@/lib/scam-rules";
 import { cn } from "@/lib/utils";
 import type { ChatMessage, Order } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 
 // ---------------------------------------------------------------------------
-// Risk check
+// Risk check — same rules the server stores on the message.
 // ---------------------------------------------------------------------------
 
-const RISK_RULES: { pattern: RegExp; reason: string }[] = [
-  { pattern: /\bzelle\b/i, reason: "Asks to pay with Zelle, outside SeatSafe." },
-  { pattern: /\bvenmo\b/i, reason: "Asks to pay with Venmo, outside SeatSafe." },
-  { pattern: /\bcash\s?app\b|\$[a-z][a-z0-9_]{2,}/i, reason: "Asks to pay with Cash App, outside SeatSafe." },
-  { pattern: /\bpaypal\b/i, reason: "Asks to pay with PayPal, outside SeatSafe." },
-  {
-    pattern: /\bhttps?:\/\/|\bwww\.|\b[a-z0-9-]+\.(?:com|net|org|io|ly|me|app|co|xyz|link)\b/i,
-    reason: "Contains a link. Links in chat can lead to fake ticket or payment pages.",
-  },
-];
-
-/** Simple keyword check. Returns the first reason that matches, or null when the message looks fine. */
+/** First reason that matches, or null when the message looks fine. */
 export function assessRisk(body: string): string | null {
-  return RISK_RULES.find((r) => r.pattern.test(body))?.reason ?? null;
+  return assessMessageRisk(body).reason ?? null;
 }
 
 function withRisk(m: Omit<ChatMessage, "risk" | "riskReason">): ChatMessage {
@@ -99,7 +87,10 @@ function useOrderChatDemo(order: Order | null) {
 export function OrderChat() {
   const { id } = useParams<{ id: string }>();
   const { order } = useOrder(id);
-  const { messages, me, send } = useOrderChatDemo(order);
+  const demo = useOrderChatDemo(USE_MOCK ? order : null);
+  const live = useOrderChat(USE_MOCK ? null : id);
+  const messages = USE_MOCK ? demo.messages : live.messages;
+  const me = USE_MOCK ? demo.me : (order?.buyerId ?? null);
   const [draft, setDraft] = useState("");
   const listRef = useRef<HTMLOListElement>(null);
 
@@ -118,7 +109,9 @@ export function OrderChat() {
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!draft.trim()) return;
-    send(draft.trim());
+    const text = draft.trim();
+    if (USE_MOCK) demo.send(text);
+    else if (me) void live.send(text, me).catch(() => undefined);
     setDraft("");
   }
 

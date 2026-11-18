@@ -4,13 +4,30 @@
 // so swapping mock -> Supabase never touches UI code.
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { getEscrowOrder, getEvents as getChainEvents } from "./chain";
+import {
+  chatFromRow,
+  eventFromRow,
+  orderEventFromRow,
+  orderFromRow,
+  standingOrderFromRow,
+  type AgentLogRow,
+  type ApprovalRow,
+  type ChatRow,
+  type EventRow,
+  type OrderEventRow,
+  type OrderRow,
+  type StandingOrderRow,
+} from "./db-map";
 import { events as mockEvents, orders as mockOrders } from "./mock";
-import type { Event, Order, OrderEvent, OrderState } from "./types";
+import { canAdvance } from "./order-state";
+import { supabase } from "./supabase";
+import type { ChatMessage, Event, Order, OrderEvent, OrderState, StandingOrder } from "./types";
 
 // ===========================================================================
 // THE SWITCH: mock data unless NEXT_PUBLIC_USE_MOCK is exactly "false".
 // ===========================================================================
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false";
+export const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false";
 
 /** Fake network latency in mock mode so loading/skeleton states get built. */
 const MOCK_DELAY_MS = 300;
@@ -143,17 +160,376 @@ function simulateDisabled() {
   console.warn("simulate() only works in mock mode (NEXT_PUBLIC_USE_MOCK != 'false').");
 }
 
+function isPubkey(value: string): boolean {
+  return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value);
+}
+
+function mergeOrders(dbOrder: Order | null, chainOrder: Order | null): Order | null {
+  if (!dbOrder) return chainOrder;
+  if (!chainOrder) return dbOrder;
+  if (!canAdvance(dbOrder.state, chainOrder.state)) return dbOrder;
+  const seen = new Set(chainOrder.events.map((e) => e.id));
+  const events = [...chainOrder.events, ...dbOrder.events.filter((e) => !seen.has(e.id))]
+    .sort((a, b) => a.at.localeCompare(b.at));
+  return { ...chainOrder, eventId: chainOrder.eventId || dbOrder.eventId, events };
+}
+
+/** chain | supabase | auto (default). auto prefers devnet events when the RPC returns any. */
+function eventsSource(): "chain" | "supabase" | "auto" {
+  const raw = process.env.NEXT_PUBLIC_EVENTS_SOURCE;
+  if (raw === "chain" || raw === "supabase") return raw;
+  return "auto";
+}
+
 function useEventsSupabase(): UseEventsResult {
-  // TODO(B): replace with Supabase query + Realtime subscription
-  // (use `supabase` from ./supabase; it is null when keys are missing). Keep this return shape.
-  return { events: [], loading: false };
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const source = eventsSource();
+
+    const loadDb = async (): Promise<Event[]> => {
+      if (!supabase) return [];
+      const { data, error } = await supabase.from("events").select("*").order("starts_at", { ascending: true });
+      if (error) {
+        console.warn("events read failed:", error.message);
+        return [];
+      }
+      return ((data ?? []) as EventRow[]).map(eventFromRow);
+    };
+
+    const load = async () => {
+      const fromDb = await loadDb();
+      let next = fromDb;
+      if (source !== "supabase") {
+        try {
+          const chain = await getChainEvents();
+          if (source === "chain" || (source === "auto" && chain.length > 0)) next = chain;
+          else if (fromDb.length === 0) next = chain;
+        } catch (err) {
+          console.warn("chain events failed:", err);
+        }
+      }
+      if (!cancelled) {
+        setEvents(next);
+        setLoading(false);
+      }
+    };
+
+    void load();
+    const db = supabase;
+    if (!db) return () => { cancelled = true; };
+
+    const channel = db
+      .channel("events-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "events" }, () => { void load(); })
+      .subscribe();
+    return () => {
+      cancelled = true;
+      void db.removeChannel(channel);
+    };
+  }, []);
+
+  return { events, loading };
 }
 
 function useOrderSupabase(orderId: string): UseOrderResult {
-  // TODO(B): replace with Supabase query + Realtime subscription on orders/order_events
-  // filtered by orderId. Keep this return shape.
-  void orderId;
-  return toOrderResult(null, false, simulateDisabled);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    let dbOrder: Order | null = null;
+    let chainOrder: Order | null = null;
+
+    const publish = () => {
+      if (!cancelled) setOrder(mergeOrders(dbOrder, chainOrder));
+    };
+
+    const loadDb = async () => {
+      if (!supabase) {
+        dbOrder = null;
+        return;
+      }
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*, order_events(*)")
+        .eq("id", orderId)
+        .maybeSingle();
+      if (error) console.warn("order read failed:", error.message);
+      dbOrder = data ? orderFromRow(data as OrderRow) : null;
+    };
+
+    const loadChain = async () => {
+      if (!isPubkey(orderId)) {
+        chainOrder = null;
+        return;
+      }
+      chainOrder = await getEscrowOrder(orderId).catch(() => null);
+    };
+
+    const load = async () => {
+      await Promise.all([loadDb(), loadChain()]);
+      if (!cancelled) {
+        publish();
+        setLoading(false);
+      }
+    };
+
+    void load();
+    const poll = isPubkey(orderId) ? setInterval(() => { void loadChain().then(publish); }, 2000) : null;
+
+    const db = supabase;
+    if (!db) {
+      return () => {
+        cancelled = true;
+        if (poll) clearInterval(poll);
+      };
+    }
+
+    const channel = db
+      .channel(`order:${orderId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `id=eq.${orderId}` }, () => {
+        void loadDb().then(publish);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "order_events", filter: `order_id=eq.${orderId}` }, (payload) => {
+        const row = orderEventFromRow(payload.new as OrderEventRow);
+        if (dbOrder) {
+          const events = dbOrder.events.some((e) => e.id === row.id) ? dbOrder.events : [...dbOrder.events, row];
+          dbOrder = { ...dbOrder, events };
+          publish();
+        } else {
+          void loadDb().then(publish);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      if (poll) clearInterval(poll);
+      void db.removeChannel(channel);
+    };
+  }, [orderId]);
+
+  return toOrderResult(loading ? null : order, loading, simulateDisabled);
+}
+
+export interface UseOrderChatResult {
+  messages: ChatMessage[];
+  loading: boolean;
+  send: (body: string, senderId: string) => Promise<void>;
+}
+
+/** Live thread for one order. Sends go through POST /api/chat so the scam check runs on the server. */
+export function useOrderChat(orderId: string | null): UseOrderChatResult {
+  const key = orderId && supabase ? orderId : null;
+  const [query, setQuery] = useState<{ key: string | null; messages: ChatMessage[]; loading: boolean }>({
+    key: null,
+    messages: [],
+    loading: false,
+  });
+  if (query.key !== key) {
+    setQuery({ key, messages: [], loading: key !== null });
+  }
+
+  useEffect(() => {
+    if (!key || !supabase) return;
+    const db = supabase;
+    let cancelled = false;
+    void db
+      .from("chat_messages")
+      .select("*")
+      .eq("order_id", key)
+      .order("at", { ascending: true })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) console.warn("chat read failed:", error.message);
+        setQuery({ key, messages: ((data ?? []) as ChatRow[]).map(chatFromRow), loading: false });
+      });
+    const channel = db
+      .channel(`chat:${key}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `order_id=eq.${key}` }, (payload) => {
+        const row = chatFromRow(payload.new as ChatRow);
+        setQuery((prev) => prev.key !== key || prev.messages.some((m) => m.id === row.id)
+          ? prev
+          : { ...prev, messages: [...prev.messages, row] });
+      })
+      .subscribe();
+    return () => {
+      cancelled = true;
+      void db.removeChannel(channel);
+    };
+  }, [key]);
+
+  const send = useCallback(async (body: string, senderId: string) => {
+    if (!key) return;
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ orderId: key, senderId, body }),
+    });
+    if (!res.ok) {
+      const err = (await res.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(err?.error ?? "Could not send");
+    }
+    const json = (await res.json()) as { message: ChatMessage };
+    setQuery((prev) => prev.messages.some((m) => m.id === json.message.id)
+      ? prev
+      : { ...prev, key, messages: [...prev.messages, json.message] });
+  }, [key]);
+
+  return { messages: query.messages, loading: query.loading, send };
+}
+
+export interface AgentLogEntry {
+  id: string;
+  kind: string;
+  message: string;
+  at: string;
+}
+
+/** Decision log written by the matcher. Subscribes to agent_log. */
+export function useAgentLog(standingOrderId: string | null): { entries: AgentLogEntry[]; loading: boolean } {
+  const key = standingOrderId && supabase ? standingOrderId : null;
+  const [query, setQuery] = useState<{ key: string | null; entries: AgentLogEntry[]; loading: boolean }>({
+    key: null,
+    entries: [],
+    loading: false,
+  });
+  if (query.key !== key) setQuery({ key, entries: [], loading: key !== null });
+
+  useEffect(() => {
+    if (!key || !supabase) return;
+    const db = supabase;
+    let cancelled = false;
+    const map = (rows: AgentLogRow[]) => rows.map((r) => ({ id: r.id, kind: r.kind, message: r.message, at: r.at }));
+    void db
+      .from("agent_log")
+      .select("*")
+      .eq("standing_order_id", key)
+      .order("at", { ascending: true })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) console.warn("agent_log read failed:", error.message);
+        setQuery({ key, entries: map((data ?? []) as AgentLogRow[]), loading: false });
+      });
+    const channel = db
+      .channel(`agent:${key}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "agent_log", filter: `standing_order_id=eq.${key}` }, (payload) => {
+        const row = payload.new as AgentLogRow;
+        const entry = { id: row.id, kind: row.kind, message: row.message, at: row.at };
+        setQuery((prev) => prev.key !== key || prev.entries.some((e) => e.id === entry.id)
+          ? prev
+          : { ...prev, entries: [...prev.entries, entry] });
+      })
+      .subscribe();
+    return () => {
+      cancelled = true;
+      void db.removeChannel(channel);
+    };
+  }, [key]);
+
+  return { entries: query.entries, loading: query.loading };
+}
+
+export interface PendingApproval {
+  id: string;
+  prompt: string;
+  totalUsd: number;
+  detail: string;
+  listingId: string;
+  priceUsd: number;
+  sellerRating: number;
+}
+
+/** The voice-call card. Null when nothing is waiting. */
+export function usePendingApproval(standingOrderId: string | null): PendingApproval | null {
+  const key = standingOrderId && supabase ? standingOrderId : null;
+  const [query, setQuery] = useState<{ key: string | null; approval: PendingApproval | null }>({
+    key: null,
+    approval: null,
+  });
+  if (query.key !== key) setQuery({ key, approval: null });
+
+  useEffect(() => {
+    if (!key || !supabase) return;
+    const db = supabase;
+    let cancelled = false;
+    const pick = (rows: ApprovalRow[]): PendingApproval | null => {
+      const pending = rows.find((r) => r.status === "pending");
+      return pending ? {
+        id: pending.id,
+        prompt: pending.prompt,
+        totalUsd: Number(pending.total_usd),
+        detail: pending.detail,
+        listingId: pending.listing_id,
+        priceUsd: Number(pending.price_usd),
+        sellerRating: Number(pending.seller_rating),
+      } : null;
+    };
+    const load = () => db
+      .from("approval_requests")
+      .select("*")
+      .eq("standing_order_id", key)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => { if (!cancelled) setQuery({ key, approval: pick((data ?? []) as ApprovalRow[]) }); });
+    void load();
+    const channel = db
+      .channel(`approval:${key}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "approval_requests", filter: `standing_order_id=eq.${key}` }, () => {
+        void load();
+      })
+      .subscribe();
+    return () => {
+      cancelled = true;
+      void db.removeChannel(channel);
+    };
+  }, [key]);
+
+  return query.approval;
+}
+
+/** Standing orders for one user. Drafts are omitted; those exist only until the budget is locked. */
+export function useStandingOrders(userId: string | null): { orders: StandingOrder[]; loading: boolean } {
+  const key = userId && supabase ? userId : null;
+  const [query, setQuery] = useState<{ key: string | null; orders: StandingOrder[]; loading: boolean }>({
+    key: null,
+    orders: [],
+    loading: false,
+  });
+  if (query.key !== key) setQuery({ key, orders: [], loading: key !== null });
+
+  useEffect(() => {
+    if (!key || !supabase) return;
+    const db = supabase;
+    let cancelled = false;
+    const load = async () => {
+      const { data, error } = await db
+        .from("standing_orders")
+        .select("*")
+        .eq("user_id", key)
+        .order("created_at", { ascending: false });
+      if (cancelled) return;
+      if (error) console.warn("standing_orders read failed:", error.message);
+      setQuery({
+        key,
+        orders: ((data ?? []) as StandingOrderRow[]).map(standingOrderFromRow).filter((o): o is StandingOrder => o !== null),
+        loading: false,
+      });
+    };
+    void load();
+    const channel = db
+      .channel(`standing:${key}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "standing_orders", filter: `user_id=eq.${key}` }, () => { void load(); })
+      .subscribe();
+    return () => {
+      cancelled = true;
+      void db.removeChannel(channel);
+    };
+  }, [key]);
+
+  return { orders: query.orders, loading: query.loading };
 }
 
 // ---------------------------------------------------------------------------

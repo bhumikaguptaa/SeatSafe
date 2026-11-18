@@ -5,8 +5,8 @@
 // (also on Filled orders that still have change in the vault).
 // Only loads anything when USE_MOCK is false; in mock mode it stays idle and the console uses
 // useAgentDemo's simulation instead.
-// Note: like A's pages, this reads lib/chain + lib/program directly, because lib/hooks.ts has no
-// standing-order hook yet (TODO(B): useStandingOrders()).
+// Chain reads stay here. The Supabase mirror (decision log, voice approval, drafts) is
+// useAgentLog / usePendingApproval / useStandingOrders in lib/hooks.ts.
 
 import { useState } from "react";
 import { PublicKey } from "@solana/web3.js";
