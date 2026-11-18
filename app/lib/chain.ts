@@ -221,7 +221,11 @@ export async function getMyTickets(owner: string): Promise<ChainTicket[]> {
     listed: true,
     price: usd(l.account.price) as number | undefined,
   }));
-  const all = [...held, ...listed];
+  // Right after a list/cancel, the two reads can come from RPC nodes at different slots and both
+  // return the same mint. Keep one entry per mint (the listing, if there is one).
+  const byMint = new Map<string, (typeof held)[number]>();
+  for (const t of [...held, ...listed]) byMint.set(t.mint.toBase58(), t);
+  const all = [...byMint.values()];
   if (all.length === 0) return [];
 
   const records = await program.account.ticketRecord.fetchMultiple(all.map((t) => p.ticketRecord(t.mint)));
@@ -401,4 +405,112 @@ export async function getMyStandingOrders(owner: string): Promise<StandingOrder[
       status,
     };
   });
+}
+
+// ---------------------------------------------------------------------------
+// Verify ("Is this listing protected?"): /verify/[pda]
+// ---------------------------------------------------------------------------
+
+/** Plain-English facts about one address, for the public /verify page. */
+export type VerifyInfo =
+  | { kind: "invalid"; address: string }
+  | { kind: "missing"; address: string }
+  | { kind: "foreign"; address: string; owner: string }
+  | { kind: "other"; address: string; accountType: string }
+  | { kind: "event"; address: string; event: ChainEvent }
+  | {
+      kind: "listing";
+      address: string;
+      event: ChainEvent | null;
+      seller: string;
+      ticketMint: string;
+      seat: string;
+      priceUsd: number;
+      createdAt: string;
+      /** Token-2022 account (owned by the listing PDA) that holds the ticket until sale. */
+      vault: string;
+    }
+  | {
+      kind: "escrow";
+      address: string;
+      event: ChainEvent | null;
+      escrow: ChainEscrow;
+      shipWindowSecs: number;
+      confirmWindowSecs: number;
+      disputeDeadline: string | null;
+      /** USDC account owned by the escrow PDA that holds payment + bond. */
+      vault: string;
+    };
+
+/** Pulls a base58 address out of a SeatSafe URL (/events/<id>, /orders/<id>, /verify/<id>) or returns the input. */
+export function addressFromInput(input: string): string {
+  const s = input.trim();
+  try {
+    const u = new URL(s);
+    const m = /\/(?:events|orders|verify|tickets)\/([1-9A-HJ-NP-Za-km-z]{32,44})/.exec(u.pathname);
+    if (m) return m[1];
+    const q = u.searchParams.get("resell");
+    if (q) return q;
+  } catch {
+    // not a URL
+  }
+  return s;
+}
+
+export async function getVerifyInfo(address: string): Promise<VerifyInfo> {
+  const program = chainProgram();
+  let key: PublicKey;
+  try {
+    key = new PublicKey(address);
+  } catch {
+    return { kind: "invalid", address };
+  }
+  const info = await connection.getAccountInfo(key, "confirmed");
+  if (!info) return { kind: "missing", address };
+  if (!info.owner.equals(program.programId)) return { kind: "foreign", address, owner: info.owner.toBase58() };
+
+  const disc = info.data.subarray(0, 8);
+  // Lower-cased: the runtime IDL may use "Listing" or "listing" depending on Anchor's name conversion.
+  const accountType: string = program.idl.accounts?.find((a) => Buffer.from(a.discriminator).equals(disc))?.name ?? "unknown";
+  const t = accountType.toLowerCase();
+  const meta = await getMetaMap();
+
+  if (t === "event") {
+    const event = await getEvent(address);
+    return event ? { kind: "event", address, event } : { kind: "missing", address };
+  }
+  if (t === "listing") {
+    const l = await program.account.listing.fetch(key);
+    const [event, record] = await Promise.all([
+      getEvent(l.event.toBase58()),
+      program.account.ticketRecord.fetchNullable(pdas(program.programId).ticketRecord(l.ticketMint)),
+    ]);
+    return {
+      kind: "listing",
+      address,
+      event,
+      seller: l.seller.toBase58(),
+      ticketMint: l.ticketMint.toBase58(),
+      seat: record?.seat ?? "",
+      priceUsd: usd(l.price),
+      createdAt: iso(l.createdAt),
+      vault: vaults.listing(program.programId, l.ticketMint).toBase58(),
+    };
+  }
+  if (t === "escroworder") {
+    const [e, cfg] = await Promise.all([program.account.escrowOrder.fetch(key), getConfig(program)]);
+    const escrow = toChainEscrow(key, e, meta);
+    const dl = Number(e.disputeDeadline.toString());
+    return {
+      kind: "escrow",
+      address,
+      event: escrow.eventId ? await getEvent(escrow.eventId) : null,
+      escrow,
+      shipWindowSecs: Number(e.shipWindowSecs.toString()),
+      confirmWindowSecs: Number(e.confirmWindowSecs.toString()),
+      disputeDeadline: dl > 0 ? iso(dl) : null,
+      vault: vaults.escrow(cfg.usdc, key).toBase58(),
+    };
+  }
+  return { kind: "other", address, accountType };
 }

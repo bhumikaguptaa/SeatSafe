@@ -2,10 +2,12 @@
 
 // Owner: A. The user's tickets with "Resell" (capped Tier 1 listing). The gate pass page is D's.
 // Real mode: Token-2022 tickets the Privy wallet holds (lib/chain.ts). Mock mode: lib/mock.ts.
+// Deep link: /tickets?resell=<ticket mint> opens that ticket's "Can't go? Resell" dialog (after login).
 
 import Link from "next/link";
-import { useState } from "react";
-import { Loader2, QrCode, Tag, X } from "lucide-react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { CalendarX2, Loader2, QrCode, ShieldCheck, Tag, X } from "lucide-react";
 import { PublicKey } from "@solana/web3.js";
 import { events as mockEvents, MOCK_USER_ID, tickets as mockTickets } from "@/lib/mock";
 import { getEvents, getMyTickets, seatLabel, USE_MOCK, type ChainTicket } from "@/lib/chain";
@@ -28,6 +30,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState, Field } from "@/components/form";
+import { AddToCalendar } from "@/components/AddToCalendar";
+import { AuthButton } from "@/components/AuthButton";
 
 interface TicketsData {
   tickets: (ChainTicket | (ChainTicket & { mock: true }))[];
@@ -49,6 +53,25 @@ async function loadChain(owner: string): Promise<TicketsData> {
 }
 
 export default function TicketsPage() {
+  // useSearchParams needs a Suspense boundary (Cache Components).
+  return (
+    <Suspense fallback={<TicketsSkeleton />}>
+      <TicketsView />
+    </Suspense>
+  );
+}
+
+function TicketsSkeleton() {
+  return (
+    <section className="mx-auto w-full max-w-3xl space-y-2 px-4 py-6 md:py-8">
+      <Skeleton className="h-8 w-40" />
+      <Skeleton className="h-20 rounded-xl" />
+    </section>
+  );
+}
+
+function TicketsView() {
+  const resellMint = useSearchParams().get("resell");
   const wallet = useTxWallet();
   const owner = wallet?.address.toBase58() ?? null;
   const key = USE_MOCK ? "tickets:mock" : owner ? `tickets:${owner}` : null;
@@ -63,12 +86,20 @@ export default function TicketsPage() {
 
       <div className="mt-6">
         {!USE_MOCK && !owner ? (
-          <EmptyState title="Log in to see your tickets">Your wallet is created when you log in.</EmptyState>
+          <EmptyState title={resellMint ? "Log in to resell your ticket" : "Log in to see your tickets"}>
+            <span className="block">Your wallet is created when you log in.</span>
+            <span className="mt-3 inline-block"><AuthButton /></span>
+          </EmptyState>
         ) : loading && !data ? (
           <div className="space-y-2">
             <Skeleton className="h-20 rounded-xl" />
             <Skeleton className="h-20 rounded-xl" />
           </div>
+        ) : resellMint && data && !data.tickets.some((t) => t.id === resellMint) ? (
+          <EmptyState title="That ticket is not in this wallet">
+            It may have been sold already, or you&apos;re logged in with a different account.{" "}
+            <Link href="/tickets" className="underline">Show my tickets</Link>
+          </EmptyState>
         ) : !data || data.tickets.length === 0 ? (
           <EmptyState title="No tickets yet">
             <Link href="/" className="underline">Find an event</Link>
@@ -76,7 +107,7 @@ export default function TicketsPage() {
         ) : (
           <ul className="space-y-3">
             {data.tickets.map((t) => (
-              <TicketRow key={t.id} ticket={t} event={data.events[t.eventId]} onDone={refresh} />
+              <TicketRow key={t.id} ticket={t} event={data.events[t.eventId]} onDone={refresh} autoResell={t.id === resellMint && !t.listed} />
             ))}
           </ul>
         )}
@@ -85,9 +116,28 @@ export default function TicketsPage() {
   );
 }
 
-function TicketRow({ ticket, event, onDone }: { ticket: ChainTicket; event?: Event; onDone: () => Promise<void> }) {
+type ResellMode = "cap" | "cantGo";
+
+function TicketRow({
+  ticket,
+  event,
+  onDone,
+  autoResell = false,
+}: {
+  ticket: ChainTicket;
+  event?: Event;
+  onDone: () => Promise<void>;
+  /** Open "Can't go? Resell" on mount (deep link). */
+  autoResell?: boolean;
+}) {
   const { run } = useRunTx();
-  const [open, setOpen] = useState(false);
+  const canResell = ticket.tier === 1 && !ticket.listed;
+  const [open, setOpen] = useState(autoResell && canResell);
+  const [mode, setMode] = useState<ResellMode>(autoResell ? "cantGo" : "cap");
+  const openResell = (m: ResellMode) => {
+    setMode(m);
+    setOpen(true);
+  };
   const [busy, setBusy] = useState(false);
 
   const cancel = async () => {
@@ -125,15 +175,30 @@ function TicketRow({ ticket, event, onDone }: { ticket: ChainTicket; event?: Eve
               <QrCode /> Gate pass
             </Link>
             {ticket.tier === 1 && (
-              <Button size="sm" onClick={() => setOpen(true)}>
-                <Tag /> Resell
-              </Button>
+              <>
+                <Button size="sm" onClick={() => openResell("cap")}>
+                  <Tag /> Resell
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => openResell("cantGo")}>
+                  <CalendarX2 /> Can&apos;t go? Resell
+                </Button>
+              </>
             )}
           </>
         )}
+        {event && <AddToCalendar event={event} />}
       </div>
       {ticket.tier === 1 && (
-        <ResellDialog open={open} onOpenChange={setOpen} ticket={ticket} event={event} onDone={onDone} />
+        <ResellDialog
+          key={mode}
+          open={open}
+          onOpenChange={setOpen}
+          ticket={ticket}
+          event={event}
+          onDone={onDone}
+          initialPrice={mode === "cantGo" ? event?.priceFromUsd : undefined}
+          cantGo={mode === "cantGo"}
+        />
       )}
     </li>
   );
@@ -145,16 +210,22 @@ function ResellDialog({
   ticket,
   event,
   onDone,
+  initialPrice,
+  cantGo = false,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   ticket: ChainTicket;
   event?: Event;
   onDone: () => Promise<void>;
+  /** Prefill (face value for "Can't go?"); defaults to the cap. */
+  initialPrice?: number;
+  cantGo?: boolean;
 }) {
   const { run } = useRunTx();
   const cap = event?.resaleCapUsd ?? null;
-  const [price, setPrice] = useState(cap != null ? String(cap) : "");
+  const start = initialPrice ?? cap;
+  const [price, setPrice] = useState(start != null ? String(start) : "");
   const [busy, setBusy] = useState(false);
   const value = Number(price);
   const valid = price !== "" && Number.isFinite(value) && value > 0;
@@ -189,7 +260,7 @@ function ResellDialog({
       <DialogContent>
         <form onSubmit={submit} className="grid gap-4">
           <DialogHeader>
-            <DialogTitle>Resell ticket</DialogTitle>
+            <DialogTitle>{cantGo ? "Can't go? Resell your ticket" : "Resell ticket"}</DialogTitle>
             <DialogDescription>
               {event?.title ?? "SeatSafe event"} · {ticket.seatLabel}
             </DialogDescription>
@@ -217,6 +288,12 @@ function ResellDialog({
               autoFocus
             />
           </Field>
+          {cantGo && (
+            <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+              <ShieldCheck className="mt-px size-3.5 shrink-0 text-vault" aria-hidden />
+              Resell safely: the buyer&apos;s money is held until your ticket transfers.
+            </p>
+          )}
           {cap != null && event && valid && (
             <p className="text-xs text-muted-foreground">
               You get {formatUsd(value * (1 - event.royaltyBps / 10_000 - 0.03))} after the {event.royaltyBps / 100}% artist

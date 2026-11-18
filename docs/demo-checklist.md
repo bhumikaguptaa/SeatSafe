@@ -62,3 +62,58 @@ Also worth showing: `/sell` with "Demo mode: 60-second windows" to list your own
 
 Before and after: `solana balance <wallet address> --url devnet` for wallet 1 and 2 stays **0 SOL**
 the whole time; the relayer's balance drops instead. Toasts say "Gas paid by SeatSafe."
+
+## 3. Devnet proof (2026-11-17, no browser)
+
+`cd program && anchor run seed-devnet --provider.cluster devnet` (8 s; every tx logged and confirmed at
+"confirmed", 60 s timeout, one retry):
+
+| Seed step | Address | Tx |
+| --- | --- | --- |
+| buy_primary Lawn GA 1 (seed seller) | mint `4LbYmJfemLxvp3RytbvdDwy7UwcUD7fcKqw9EJM6SQLG` | [4VRMB18B…](https://explorer.solana.com/tx/4VRMB18BtVrPcAsHu6kkax9CZsS3oA8cC6eNgEdqSMYKtkcWzEYoPRcKBJd9zXZSG32KbNn6qSBEGMCEAvECa7x9?cluster=devnet) |
+| buy_primary Lawn GA 2 (seed seller) | mint `8fj1GmNKekat7jHxMeUqeeaV4uwNP5tnZpR7kSKQ4j1H` | [2VKtBYVq…](https://explorer.solana.com/tx/2VKtBYVqP4EooDSY8edJAefUYpiMgJadAsLVq5jZQzxtoQKmsSafwR1KvnFCfVcGVehJ7mx96CopYLZvnzbv23wB?cluster=devnet) |
+| Resale listing at $14 | `Cc8W2bQwDF9smQjUomkvgGJqVpj5HRo5i1Fzo9aJLdWm` | [itSijzmE…](https://explorer.solana.com/tx/itSijzmEKdytZaFuHSxNwMPmvKaid4havuCmo7ELz1FzDF8qkm1XhzZNxZQttKpGiGdGepX63DP7bi8KSXZhsN2?cluster=devnet) |
+| Escrow listing $20, bond $2, 60 s | `3gPLQkSMgUaMVi1WY6iBYokNuaDH7nyqRLmjUaeF8zpU` | [1yTqSEq9…](https://explorer.solana.com/tx/1yTqSEq9CTCTEZywD2wR61HwQzLnTSY1U2BADm3rbkTiaBxUnR1njx2pPeB9RmVXpk7Ht6n8KjVQYHRwMebcfTP?cluster=devnet) |
+
+`cd app && npm run demo:devnet` (`scripts/demo-devnet.ts`): the app's builders (`lib/program.ts`) sent
+through the same steps as `/api/relay` (`checkRelayTx`, relayer co-signs and pays). Wallets A and B are
+throwaway keypairs with 0 SOL. Amounts are smaller than in section 1 so the faucet covers them:
+resale at $11 instead of $14, and a separate $1 escrow with a $1 bond (the seeded $20 escrow is kept for the live demo).
+
+| # | Step | Tx | Result |
+| --- | --- | --- | --- |
+| b | buy_primary $10 (A) | [2Ec4WXL7…](https://explorer.solana.com/tx/2Ec4WXL7FwdcyQNk7Ako7QQ4hYYCiNRJX5nbnE18Nidf9WDeXCCuLH82Rba72ZijuwArR4KmL6drC4C6zguQNQZQ?cluster=devnet) | PASS |
+| d | list_resale $50 over the $15 cap (A) | rejected in preflight, no tx | PASS: `AboveResaleCap` |
+| e1 | list_resale $11 (A) | [4JUjLNSu…](https://explorer.solana.com/tx/4JUjLNSu8uSqipSXFjowxc32qY8W6yeGPdP412a73VXhiG2evybieXGanwRtX5Cw2i8k1L3KhrpaFHS68rkYR42C?cluster=devnet) | PASS |
+| e2 | swap_resale (B buys A's listing) | [57yJuf5s…](https://explorer.solana.com/tx/57yJuf5sS3dTgiyV5mUzPi7bvHBpNt3YF85dGZvF2EqTZgzEN9xKgjWBMyXDwbRcScacwvyyGr6QoLBn65sxW1i3?cluster=devnet) | PASS: B holds the ticket, A got $10.67 ($11 − 3%) |
+| f0 | create_escrow_listing $1, bond $1, 60 s (seed seller) | [eFns2ocj…](https://explorer.solana.com/tx/eFns2ocjVo7RsW3QVvV2a4GMMqDdxg7GoKZJk3fcZx57vJjoHwpnqLE2CSPQVboYj3kNayoQgQShHtawpPxw1f7?cluster=devnet) | PASS: `B9WXyY4W5rjo4KxjaMMgS98abTMjyB8QLRKsYfbGa8rd` |
+| f1 | fund_escrow (A) | [3z3JH7q4…](https://explorer.solana.com/tx/3z3JH7q4tVsFThpqNCyRBzVkpXkgLyogrsFXhGD5HMGotftiErkC8zdXUfL6SciFELdZC7m26Hej2zuS4oHyFdm?cluster=devnet) | PASS |
+| f3 | refund_expired after the 60 s window (A) | [AyD5AdMq…](https://explorer.solana.com/tx/AyD5AdMqefmJD8rCsTXhWsGeZGkJhUZdE6ntKSPMDkerFXUASwS2ipDG1hsuMKED1RNaKYJYiAYUCNxogFQ9iET?cluster=devnet) | PASS: A got $2 (price + bond) |
+| gas | A and B SOL balance | – | PASS: 0 SOL throughout |
+
+**Still needs a human click-through in the browser** (Privy email/Google login and Privy signing
+can't be scripted): step a (`/creator`), b–f3 through the UI with real Privy wallets 1 and 2,
+the friendly over-cap error toast, the escrow countdown/Claim refund UI, and the "Gas paid by
+SeatSafe" toasts. The script covers the same on-chain logic, but not the HTTP hop to `/api/relay`
+(that hop is covered separately by `npm run check:relay`).
+
+### Browser proof with a real Privy wallet (2026-11-17)
+
+Wallet 1 = `Hh7qBYYz4HaNfjevedBabsKRAtgC6RWXzqhPWYoZnJgq` (Privy login on localhost). Fee payer on every tx is the
+relayer `7r2SszeU…`; wallet 1 only signs and stayed at **0 SOL** throughout.
+
+| # | Step | Tx | Result |
+| --- | --- | --- | --- |
+| b | Buy ticket $10 | [472KgZeR…](https://explorer.solana.com/tx/472KgZeRUbP6zAchNjvjCv4uqguxQR6EBJMH1tYHySTHv952nBRQurFU6bQbMPuWb9dCW3RFeAaVYJQcvNnXT9vP?cluster=devnet) | ✅ USDC 30 → 20 |
+| e1 | List own ticket at $14 | [4kf8Kds4…](https://explorer.solana.com/tx/4kf8Kds4LEAja36CswkSFf5rHoibgcqawyFBo7zg9KT7E6P7imotbT8k1o1etuRmdaWd1R2KkrXaBydGhjxmiGbx?cluster=devnet) | ✅ (later cancelled) |
+| d | Resell at $50 | rejected before signing (simulation) | ✅ `AboveResaleCap` toast, no tx |
+| e2 | Buy the seed seller's $14 listing (swap) | [5nsoeBfa…](https://explorer.solana.com/tx/5nsoeBfa1r2PgJTQQPAVC1CCMqbemGdL79YpWZ2bypchVfucaJdu8bDnKStfZmyAjXnkWtz8sVkgaEs2K8yFSQUf?cluster=devnet) | ✅ seller +$13.58, treasury +$0.42 |
+| f1 | Buy with escrow protection $20 | [C51PcMoB…](https://explorer.solana.com/tx/C51PcMoBFrSEhvpL4kE7wBDTeRQ4L1wrBTwQ52ZkmUefxdrR4HvC43SrYLBEgxheQML7ZzYq5iJQ3t2frq9pTQJ?cluster=devnet) | ✅ vault 2 → 22 |
+| f3 | Claim refund after 60 s | [3ouPnZX8…](https://explorer.solana.com/tx/3ouPnZX8ELgXye5jAkHazTwkFZGHMJqhuoY2h3mVcGSe9jytqbgcbNFrjy9pQkr7CsNoazrw5UpxDJjUWXbwmJYR?cluster=devnet) | ✅ wallet 1 +$22 |
+
+Not yet clicked in the browser: **a** (`/creator` create event) and a second Privy login (wallet 2).
+
+**Before the live demo:** the seeded $20 escrow (`3gPLQ…`) is now refunded, and the seed seller's $14 listing was
+bought. Re-run `cd program && anchor run seed-devnet --provider.cluster devnet` won't recreate them (it's
+idempotent on the seller's existing tickets/escrow); list a ticket at $14 from `/tickets` and a new outside
+ticket from `/sell` instead.

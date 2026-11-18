@@ -13,7 +13,7 @@
 // Privy API per docs.privy.io/wallets/using-wallets/solana/sign-a-transaction and
 // .../send-a-transaction (React SDK v3: hooks from "@privy-io/react-auth/solana").
 
-import { useCallback, useMemo } from "react";
+import { createElement, useCallback, useMemo, type ReactNode } from "react";
 import { PublicKey } from "@solana/web3.js";
 import { utils } from "@coral-xyz/anchor";
 import { useSignAndSendTransaction, useSignTransaction, useWallets } from "@privy-io/react-auth/solana";
@@ -75,6 +75,17 @@ export interface SentTx {
 }
 
 /**
+ * Simulates before asking the user to sign, so program errors (e.g. AboveResaleCap) show as a
+ * friendly toast right away instead of after a signing popup.
+ */
+async function preflight(built: BuiltTx): Promise<void> {
+  const sim = await connection.simulateTransaction(built.tx, { sigVerify: false, replaceRecentBlockhash: true });
+  if (sim.value.err) {
+    throw new TxError(`Simulation failed: ${JSON.stringify(sim.value.err)}`, sim.value.logs ?? []);
+  }
+}
+
+/**
  * Builds, signs and sends one SeatSafe transaction. `build` gets the fee payer chosen here
  * (relayer, or the user in fallback mode), e.g. `(payer) => buyPrimary({ program, user, payer }, args)`.
  * Throws TxError (with program logs and, if sent, the signature) on failure.
@@ -87,6 +98,7 @@ export async function sendWithRelayer(
 
   if (enabled && relayer) {
     const built = await build(relayer);
+    await preflight(built);
     const signed = await wallet.signTransaction(built.tx.serialize());
     const res = await fetch("/api/relay", {
       method: "POST",
@@ -105,6 +117,7 @@ export async function sendWithRelayer(
 
   console.warn("Relayer is off (no RELAYER_SECRET_KEY on the server): the user pays the fee and needs devnet SOL.");
   const built = await build(wallet.address);
+  await preflight(built);
   let signature: string;
   try {
     signature = await wallet.signAndSendTransaction(built.tx.serialize());
@@ -165,6 +178,14 @@ export interface RunTxOptions {
   success: string;
   /** Values for specific error messages (e.g. the event's resale cap). */
   errorContext?: ErrorContext;
+  /** Extra content under the success message (e.g. Add to calendar links). */
+  successExtra?: ReactNode;
+}
+
+/** Toast description: the status line plus optional extra content. */
+function successDescription(line: string | undefined, extra?: ReactNode): ReactNode {
+  if (!extra) return line;
+  return createElement("div", null, line ? createElement("div", null, line) : null, extra);
 }
 
 /**
@@ -188,12 +209,15 @@ export function useRunTx() {
         );
         toast.success(opts.success, {
           id,
-          description: sent.sponsored ? "Gas paid by SeatSafe." : undefined,
+          description: successDescription(sent.sponsored ? "Gas paid by SeatSafe." : undefined, opts.successExtra),
+          duration: opts.successExtra ? 10_000 : undefined,
           action: { label: "View tx", onClick: () => window.open(sent.explorerUrl, "_blank", "noopener") },
         });
         return sent;
       } catch (err) {
-        console.error(opts.pending, err);
+        // warn, not error: Next's dev overlay pops up on console.error, and these are expected
+        // outcomes (e.g. AboveResaleCap) that the toast already explains.
+        console.warn(opts.pending, err);
         const f = friendlyError(err, opts.errorContext);
         toast.error(f.message, {
           id,
@@ -220,6 +244,6 @@ export async function mockTx(opts: RunTxOptions, error?: string): Promise<boolea
     toast.error(error, { id, description: "Mock mode: no transaction sent." });
     return false;
   }
-  toast.success(opts.success, { id, description: "Mock mode: no transaction sent." });
+  toast.success(opts.success, { id, description: successDescription("Mock mode: no transaction sent.", opts.successExtra), duration: opts.successExtra ? 10_000 : undefined });
   return true;
 }
