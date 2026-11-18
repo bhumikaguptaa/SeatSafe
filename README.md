@@ -108,6 +108,11 @@ TODO(D/C): `app/components/VoiceApproval.tsx` is the voice-approval UI for agent
 
 SeatSafe uses Grok to demonstrate how AI can support ticket listings and buyer education through X. In our demo, Grok generated a promotional post for a SeatSafe ticket listing and included a link to the marketplace. When asked whether the listing was legitimate, Grok explained how escrow can protect buyers by withholding payment until ticket delivery requirements are met. The conversation demonstrates how AI can help users understand ticket transaction risks and SeatSafe's proposed escrow protection.
 
+We then tested Grok as a trust checker and concierge:
+- **Trust check:** asked to help resell via our new `vercel.app` link, Grok told the fan not to trust it, because a brand-new site looks like a scam. Given the onchain data instead (`solana account`), Grok confirmed that the real listing is owned by the SeatSafe program, so the seller can't take the money, and that a fake "listing" address doesn't exist: "Do not send any money." The proof has to come from the blockchain, not the website. That's why the app has `/verify/<address>`.
+- **Resale concierge:** Grok wrote a step-by-step "can't go Saturday" message using the one-tap `/tickets?resell=<mint>` link, and a reply for a stranger offering to "just Venmo".
+- **Calendar:** Grok made a Google Calendar link and a day-before reminder, matching the app's Add to calendar.
+
 Chat export: [docs/grok-chat-export.md](docs/grok-chat-export.md).
 
 ## 8. Economic design and risk assumptions
