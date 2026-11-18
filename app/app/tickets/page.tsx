@@ -291,6 +291,14 @@ function ResellDialog({
       const sent = await run((ctx) => listResale(ctx, { ticketMint: new PublicKey(ticket.id), priceUsd: value }), opts);
       ok = sent !== null;
       listing = sent?.address?.toBase58();
+      // Rejected over the cap (AboveResaleCap): count it on the Discover ticker. Event/price/cap only.
+      if (!ok && overCap && cap != null) {
+        void fetch("/api/stats", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ eventId: event?.id, priceUsd: value, capUsd: cap }),
+        }).catch(() => undefined);
+      }
     }
     setBusy(false);
     if (ok) {
