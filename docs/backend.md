@@ -42,9 +42,11 @@ Create one stream:
 | Setting | Value |
 | --- | --- |
 | Network | Solana Devnet |
-| Dataset | Logs |
-| Destination | `https://<vercel-host>/api/stream-webhook` |
+| Dataset | Block |
+| Destination | `https://seat-safe-chi.vercel.app/api/stream-webhook` |
 | Header | `x-webhook-secret: <STREAM_WEBHOOK_SECRET>` |
+
+The live stream is named SeatSafe and is delivering on Solana devnet. Screenshot: [quicknode-stream.png](quicknode-stream.png).
 
 Filter. Keep a transaction only when a log line mentions the program. Returning `null` drops the block so QuickNode does not call us for unrelated traffic.
 
@@ -89,7 +91,7 @@ State map:
 
 `ListingCreated` also runs the standing-order matcher.
 
-Screenshot the stream's dataset, filter and destination in the QuickNode dashboard and drop that image in `docs/` before the video. The dashboard login is the team's QuickNode account (claim the hackathon perk first; it is capped).
+The stream screenshot is [quicknode-stream.png](quicknode-stream.png): SeatSafe, Solana devnet, dataset Block, destination `seat-safe-chi.vercel.app`.
 
 Replay a payload locally:
 

@@ -255,7 +255,7 @@ The API, Supabase schema, QuickNode stream, deadline cron, scam detector and sta
 
 - Apply `supabase/schema.sql` and, for the mock-shaped data, `supabase/seed.sql`.
 - `POST /api/stream-webhook` decodes Anchor logs for program `7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy` and moves orders forward only. Duplicate signatures are ignored.
-- QuickNode: Solana **devnet**, dataset **Logs**, destination `https://<vercel-host>/api/stream-webhook`, header `x-webhook-secret`. The filter is in `docs/backend.md`. The stream is what makes the tracker move without a refresh.
+- QuickNode stream **SeatSafe** is live on Solana **devnet**, dataset **Block**, destination `https://seat-safe-chi.vercel.app/api/stream-webhook`, header `x-webhook-secret`. The filter is in `docs/backend.md`. The stream is what makes the tracker move without a refresh. Screenshot: [docs/quicknode-stream.png](docs/quicknode-stream.png).
 - Vercel cron (`app/vercel.json`) calls `refund_expired` / `release_expired`, re-reads open escrows, and checks the relayer once a day, which is what the Hobby plan allows. Call those routes directly to run them during a demo.
 - `POST /api/chat` flags off-app payment, links and pressure. `POST /api/standing-orders` turns one English sentence into `{ eventId, quantity, maxPrice, minRating, deadline }`. A match at or above $75 waits for `POST /api/standing-orders/:id/approve` (the voice card). Below that, the relayer sends `fill_standing_order`.
 
