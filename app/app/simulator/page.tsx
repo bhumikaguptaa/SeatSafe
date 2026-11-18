@@ -47,6 +47,35 @@ interface LiveBalances {
   buyerAddress: string;
 }
 
+/** The stage is designed at 900 px; on narrower screens it scales down as a whole (flights use % so they still line up). */
+const STAGE_W = 900;
+function ScaledStage({ children }: { children: React.ReactNode }) {
+  const outer = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState({ scale: 1, height: 0 });
+  useEffect(() => {
+    const o = outer.current;
+    const i = inner.current;
+    if (!o || !i) return;
+    const measure = () => {
+      const scale = Math.min(1, o.clientWidth / STAGE_W);
+      setBox({ scale, height: i.offsetHeight * scale });
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(o);
+    ro.observe(i);
+    return () => ro.disconnect();
+  }, []);
+  const scaled = box.scale < 1;
+  return (
+    <div ref={outer} className="w-full" style={scaled ? { height: box.height } : undefined}>
+      <div ref={inner} style={scaled ? { width: STAGE_W, transform: `scale(${box.scale})`, transformOrigin: "top left" } : undefined}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function SimulatorPage() {
   const reduced = useReducedMotion() ?? false;
   const [scenario, setScenario] = useState<ScenarioId>("fair");
@@ -171,11 +200,13 @@ export default function SimulatorPage() {
     return () => clearTimeout(id);
   }, [auto, live, busy, index, steps, go]);
 
-  // Displayed numbers: simulated = frame; live = real wallets for Sam/Bea.
-  const sellerUsd = live && balances ? balances.seller : frame.seller;
-  const buyerUsd = live && balances ? balances.buyer : frame.buyer;
+  // Numbers only change when the coins land: while flights are in the air, show the previous frame's money.
   const prev = index > 0 ? steps[index - 1].frame : null;
-  const delta = (who: "seller" | "buyer") => (prev && !live ? { amount: Math.round((frame[who] - prev[who]) * 100) / 100, key: `${scenario}-${index}-${who}` } : null);
+  const money$ = flying.length > 0 && prev ? prev : frame;
+  // Live mode: Sam/Bea are the real demo wallets (updated after each confirmed transaction).
+  const sellerUsd = live && balances ? balances.seller : money$.seller;
+  const buyerUsd = live && balances ? balances.buyer : money$.buyer;
+  const delta = (who: "seller" | "buyer") => (prev && !live && flying.length === 0 ? { amount: Math.round((frame[who] - prev[who]) * 100) / 100, key: `${scenario}-${index}-${who}` } : null);
 
   const ticketFlying = flying.some((id) => frame.flights.find((f) => f.id === id)?.kind === "ticket");
   const ticketNode = (at: Anchor) =>
@@ -248,13 +279,15 @@ export default function SimulatorPage() {
         <div className="mt-4"><StepRail steps={steps} current={index} onSelect={live ? undefined : (i) => { setIndex(i); setFlying([]); setFfLeft(null); }} /></div>
 
         {/* Stage */}
-        <div className="relative mt-4 overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_50%_35%,rgba(61,108,240,0.35),transparent_60%),linear-gradient(180deg,#0b1430,#02060f)] p-3 md:p-6">
+        <div className="mt-4">
+        <ScaledStage>
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_50%_35%,rgba(61,108,240,0.35),transparent_60%),linear-gradient(180deg,#0b1430,#02060f)] p-3 md:p-6">
           <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 md:gap-6">
             <Persona name="Sam" role={scenario === "fair" ? "Seller · owns a ticket" : "Seller · says he has a ticket"} initial="S" usdc={sellerUsd} tone={frame.sellerTone ?? "neutral"} delta={delta("seller")}>
               {ticketNode("seller")}
             </Persona>
             <div className="flex flex-col items-center gap-2 pt-2">
-              <Vault balance={frame.vault} state={frame.vaultState}>{ticketNode("vault")}</Vault>
+              <Vault balance={money$.vault} state={frame.vaultState}>{ticketNode("vault")}</Vault>
               {frame.cap && (
                 <div className={cn("w-44 rounded-xl border px-3 py-2 text-center text-xs md:w-56", frame.cap.price > frame.cap.cap ? "border-disputed/60 bg-disputed/10" : "border-released/50 bg-released/10")} title="The artist sets a maximum resale price. The program refuses anything above it.">
                   <p className="font-semibold">Price {money(frame.cap.price)} · Max {money(frame.cap.cap)}</p>
@@ -282,11 +315,11 @@ export default function SimulatorPage() {
 
           {/* Payout receivers */}
           <div className="mt-4 flex justify-center gap-6 text-xs">
-            <span className={cn("rounded-full border px-3 py-1", frame.artist > 0 ? "border-transit/60 text-transit" : "border-white/10 text-white/50")} title="The artist earns a royalty on every SeatSafe resale.">
-              Artist {money(frame.artist)}
+            <span className={cn("rounded-full border px-3 py-1", money$.artist > 0 ? "border-transit/60 text-transit" : "border-white/10 text-white/50")} title="The artist earns a royalty on every SeatSafe resale.">
+              Artist {money(money$.artist)}
             </span>
-            <span className={cn("rounded-full border px-3 py-1", frame.seatsafe > 0 ? "border-white/40 text-white" : "border-white/10 text-white/50")} title="SeatSafe's 3% fee.">
-              SeatSafe fee {money(frame.seatsafe)}
+            <span className={cn("rounded-full border px-3 py-1", money$.seatsafe > 0 ? "border-white/40 text-white" : "border-white/10 text-white/50")} title="SeatSafe's 3% fee.">
+              SeatSafe fee {money(money$.seatsafe)}
             </span>
           </div>
 
@@ -328,6 +361,8 @@ export default function SimulatorPage() {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+        </ScaledStage>
         </div>
 
         {/* Narration + controls */}
