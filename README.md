@@ -135,13 +135,7 @@ Grok is SeatSafe's trust checker and concierge on X. Given a listing's onchain a
 
 Chat export: [docs/grok-chat-export.md](docs/grok-chat-export.md).
 
-## 8. ElevenLabs
-
-TODO(D/C): keep this section only if voice approval works and appears in the demo video with audio; otherwise delete it and don't opt into the bounty.
-
-Draft: SeatSafe uses **ElevenLabs Agents** (Conversational AI) through the **ElevenLabs React SDK** (`@elevenlabs/react`) for voice approval of agent purchases. When a standing order finds a match above the approval threshold, the app opens an "incoming call" from the SeatSafe agent, which reads out the seat, price and seller and asks for a spoken yes/no; the agent's `approve` / `decline` client tools call `POST /api/standing-orders/:id/approve`, which then fills the order onchain. Code: `app/components/VoiceApproval.tsx`.
-
-## 9. Economic design and risk assumptions
+## 8. Economic design and risk assumptions
 
 - **Fees:** 3% on primary sales, resales and completed escrows (from the onchain `Config`). Artist royalty set per event; `royalty + fee ≤ 50%` enforced at `create_event`.
 - **Resale cap** enforced in `list_resale`; because tickets are frozen outside the program, there's no other way to sell a Tier 1 ticket. Off-chain side deals can't be stopped by any onchain design.
@@ -153,7 +147,7 @@ Draft: SeatSafe uses **ElevenLabs Agents** (Conversational AI) through the **Ele
 
 Full list: [docs/program.md § Trust and risk assumptions](docs/program.md#trust-and-risk-assumptions).
 
-## 10. Deployed addresses (devnet)
+## 9. Deployed addresses (devnet)
 
 | What | Address |
 | --- | --- |
@@ -168,7 +162,7 @@ Full list: [docs/program.md § Trust and risk assumptions](docs/program.md#trust
 | Demo event: Neon Harbor ($75, cap $120) | `Hw1cWsKxef959oD338Qx86TjDt2km4XXRBqPgxjjvL7a` |
 | Demo event: UT vs. A&M ($85, cap $130) | `6hW7X8JNFfwhU7Qx3dFTyy3LUa5tsCvMWyFhREdZZXzs` |
 
-## 11. Setup
+## 10. Setup
 
 ### Run the app with mock data (no keys)
 
@@ -237,13 +231,4 @@ docs/        program reference, backend, demo checklist, Grok chat export
 - Reminders and resale offers over email, Slack and Discord for student orgs
 - Organizer escrow: hold part of primary revenue until the event happens, refund everyone automatically if it's cancelled
 
-## 13. Team
-
-| Member | Role |
-| --- | --- |
-| TODO(C): name + link | Lead: Solana program, integration |
-| TODO(C): name + link | Backend: API, Supabase, QuickNode Streams |
-| TODO(C): name + link | Pitch, Devpost, demo video |
-| TODO(C): name + link | Frontend: 3D stadium, tracker, agent, voice |
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for branches, PRs and file ownership.
+Built for University Blockchain Conference 🫶🏼
