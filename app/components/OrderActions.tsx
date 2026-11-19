@@ -42,7 +42,7 @@ export function useOrderActions(escrowId: string) {
     me: wallet?.address.toBase58() ?? null,
     onConfirm: () => act("confirm", (ctx) => confirmReceipt(ctx, { escrow: key() }), "Releasing payment…", "Confirmed. Payment released to the seller."),
     onDispute: () => act("dispute", (ctx) => openDispute(ctx, { escrow: key() }), "Opening a dispute…", "Dispute opened. Funds stay locked.", "dispute"),
-    claimRefund: () => act("refund", (ctx) => refundExpired(ctx, { escrow: key() }), "Claiming your refund…", "Refunded: price and seller bond are back in your wallet.", "refund"),
+    claimRefund: () => act("refund", (ctx) => refundExpired(ctx, { escrow: key() }), "Claiming your refund…", "Refunded: your money is back.", "refund"),
     releasePayment: () => act("release", (ctx) => releaseExpired(ctx, { escrow: key() }), "Releasing payment…", "Payment released to the seller.", "release"),
     markSent: () => act("markSent", (ctx) => markSent(ctx, { escrow: key() }), "Marking as sent…", "Marked as sent.", "markSent"),
   };
@@ -55,7 +55,7 @@ const STATE_TEXT: Record<ChainEscrow["state"], string> = {
   IN_TRANSIT: "Seller sent the ticket. Buyer: check it and confirm.",
   CONFIRMED: "Confirmed. Payment released to the seller.",
   RELEASED: "Payment released to the seller.",
-  REFUNDED: "Refunded: the buyer got the price and the seller's bond.",
+  REFUNDED: "Refunded: the buyer got their money back.",
   DISPUTED: "Disputed. Funds stay locked until the arbiter decides.",
   SWAPPED: "Swapped",
 };

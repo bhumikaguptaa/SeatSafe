@@ -79,7 +79,7 @@ export const SIMULATED_TERMS: Terms = {
   royaltyBps: 500,
   feeBps: 300,
   escrowPrice: 20,
-  bond: 2,
+  bond: 0, // no bond (escrow.rs:76-80 allows 0)
   windowSecs: 60,
   sellerStart: 5,
   buyerStart: 50,
@@ -158,10 +158,10 @@ export function buildSteps(id: ScenarioId, t: Terms): Step[] {
 
   // Escrow scenarios share the first two steps.
   const e0: Frame = { ...base, ticket: { at: "seller", lock: "unlocked", outside: true } };
-  const e1: Frame = { ...e0, seller: r2(e0.seller - t.bond), vault: t.bond, vaultState: "holding", flights: [{ id: "c-bond", kind: "coin", amount: t.bond, label: "Sam's bond", tone: "transit", from: "seller", to: "vault" }] };
+  const e1: Frame = { ...e0, seller: r2(e0.seller - t.bond), vault: t.bond, vaultState: "holding", flights: t.bond ? [{ id: "c-bond", kind: "coin", amount: t.bond, label: "Sam's bond", tone: "transit", from: "seller", to: "vault" }] : [] };
   const e2: Frame = { ...e1, buyer: r2(e1.buyer - t.escrowPrice), vault: r2(e1.vault + t.escrowPrice), countdown: t.windowSecs, flights: [{ id: "c-pay", kind: "coin", amount: t.escrowPrice, label: "Bea pays", from: "buyer", to: "vault" }] };
   const intro: Step = { title: "Outside ticket", action: "Start", caption: "Sam says he has a ticket from another site (a PDF). SeatSafe can't see it, so it protects the money instead.", frame: e0 };
-  const list: Step = { title: `List + ${money(t.bond)} bond`, action: `List for ${money(t.escrowPrice)}`, caption: `Sam lists it for ${money(t.escrowPrice)}. To list, he must lock a ${money(t.bond)} bond in the vault: he loses it if he doesn't deliver.`, frame: e1, live: { action: "b_list" } };
+  const list: Step = { title: t.bond ? `List + ${money(t.bond)} bond` : "List it", action: `List for ${money(t.escrowPrice)}`, caption: t.bond ? `Sam lists it for ${money(t.escrowPrice)} and locks a ${money(t.bond)} bond in the vault: he loses it if he doesn't deliver.` : `Sam lists it for ${money(t.escrowPrice)}. Any buyer's money will go into a SeatSafe vault, never straight to Sam.`, frame: e1, live: { action: "b_list" } };
   const pay: Step = { title: "Bea pays", action: `Bea pays ${money(t.escrowPrice)}`, caption: `Bea's ${money(t.escrowPrice)} goes into the vault, not to Sam. Sam can't touch this money. He has ${t.windowSecs} seconds to send the ticket.`, frame: e2, live: { action: "b_fund" } };
 
   if (id === "scam") {
@@ -176,9 +176,9 @@ export function buildSteps(id: ScenarioId, t: Terms): Step[] {
       buyerTone: "released",
       flights: [
         { id: "c-refund", kind: "coin", amount: t.escrowPrice, label: "refund", tone: "released", from: "vault", to: "buyer" },
-        { id: "c-bond-back", kind: "coin", amount: t.bond, label: "Sam's bond", tone: "released", from: "vault", to: "buyer", delay: 0.25 },
+        ...(t.bond ? [{ id: "c-bond-back", kind: "coin" as const, amount: t.bond, label: "Sam's bond", tone: "released" as Tone, from: "vault" as Anchor, to: "buyer" as Anchor, delay: 0.25 }] : []),
       ],
-      banner: { tone: "released", title: "Scam stopped", text: `Bea got her ${money(t.escrowPrice)} back, plus Sam's ${money(t.bond)} bond. Automatically, no support ticket.` },
+      banner: { tone: "released", title: "Scam stopped", text: `Bea got her ${money(t.escrowPrice)} back${t.bond ? `, plus Sam's ${money(t.bond)} bond` : ""}. Automatically, no support ticket.` },
     };
     return [
       intro,
@@ -202,10 +202,10 @@ export function buildSteps(id: ScenarioId, t: Terms): Step[] {
     sellerTone: "released",
     flights: [
       { id: "c-paid", kind: "coin", amount: r2(t.escrowPrice - escrowFee), label: "to Sam", tone: "released", from: "vault", to: "seller" },
-      { id: "c-bond-back", kind: "coin", amount: t.bond, label: "bond back", tone: "released", from: "vault", to: "seller", delay: 0.2 },
+      ...(t.bond ? [{ id: "c-bond-back", kind: "coin" as const, amount: t.bond, label: "bond back", tone: "released" as Tone, from: "vault" as Anchor, to: "seller" as Anchor, delay: 0.2 }] : []),
       { id: "c-fee", kind: "coin", amount: escrowFee, label: "SeatSafe fee", tone: "neutral", from: "vault", to: "seatsafe", delay: 0.35 },
     ],
-    banner: { tone: "released", title: "Honest sale complete", text: "Bea confirmed the ticket works, so the vault paid Sam and returned his bond." },
+    banner: { tone: "released", title: "Honest sale complete", text: "Bea confirmed the ticket works, so the vault paid Sam." },
   };
   return [
     intro,

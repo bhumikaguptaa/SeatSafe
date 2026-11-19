@@ -39,7 +39,7 @@ type Anchor = "seller" | "buyer" | "vault" | "seatsafe";
 const ANCHORS: Record<Anchor, Point> = { seller: { x: 17, y: 62 }, buyer: { x: 83, y: 62 }, vault: { x: 50, y: 42 }, seatsafe: { x: 60, y: 95 } };
 const EVENT_ID = Object.entries((bundledMeta as { events?: Record<string, { title?: string }> }).events ?? {}).find(([, m]) => /battle of the bands/i.test(m.title ?? ""))?.[0] ?? "";
 const EVENT_TITLE = "Battle of the Bands";
-const PRICE = { over: 50, resale: 14, escrow: 20, bond: 2, windowSecs: 60 };
+const PRICE = { over: 50, resale: 14, escrow: 20, bond: 0, windowSecs: 60 }; // bond 0 (escrow.rs:76-80)
 
 interface FlightSpec {
   id: string;
@@ -264,9 +264,9 @@ export function LiveLab() {
       } else {
         const a = prev.escrowState ?? null;
         const b = snap.escrowState ?? null;
-        if (!a && b === "listed") f.push({ id: `c-bond-${snap.slot}`, kind: "coin", amount: snap.vaultUsd, label: "seller bond", tone: "transit", from: "seller", to: "vault" });
+        if (!a && b === "listed" && snap.vaultUsd > 0) f.push({ id: `c-bond-${snap.slot}`, kind: "coin", amount: snap.vaultUsd, label: "seller bond", tone: "transit", from: "seller", to: "vault" });
         if (a === "listed" && b === "funded") f.push({ id: `c-pay-${snap.slot}`, kind: "coin", amount: snap.vaultUsd - prev.vaultUsd, label: "buyer pays", from: "buyer", to: "vault" });
-        if (a === "funded" && b === "refunded") f.push({ id: `c-refund-${snap.slot}`, kind: "coin", amount: prev.vaultUsd, label: "refund + bond", tone: "released", from: "vault", to: "buyer" });
+        if (a === "funded" && b === "refunded") f.push({ id: `c-refund-${snap.slot}`, kind: "coin", amount: prev.vaultUsd, label: prev.bondUsd ? "refund + bond" : "full refund", tone: "released", from: "vault", to: "buyer" });
         if (a === "funded" && b === "sent") f.push({ id: `t-sent-${snap.slot}`, kind: "ticket", from: "seller", to: "buyer", outside: true });
         if ((a === "sent" || a === "funded") && b === "completed") f.push({ id: `c-paid-${snap.slot}`, kind: "coin", amount: prev.vaultUsd, label: "to seller", tone: "released", from: "vault", to: "seller" });
       }
@@ -433,7 +433,7 @@ export function LiveLab() {
     const st = s?.escrowState ?? null;
     const deadlinePassed = Boolean(s?.shipDeadline && now && now > s.shipDeadline);
     return [
-      { key: "list-escrow", label: `List outside ticket ${money(PRICE.escrow)} + ${money(PRICE.bond)} bond`, role: "seller", presenter: "b_list", enabled: !escrow || st === "refunded" || st === "completed", why: "an order is already running", stack: ["anchor", "escrow", "relayer"], build: (c) => createEscrowListing(c, { priceUsd: PRICE.escrow, bondUsd: PRICE.bond, shipWindowSecs: PRICE.windowSecs, confirmWindowSecs: PRICE.windowSecs }) },
+      { key: "list-escrow", label: `List outside ticket ${money(PRICE.escrow)}${PRICE.bond ? ` + ${money(PRICE.bond)} bond` : ""}`, role: "seller", presenter: "b_list", enabled: !escrow || st === "refunded" || st === "completed", why: "an order is already running", stack: ["anchor", "escrow", "relayer"], build: (c) => createEscrowListing(c, { priceUsd: PRICE.escrow, bondUsd: PRICE.bond, shipWindowSecs: PRICE.windowSecs, confirmWindowSecs: PRICE.windowSecs }) },
       { key: "pay", label: `Pay ${money(s?.priceUsd ?? PRICE.escrow)} into the vault`, role: "buyer", presenter: "b_fund", enabled: st === "listed", why: "waits for the listing", stack: ["anchor", "escrow", "relayer"], build: (c) => fundEscrow(c, { escrow: new PublicKey(escrow!) }) },
       { key: "withdraw", label: "Try to withdraw the money", role: "seller", expectFail: true, presenter: "b_steal", enabled: st === "funded", why: "after the buyer pays", stack: ["anchor", "escrow"], build: (c) => releaseExpired(c, { escrow: new PublicKey(escrow!) }) },
       { key: "refund", label: deadlinePassed ? "Claim refund" : "Claim refund (too early)", role: "buyer", presenter: "b_refund", enabled: st === "funded", why: "after the buyer pays", stack: ["anchor", "escrow", "relayer"], build: (c) => refundExpired(c, { escrow: new PublicKey(escrow!) }) },
@@ -481,7 +481,7 @@ export function LiveLab() {
     : scenario === "fair" && d?.ticket?.holder === "buyer"
       ? { tone: "released" as const, title: "Done in one transaction", text: "Ticket and payment swapped atomically. The ticket is frozen again in the buyer's wallet (real account state)." }
       : scenario === "scam" && d?.escrowState === "refunded"
-        ? { tone: "released" as const, title: "Scam stopped", text: `The vault paid the buyer back ${money((d.priceUsd ?? 0) + (d.bondUsd ?? 0))}, including the seller's bond.` }
+        ? { tone: "released" as const, title: "Scam stopped", text: `The vault paid the buyer back ${money((d.priceUsd ?? 0) + (d.bondUsd ?? 0))}${(d.bondUsd ?? 0) > 0 ? ", including the seller's bond" : ", in full"}.` }
         : null;
 
   const myRoleActions = driver === "presenter" ? actions : actions.filter((a) => a.role === role);
@@ -493,7 +493,7 @@ export function LiveLab() {
     driver === "users" && role
       ? scenario === "fair"
         ? role === "seller" ? "Seller needs a Battle of the Bands ticket (Prepare buys one for $10)." : `Buyer needs ${money(PRICE.resale)} USDC.`
-        : role === "seller" ? `Seller needs ${money(PRICE.bond)} USDC for the bond.` : `Buyer needs ${money(PRICE.escrow)} USDC.`
+        : role === "seller" ? "Seller needs no USDC to list (no bond)." : `Buyer needs ${money(PRICE.escrow)} USDC.`
       : null;
 
   return (
@@ -507,7 +507,7 @@ export function LiveLab() {
             <p className="text-sm text-white/70">Every number, padlock and coin on this screen is read from Solana, after confirmation.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <div className="flex items-center gap-1 rounded-full border border-white/15 bg-black/30 p-1" role="group" aria-label="Who signs">
+            <div className="flex items-center gap-1 rounded-full border border-white/15 bg-card p-1" role="group" aria-label="Who signs">
               <button type="button" onClick={() => setParams({ driver: null })} className={cn("rounded-full px-3 py-1.5 font-semibold", driver === "users" && "bg-white text-black")}>Two real users</button>
               <button type="button" disabled={!presenter?.enabled} title={presenter?.enabled ? "Server demo wallets sign" : presenter?.reason} onClick={() => setParams({ driver: "presenter", role: null })} className={cn("rounded-full px-3 py-1.5 font-semibold disabled:opacity-40", driver === "presenter" && "bg-vault text-black")}>Presenter</button>
             </div>
@@ -523,7 +523,7 @@ export function LiveLab() {
               aria-selected={scenario === id}
               type="button"
               onClick={() => setParams({ scenario: id, mint: null, escrow: null, seller: null })}
-              className={cn("rounded-2xl border px-4 py-3 text-left", scenario === id ? (id === "scam" ? "border-disputed bg-disputed/10 glow-disputed" : "border-vault bg-vault/10 glow-vault") : "border-white/10 bg-white/[0.03]")}
+              className={cn("rounded-2xl border px-4 py-3 text-left", scenario === id ? (id === "scam" ? "border-disputed bg-disputed/10 glow-disputed" : "border-vault bg-vault/10 glow-vault") : "border-white/10 bg-card")}
             >
               <p className="font-bold">{name}</p>
               <p className="text-xs text-white/60">{sub}</p>
@@ -533,7 +533,7 @@ export function LiveLab() {
 
         {/* Role (two users) */}
         {driver === "users" && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-sm">
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-card p-3 text-sm">
             <UserRound className="size-4 text-white/60" />
             {!me ? (
               <>
@@ -549,7 +549,7 @@ export function LiveLab() {
                   </Button>
                 ))}
                 {role && (
-                  <button type="button" className="ml-auto inline-flex items-center gap-1 rounded-full border border-white/20 px-3 py-1 text-xs hover:bg-white/10" onClick={() => void navigator.clipboard.writeText(shareLink)}>
+                  <button type="button" className="ml-auto inline-flex items-center gap-1 rounded-full border border-white/20 px-3 py-1 text-xs hover:bg-[#1d1d24]" onClick={() => void navigator.clipboard.writeText(shareLink)}>
                     <Copy className="size-3" /> Copy link for the {role === "seller" ? "buyer" : "seller"}&apos;s window
                   </button>
                 )}
@@ -562,7 +562,7 @@ export function LiveLab() {
           <div>
             {/* Stage */}
             <ScaledStage>
-              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_50%_35%,rgba(61,108,240,0.35),transparent_60%),linear-gradient(180deg,#0b1430,#02060f)] p-4 md:p-6">
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_50%_-10%,#3a1013_0%,transparent_55%),linear-gradient(180deg,#121217,#0b0b0f)] p-4 md:p-6">
                 <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4">
                   <div className="flex flex-col items-center gap-1">
                     <Persona name="Seller" role={seller ? short(seller) : "not joined yet"} initial="S" usdc={d?.sellerUsd ?? 0} tone={lastBlocked && latest?.who.startsWith("Seller") ? "disputed" : "neutral"}>
@@ -604,11 +604,11 @@ export function LiveLab() {
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0 }}
                       transition={MOTION.dramatic}
-                      className={cn("absolute inset-x-3 top-3 z-40 mx-auto max-w-xl rounded-2xl border-2 bg-black/85 px-4 py-3 text-center backdrop-blur", TONE[banner.tone].border, TONE[banner.tone].glow)}
+                      className={cn("absolute inset-x-3 top-3 z-40 mx-auto max-w-xl rounded-2xl border-2 overlay-white px-4 py-3 text-center", TONE[banner.tone].border, TONE[banner.tone].glow)}
                       role="status"
                     >
                       <p className={cn("text-xl font-extrabold md:text-2xl", TONE[banner.tone].text)}>{banner.title}</p>
-                      <p className="mt-1 text-sm text-white/85">{banner.text}</p>
+                      <p className="mt-1 text-sm text-[#3f3f46]">{banner.text}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>

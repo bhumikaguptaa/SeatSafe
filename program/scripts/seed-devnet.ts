@@ -99,7 +99,7 @@ const EVENTS = [
 ];
 
 const RESALE_PRICE = 14;
-const ESCROW = { orderId: 2001, price: 20, bond: 2, windowSecs: 60, seat: "Lawn GA (outside ticket)" };
+const ESCROW = { orderId: 2001, price: 20, bond: 0, windowSecs: 60, seat: "Lawn GA (outside ticket)" }; // bond 0 allowed (escrow.rs:76-80)
 /** Index into EVENTS of the event used for the tickets, the resale and the escrow. */
 const DEMO_EVENT = 2;
 const SELLER_SOL = 0.2;

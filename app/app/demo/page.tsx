@@ -107,7 +107,7 @@ async function load(owner: string | null): Promise<DemoData> {
     ? { label: "Open resale listing", level: "ok", detail: `${resale.seat || "GA"} · ${formatUsd(resale.priceUsd)}` }
     : { label: "Open resale listing", level: "fail", detail: "None", fix: RESET });
   checks.push(escrow
-    ? { label: "Open escrow listing", level: "ok", detail: `${formatUsd(escrow.priceUsd)} + ${formatUsd(escrow.bondUsd)} bond` }
+    ? { label: "Open escrow listing", level: "ok", detail: `${formatUsd(escrow.priceUsd)}${escrow.bondUsd > 0 ? ` + ${formatUsd(escrow.bondUsd)} bond` : ""}` }
     : { label: "Open escrow listing", level: "fail", detail: "None", fix: RESET });
 
   // Stream freshness (newest order_events row).
@@ -249,9 +249,9 @@ export default function DemoPage() {
           />
           <Step
             n={1}
-            title="Primary buy"
-            say="Buy a ticket with just an email login. No wallet, no SOL: SeatSafe pays the gas."
-            expect="Toast “Ticket bought!”, USDC drops by the price, bell: “You're in!”"
+            title="Pick a seat in 3D, buy it"
+            say="Fly into the stadium, see the real view from your seat, buy with just an email login. No wallet, no SOL."
+            expect="Red seat → ticket card → Buy → toast “You're in!”; the seat turns blue live; bell: “You're in!”"
             ready={step(Boolean(d.primaryEvent))}
             links={d.primaryEvent ? [{ label: `Open ${d.primaryEvent.title}`, href: `/events/${d.primaryEvent.id}` }] : []}
           />
@@ -276,8 +276,8 @@ export default function DemoPage() {
           <Step
             n={4}
             title="Scam auto-refund (escrow)"
-            say="Outside ticket: the money waits in a program vault. Seller never ships, buyer gets money + bond back."
-            expect="/orders tracker HELD with countdown → Claim refund → “your $ is back” notification, ticker refunds +1"
+            say="Outside ticket: the money waits in a program vault. Seller never ships, the buyer gets it all back automatically."
+            expect="Amber seat in 3D → Buy with escrow → /orders: live vault with the onchain countdown; seller's “Request payout now” is blocked by the program; after the deadline: Claim refund → “your $ is back”"
             ready={step(Boolean(d.escrow))}
             links={ev ? [{ label: "Open escrow listing", href: `/events/${ev.id}` }] : []}
             note={d.escrow ? <>Buy with escrow protection ({formatUsd(d.escrow.priceUsd)}), then wait 60 s.</> : <>No escrow: <CopyText text={RESET} /></>}

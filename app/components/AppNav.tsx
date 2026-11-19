@@ -44,7 +44,7 @@ function DesktopLinks({ pathname }: { pathname: string | null }) {
           href={href}
           className={cn(
             "rounded-md px-3 py-1.5 text-sm text-white/80 transition-colors hover:text-white",
-            isActive(pathname, href) && "bg-white/15 text-white",
+            isActive(pathname, href) && "bg-[#1d1d24] text-white",
           )}
         >
           {label}
@@ -80,7 +80,7 @@ function MobileTabs({ pathname }: { pathname: string | null }) {
 export function TopNav() {
   return (
     // Transparent over the page gradient; the blur keeps it legible once content scrolls underneath.
-    <header className="sticky top-0 z-40 bg-transparent backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-border bg-background">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <ShieldCheck className="size-5 text-white" />
@@ -116,7 +116,7 @@ export function TopNav() {
 /** Bottom tab bar (mobile only). */
 export function BottomTabs() {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background md:hidden">
       <Suspense fallback={<MobileTabs pathname={null} />}>
         <ActiveMobileTabs />
       </Suspense>

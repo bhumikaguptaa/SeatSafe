@@ -187,3 +187,23 @@ Funds: seller ≥ $2 (B) and a ticket or $10 (A); buyer ≥ $14 (A) and ≥ $20 
 **Presenter (backup):** `/simulator?driver=presenter` uses the server demo wallets (needs `SIM_LIVE_ENABLED` and
 `SIM_SELLER_SECRET_KEY` / `SIM_BUYER_SECRET_KEY` in Vercel); same visuals and X-ray, one screen, buttons labelled Sam/Bea.
 **Offline backup:** `/simulator?offline=1` (scripted animation, no network).
+
+## 7. 3D stadium + escrow flow (Nov 19)
+
+**Recording the video opening:** open `https://seat-safe-chi.vercel.app/events/EMhrDn2puUvJac9PZ15CCTUftj2Axv6E7wp81oV1RzxE?intro=1`,
+full screen at 1920×1080, start recording, don't touch the mouse: ~12 s of aerial orbit → "West Lower · from $10" pill →
+glide into the stand → seat pills → the view from the seat → white ticket card with the seat-view thumbnail.
+
+**Live demo (four seat types on one stadium):** run `cd program && anchor run reset-demo --provider.cluster devnet` first
+(creates a $14 resale and a $20 outside-ticket listing, bond 0) so red, green, amber and blue seats all show.
+
+| # | Who | Do | Expect |
+| --- | --- | --- | --- |
+| s1 | Buyer | Event page → hover a stand → click → click a **red** seat | Camera at seat height; ticket card "Available · official", $10, cap $15 |
+| s2 | Buyer | **Buy** | Toast "You're in! West Lower · Row r · Seat s"; camera pulls back; that seat is now **blue** |
+| s3 | Buyer | Click a **green** seat → **Buy** | "Protected resale · $14 (cap $15)"; atomic swap |
+| s4 | Buyer | Click the **amber** seat → **Buy with escrow** | Redirect to `/orders/<escrow>`: live vault $20, onchain countdown |
+| s5 | Seller (`/sell` → My escrow sales) | **Request payout now** | Red toast "Blocked by the program: only the buyer can release this money" (`InvalidState`) |
+| s6 | Buyer (order page) | After the 60 s deadline: **Claim refund** | Vault → $0, coins fly back, "Refunded"; bell "your $20 is back" |
+| s7 | (honest path) Seller marks sent, buyer does nothing | Wait 60 s, then seller's **Request payout now** (now allowed) | Order page: "Seller paid automatically: buyer didn't respond" |
+| s8 | Anyone | **Upgrade to VIP** on the ticket card | Glide into the glass-fronted VIP box (view only: not an onchain tier) |

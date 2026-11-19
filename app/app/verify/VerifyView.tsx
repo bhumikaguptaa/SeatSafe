@@ -114,10 +114,10 @@ function VaultLink({ vault, what }: { vault: string; what: string }) {
 
 const ESCROW_STATE: Record<string, { label: string; text: string }> = {
   LISTED: { label: "For sale", text: "No one has paid yet. If you buy, your payment goes into the vault, not to the seller." },
-  HELD: { label: "Paid, waiting for the seller", text: "The buyer's payment and the seller's bond are locked in the vault." },
+  HELD: { label: "Paid, waiting for the seller", text: "The buyer's payment is locked in the vault." },
   IN_TRANSIT: { label: "Ticket sent", text: "The seller says the ticket was sent. The buyer can confirm or open a dispute before the deadline." },
   RELEASED: { label: "Completed", text: "The order finished and the vault paid out." },
-  REFUNDED: { label: "Refunded", text: "The seller missed the deadline. The buyer got the payment and the seller's bond." },
+  REFUNDED: { label: "Refunded", text: "The seller missed the deadline. The buyer got the money back." },
   CANCELLED: { label: "Cancelled", text: "The seller withdrew the listing before anyone paid." },
   DISPUTED: { label: "In dispute", text: "Funds stay locked in the vault until the dispute is settled." },
 };
@@ -200,10 +200,10 @@ function Result({ info }: { info: VerifyInfo }) {
             <Row label="Event">{info.event?.title ?? "Outside ticket"}</Row>
             {e.seat && <Row label="Seat">{e.seat}</Row>}
             <Row label="Price">{formatUsd(e.priceUsd)}</Row>
-            <Row label="Seller bond">
+            {e.bondUsd > 0 && (<Row label="Seller bond">
               {formatUsd(e.bondUsd)}
               <span className="block text-xs font-normal text-muted-foreground">goes to the buyer if the seller doesn&apos;t deliver</span>
-            </Row>
+            </Row>)}
             <Row label="State"><Badge variant="outline">{st.label}</Badge></Row>
             {e.state === "LISTED" && (
               <Row label="Seller must send within">{secs(info.shipWindowSecs)} of payment</Row>
@@ -215,7 +215,7 @@ function Result({ info }: { info: VerifyInfo }) {
           {st.text && <p className="text-sm text-muted-foreground">{st.text}</p>}
           <p className="text-sm">
             <strong>Money is held by the SeatSafe program, not the seller.</strong> If the seller misses the deadline, the buyer
-            gets the payment and the bond back automatically.
+            gets the payment back automatically.
           </p>
           <div className="flex flex-wrap gap-2">
             {e.state === "LISTED" && info.event && (

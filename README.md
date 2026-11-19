@@ -4,6 +4,7 @@ SeatSafe is a **ticketing platform** on Solana where fans can **buy and resell t
 
 - **Live app:** TODO(A): Vercel URL
 - **Demo video:** TODO(C)
+- **3D seat picker:** every event page ([example](https://seat-safe-chi.vercel.app/events/EMhrDn2puUvJac9PZ15CCTUftj2Axv6E7wp81oV1RzxE)) opens on an aerial stadium; fly into a stand, see the real view from a seat, buy it. Hands-free cinematic for recording: add `?intro=1`.
 - **Live Lab:** [/simulator](https://seat-safe-chi.vercel.app/simulator): two people trade a ticket on devnet and every number, padlock and coin is read from Solana after confirmation, with an "under the hood" X-ray of each layer (Privy signature, relayer fee, program logs + compute units, token movement, decoded event, QuickNode delivery time, UI update). Offline backup: `/simulator?offline=1`. Presenter run sheet: [/demo](https://seat-safe-chi.vercel.app/demo).
 - Built for the UBC 2026 Hackathon. **Submission due Fri Nov 20, 12 PM CST.**
 
@@ -22,8 +23,26 @@ TODO(C): add 2–3 sourced numbers (scam losses, average resale markup), each wi
 | What | Tickets sold on SeatSafe (Token-2022, one mint per ticket) | Tickets from other platforms (Ticketmaster, AXS, …) |
 | Resale | Atomic swap: ticket and USDC move in **one transaction** | Escrow: buyer's USDC waits in a program vault |
 | Price | **Capped** by the artist (`price ≤ resale_cap`), enforced onchain | Set by the seller |
-| Protection | Trustless: the swap either fully happens or doesn't | Trust-minimized: seller bond + deadlines + automatic refund + disputes |
+| Protection | Trustless: the swap either fully happens or doesn't | Trust-minimized: deadlines + automatic refund + automatic payout + disputes (bond optional, 0 in the app) |
 | Artist | Earns a royalty on every resale | – |
+
+### Four kinds of seat (3D picker)
+
+| Colour | Seat | What happens when you buy |
+| --- | --- | --- |
+| 🔴 Red | **Available, official** (`supply − sold`) | `buy_primary`; the seat code (e.g. `WL R3 S12`) is stored onchain in the ticket record |
+| 🟢 Green | **Protected resale** (open Tier 1 listing) | `swap_resale`: ticket and money in one transaction, at or under the cap |
+| 🟡 Amber | **Outside ticket · escrow protected** (open Tier 2 listing) | `fund_escrow` → `/orders/<escrow>`: money waits in the vault |
+| 🔵 Blue | **Taken** (minted) | – |
+
+Seat mapping (`app/lib/stadium-map.ts`, deterministic): the event's `supply` tickets are spread round-robin over 10 sections, best seats first, so ticket index *i* always maps to the same seat; a ticket bought in 3D is pinned to the seat code it stored onchain; a resale seat is the minted ticket whose mint PDA (`[ticket_mint, event, i]`) has an open listing; escrow listings (not tied to a seat onchain) are placed by a hash of the escrow PDA in a corner section. An event has one onchain primary price, so a stand's "from $X" is the cheapest real seat in it.
+
+### Protects both sides (escrow)
+
+- **Seller never sends** → after the onchain ship deadline the buyer claims a full refund (`refund_expired`). The seller's "Request payout now" before that is rejected by the program (`InvalidState`).
+- **Buyer goes silent after the ticket is sent** → after the confirm window anyone can trigger `release_expired`, and the seller is paid automatically (the order page says "Seller paid automatically: buyer didn't respond").
+- **Disagreement** → `open_dispute`; an arbiter can only split that escrow's own vault, and `dispute_timeout` refunds the price if the arbiter never acts.
+- **Bond:** `create_escrow_listing` only requires `price > 0` and both windows `> 0` (`programs/seatsafe/src/instructions/escrow.rs`, lines 76–80), so the app lists with **bond = 0** (simulated and run on devnet). The program still supports a bond; listings that have one show it.
 
 ### Money flow
 
@@ -87,7 +106,7 @@ The six parts:
 - **Program:** `seatsafe`, Anchor, on devnet at [`7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy`](https://explorer.solana.com/address/7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy?cluster=devnet).
 - **Token-2022 frozen tickets:** each ticket is its own mint (supply 1, decimals 0) with the **DefaultAccountState = Frozen** extension. Mint and freeze authority is the `["ticket_authority"]` PDA, so every ticket account starts frozen and only the program can thaw it. A holder can't transfer a ticket peer to peer; the only way to sell is `list_resale → swap_resale`, which enforces the cap. A plain `transferChecked` fails with "Account is frozen" (tested). See [docs/program.md § Plan B](docs/program.md#plan-b-ticket-design-why-the-cap-cant-be-bypassed).
 - **Atomic swap with royalty and fee split:** `swap_resale` moves the ticket out of the listing vault and splits the buyer's USDC between seller, organizer royalty and treasury fee in one transaction.
-- **Escrow vaults:** each `EscrowOrder` PDA owns a USDC account holding the buyer's payment plus the seller's bond. Deadlines use the cluster clock, so anyone can trigger `refund_expired` / `release_expired` after they pass. No admin can withdraw user funds.
+- **Escrow vaults:** each `EscrowOrder` PDA owns a USDC account holding the buyer's payment (plus a seller bond if one was set; the app uses 0). Deadlines use the cluster clock, so anyone can trigger `refund_expired` / `release_expired` after they pass. No admin can withdraw user funds.
 - **Standing orders (agents):** a `StandingOrder` PDA owns a USDC budget vault. `fill_standing_order` checks event, max price, quantity, deadline and seller ≠ owner onchain, so a crank can only buy what the owner allowed.
 - **Relayer as fee payer:** the relayer is the transaction fee payer and the `payer` for rent. Users sign only and hold **0 SOL** (proven on devnet: [docs/demo-checklist.md § 3](docs/demo-checklist.md#3-devnet-proof-2026-11-17-no-browser)).
 - **USDC:** Circle devnet USDC, mint `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`. All prices are USDC with 6 decimals, shown as dollars.
@@ -126,13 +145,19 @@ Chat export: [docs/grok-chat-export.md](docs/grok-chat-export.md).
 
 - **Fees:** 3% SeatSafe fee on primary sales, resales and completed escrows, read from the onchain `Config`. Artist royalty (set per event) on resales. `royalty + fee ≤ 50%` is enforced at `create_event`.
 - **Resale cap** is enforced in `list_resale`, and because tickets are frozen outside the program there is no other way to sell a Tier 1 ticket. Off-chain side deals (cash, then a listing at the cap) can't be stopped by any onchain design.
-- **Seller bond** (Tier 2) is lost to the buyer if the seller doesn't mark the ticket sent before the ship deadline.
+- **Seller bond** (Tier 2, optional): if set, it is lost to the buyer if the seller doesn't mark the ticket sent before the ship deadline. The app lists with bond 0: the deadlines and automatic refund already protect the buyer.
 - **Tier 2 is trust-minimized, not trustless:** the program can't see an outside ticket. The buyer is protected by the confirm window and disputes.
 - **Arbiter** can only split a disputed escrow's own vault. If it never acts, `dispute_timeout` returns the price to the buyer and the bond to the seller.
 - **No admin backdoor:** no instruction lets anyone withdraw user funds. The upgrade authority (deployer key) is the real trust root on devnet.
 - **Crank trust:** the worst a malicious crank can do is fill a standing order with a listing that matches the owner's own rules. Seller ratings are off-chain, so `minSellerRating` is enforced by our crank only.
 
 Full list: [docs/program.md § Trust and risk assumptions](docs/program.md#trust-and-risk-assumptions).
+
+### 3D stadium: stack and credits
+
+`three` 0.187 + `@react-three/fiber` 9.8 + `@react-three/drei` 10.7 + `@react-three/postprocessing` 3.2 (all pinned; loaded client-only). The stadium is procedural (Blender wasn't available): 10 sections + a VIP box, seats as one `InstancedMesh` per section, N8AO + bloom on the floodlights + vignette + ACES tone mapping. 60 fps at 1920×1080 on an Apple M4 (ANGLE/Metal) with post-processing on; `?fx=0` turns post-processing off on slow machines.
+
+- HDRI: **"Venice Sunset" by Greg Zaal, [Poly Haven](https://polyhaven.com/a/venice_sunset), CC0** (`app/public/hdri/venice_sunset_1k.hdr`). No other external assets.
 
 ## 9. Deployed addresses (devnet)
 

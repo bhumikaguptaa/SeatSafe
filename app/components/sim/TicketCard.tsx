@@ -41,7 +41,7 @@ export function TicketCard({
     <div
       title={tip}
       className={cn(
-        "relative overflow-hidden rounded-2xl border bg-gradient-to-br from-white/15 to-white/[0.04] text-left backdrop-blur",
+        "relative overflow-hidden rounded-2xl border bg-[#1d1d24] text-left",
         outside ? "border-transit/50" : locked ? "border-vault/50" : "border-released/60",
         glow && (outside ? "glow-transit" : locked ? "glow-vault" : "glow-released"),
         size === "sm" ? "w-36 p-2.5" : "w-48 p-3.5",

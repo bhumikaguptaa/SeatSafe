@@ -21,7 +21,8 @@ import bundledMeta from "@/lib/event-meta.json";
 import type { LiveAction } from "@/app/simulator/scenarios";
 
 const DEVNET_GENESIS = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
-export const SIM = { resale: 14, over: 50, escrowPrice: 20, bond: 2, windowSecs: 60 } as const;
+// bond 0: create_escrow_listing only requires price > 0 and windows > 0 (escrow.rs:76-80)
+export const SIM = { resale: 14, over: 50, escrowPrice: 20, bond: 0, windowSecs: 60 } as const;
 
 function parseKey(raw: string): Keypair {
   const s = raw.trim();

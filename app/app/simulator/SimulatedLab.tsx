@@ -242,7 +242,7 @@ export function SimulatedLab() {
             <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">SeatSafe Live Lab · offline backup</h1>
             <p className="text-sm text-white/70">Two people trade a ticket. Watch where the money and the ticket go.</p>
           </div>
-          <div className="flex items-center gap-1 rounded-full border border-white/15 bg-black/30 p-1 text-xs" role="group" aria-label="Mode">
+          <div className="flex items-center gap-1 rounded-full border border-white/15 bg-card p-1 text-xs" role="group" aria-label="Mode">
             <button type="button" onClick={() => { setLive(false); reset(); }} className={cn("rounded-full px-3 py-1.5 font-semibold", !live && "bg-white text-black")}>Simulated</button>
             <button
               type="button"
@@ -267,7 +267,7 @@ export function SimulatedLab() {
               onClick={() => reset(s.id)}
               className={cn(
                 "rounded-2xl border px-4 py-3 text-left transition-colors",
-                scenario === s.id ? (s.id === "scam" ? "border-disputed bg-disputed/10 glow-disputed" : "border-vault bg-vault/10 glow-vault") : "border-white/10 bg-white/[0.03] hover:bg-white/[0.07]",
+                scenario === s.id ? (s.id === "scam" ? "border-disputed bg-disputed/10 glow-disputed" : "border-vault bg-vault/10 glow-vault") : "border-white/10 bg-card hover:bg-[#1d1d24]",
               )}
             >
               <p className="font-bold">{s.name}</p>
@@ -281,7 +281,7 @@ export function SimulatedLab() {
         {/* Stage */}
         <div className="mt-4">
         <ScaledStage>
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_50%_35%,rgba(61,108,240,0.35),transparent_60%),linear-gradient(180deg,#0b1430,#02060f)] p-3 md:p-6">
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_50%_-10%,#3a1013_0%,transparent_55%),linear-gradient(180deg,#121217,#0b0b0f)] p-3 md:p-6">
           <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 md:gap-6">
             <Persona name="Sam" role={scenario === "fair" ? "Seller · owns a ticket" : "Seller · says he has a ticket"} initial="S" usdc={sellerUsd} tone={frame.sellerTone ?? "neutral"} delta={delta("seller")}>
               {ticketNode("seller")}
@@ -291,7 +291,7 @@ export function SimulatedLab() {
               {frame.cap && (
                 <div className={cn("w-44 rounded-xl border px-3 py-2 text-center text-xs md:w-56", frame.cap.price > frame.cap.cap ? "border-disputed/60 bg-disputed/10" : "border-released/50 bg-released/10")} title="The artist sets a maximum resale price. The program refuses anything above it.">
                   <p className="font-semibold">Price {money(frame.cap.price)} · Max {money(frame.cap.cap)}</p>
-                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/10">
+                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[#1d1d24]">
                     <motion.div
                       className={cn("h-full rounded-full", frame.cap.price > frame.cap.cap ? "bg-disputed" : "bg-released")}
                       initial={{ width: 0 }}
@@ -350,11 +350,11 @@ export function SimulatedLab() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={MOTION.dramatic}
-                className={cn("absolute inset-x-3 top-3 z-40 mx-auto max-w-xl rounded-2xl border-2 bg-black/80 px-4 py-3 text-center backdrop-blur md:top-6", TONE[banner.tone].border, TONE[banner.tone].glow)}
+                className={cn("absolute inset-x-3 top-3 z-40 mx-auto max-w-xl rounded-2xl border-2 overlay-white px-4 py-3 text-center md:top-6", TONE[banner.tone].border, TONE[banner.tone].glow)}
                 role="status"
               >
                 <p className={cn("text-lg font-extrabold md:text-2xl", TONE[banner.tone].text)}>{banner.title}</p>
-                <p className="mt-1 text-sm text-white/85">{banner.text}</p>
+                <p className="mt-1 text-sm text-[#3f3f46]">{banner.text}</p>
                 {banner.tone === "released" && index === steps.length - 1 && (
                   <div className="mt-2"><TxBadge signature={live ? lastSig : null} label={live ? "tx" : "simulated"} /></div>
                 )}
@@ -386,7 +386,7 @@ export function SimulatedLab() {
         {error && <p className="mt-2 rounded-xl border border-disputed/50 bg-disputed/10 px-3 py-2 text-sm">{error}</p>}
 
         {/* Transaction log */}
-        <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-3 text-xs">
+        <div className="mt-4 rounded-2xl border border-white/10 bg-card p-3 text-xs">
           <p className="mb-2 font-semibold tracking-wide text-white/60 uppercase">
             {live ? "Devnet transactions" : "Steps (simulated: switch to Live on devnet for real transactions)"}
           </p>

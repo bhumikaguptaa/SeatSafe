@@ -1,6 +1,6 @@
 // Owner: A. Event detail: primary sale, capped resale listings, outside tickets with escrow.
 // The <Suspense> is required: `params` is request-time data under Cache Components.
-// `?calendar=1` opens the Add to calendar menu on load (shareable link, e.g. from the Grok bot).
+// `?intro=1` plays the 3D picker cinematic (video recording). `?calendar=1` opens the Add to calendar menu on load (shareable link, e.g. from the Grok bot).
 // id = event PDA in real mode (NEXT_PUBLIC_USE_MOCK=false), a mock id like "evt_neon_harbor" otherwise.
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,7 +22,7 @@ async function EventFromParams({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
-  return <EventView id={id} openCalendar={sp.calendar === "1"} />;
+  return <EventView id={id} openCalendar={sp.calendar === "1"} intro={sp.intro === "1"} />;
 }
 
 function EventSkeleton() {

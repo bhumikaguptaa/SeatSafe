@@ -23,6 +23,7 @@ import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { connection, PROGRAM_ID } from "./solana";
 import { fromBaseUnits, getConfig, getProgram, pdas, vaults, type SeatsafeProgram } from "./program";
 import { DEFAULT_EVENT_META, getMetaMap, type MetaMap } from "./event-meta";
+import { prettySeat } from "./stadium-map";
 import type { Event, Listing, Order, OrderEvent, OrderState, StandingOrder, Ticket } from "./types";
 
 /** Same switch as lib/hooks.ts: mock data unless NEXT_PUBLIC_USE_MOCK is exactly "false". */
@@ -145,7 +146,7 @@ export async function getListingsForEvent(eventPda: string): Promise<ChainListin
     bondUsd: 0,
     createdAt: iso(l.account.createdAt),
     ticketMint: l.account.ticketMint.toBase58(),
-    seat: records[i]?.seat ?? "",
+    seat: prettySeat(records[i]?.seat ?? ""),
   }));
 
   const t2: ChainListing[] = escrows
@@ -232,7 +233,7 @@ export async function getMyTickets(owner: string): Promise<ChainTicket[]> {
   return all.flatMap((t, i) => {
     const r = records[i];
     if (!r) return []; // not a SeatSafe ticket
-    const label = r.seat;
+    const label = prettySeat(r.seat); // "WL R1 S26" (3D picker) -> "West Lower · Row 1 · Seat 26"
     return [{
       id: t.mint.toBase58(),
       eventId: r.event.toBase58(),

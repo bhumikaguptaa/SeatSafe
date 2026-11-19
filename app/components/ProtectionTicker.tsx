@@ -125,10 +125,10 @@ export function ProtectionTicker() {
     };
   }, []);
 
-  if (!stats) return <div className="mb-6 h-28 animate-pulse rounded-2xl bg-white/5" aria-hidden />;
+  if (!stats) return <div className="mb-6 h-28 animate-pulse rounded-2xl bg-card" aria-hidden />;
 
   return (
-    <section aria-label="SeatSafe protection, live" className="mb-6 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-vault/25 via-white/[0.04] to-released/10 p-4 text-white md:p-5">
+    <section aria-label="SeatSafe protection, live" className="mb-6 overflow-hidden rounded-2xl border border-white/10 bg-card p-4 text-white md:p-5">
       <div className="mb-3 flex items-center justify-between gap-2 text-xs text-white/70">
         <span className="flex items-center gap-1.5 font-medium text-white">
           <span className="relative flex size-2">
@@ -158,7 +158,7 @@ export function ProtectionTicker() {
                 layout={!reduced}
                 initial={reduced ? false : { opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex min-w-[16rem] shrink-0 snap-start items-center gap-2 rounded-lg bg-black/25 px-3 py-2 text-xs md:min-w-0"
+                className="flex min-w-[16rem] shrink-0 snap-start items-center gap-2 rounded-lg bg-[#1d1d24] px-3 py-2 text-xs md:min-w-0"
               >
                 <span className="min-w-0 flex-1 truncate" title={item.text}>{item.text}</span>
                 <span className="shrink-0 text-white/50">{timeAgo(item.at, now)}</span>
