@@ -1,43 +1,62 @@
 # SeatSafe
 
-SeatSafe is a **ticketing platform** on Solana where fans can **buy and resell tickets without getting scammed or price-gouged**. Artists sell onchain tickets (Token-2022) with a resale price cap and royalty enforced in code. Fans resell through an atomic swap, so the ticket and the USDC change hands in one transaction. Tickets from outside platforms go through an escrow vault with deadlines and automatic refunds. **AI agents can fill standing orders** ("2 tickets under $90") from a capped budget vault, and a live tracker shows where the money and the ticket are at every moment. Users never see crypto: they log in with email or Google, see prices in dollars (devnet USDC), and a relayer pays gas.
+**Buy and resell tickets without getting scammed or price-gouged.** SeatSafe is a ticketing app on Solana where your money only moves when the ticket does. Artists sell onchain tickets with a resale price cap and royalty enforced in code. Fans resell through an atomic swap: the ticket and the payment change hands in one transaction. Tickets from other platforms (Ticketmaster, AXS) are sold through an escrow vault that refunds the buyer automatically if the seller never delivers. Fans never see crypto: they log in with email or Google, see prices in dollars, and pay no gas.
 
-- **Live app:** TODO(A): Vercel URL
-- **Demo video:** TODO(C)
-- **Live Lab:** [/simulator](https://seat-safe-chi.vercel.app/simulator): two people trade a ticket on devnet and every number, padlock and coin is read from Solana after confirmation, with an "under the hood" X-ray of each layer (Privy signature, relayer fee, program logs + compute units, token movement, decoded event, QuickNode delivery time, UI update). Offline backup: `/simulator?offline=1`. Presenter run sheet: [/demo](https://seat-safe-chi.vercel.app/demo).
-- Built for the UBC 2026 Hackathon. **Submission due Fri Nov 20, 12 PM CST.**
+- **Live app:** https://seat-safe-chi.vercel.app
+- **Demo video (3 min):** TODO(C): YouTube or Google Drive link
+- **Live Lab:** [/simulator](https://seat-safe-chi.vercel.app/simulator): two people trade a ticket on Solana devnet, with every balance, padlock and transfer read from the chain and an "under the hood" view of each layer
+- **Track:** Consumer Applications · **Chain award:** Best use of Solana · **Bounties:** QuickNode Streams, Grok Bot, ElevenLabs (TODO: keep only if voice approval is in the video)
+- **Program (devnet):** [`7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy`](https://explorer.solana.com/address/7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy?cluster=devnet)
+
+Built during the UBC 2026 Hackathon (Nov 12–20, 2026).
+
+![How SeatSafe works](docs/seatsafe-user-flow.png)
+
+---
 
 ## 1. The problem
 
-Fans buying resale tickets face two risks: **scams** (paying a stranger for a ticket that never arrives, or arrives fake) and **price gouging** (scalpers reselling far above face value, while the artist gets nothing from resale).
+Buying a ticket from anyone but the box office is a leap of faith:
 
-TODO(C): add 2–3 sourced numbers (scam losses, average resale markup), each with a link.
+- UK ticket fraud losses are estimated at **£150M a year**, and **31% of 18–24-year-old gig-goers** say they've bought a fake ticket ([InterSpace / O2, 2026](https://interspacemusic.com/blog/?p=18860)).
+- The average US concert-ticket scam reported to the BBB in 2025 cost **$303** ([Surfshark](https://surfshark.com/research/chart/concert-ticket-fraud)).
+- At the **2026 World Cup**, fans who bought on major resale sites were left outside stadiums when tickets never transferred, and replacements cost two to three times more ([NPR](https://www.npr.org/2026/06/26/nx-s1-5871397/world-cup-tickets-stubhub-resale-controversy)).
+- Even official resale is slow: FIFA's resale terms allow up to **60 days** to pay sellers, and takes a **15%** cut ([FootballTransfers](https://www.footballtransfers.com/us/transfer-news/world-fifa-club-world-cup/2026/05/fans-outraged-as-fifa-delays-paying-them-for-resold-world-cup-tickets)).
 
-## 2. How it works
+Underneath every story: buyers pay before they hold anything, platforms hold the money and the power, and deals move to DMs and payment apps where nothing protects anyone.
+
+## 2. What SeatSafe does
+
+| | What the fan sees |
+| --- | --- |
+| **3D stadium seat picker** | An aerial 3D stadium: hover a stand to see prices, glide in, pick a seat and see the real view from it before buying |
+| **Buy** | Email or Google login, prices in dollars, no gas, no seed phrase |
+| **My tickets** | Each ticket is locked: only SeatSafe can move it, so it can't be double-sold or sold above the cap |
+| **Can't go? Resell** | One tap, prefilled at face value. Above the artist's cap: blocked by the program. At or below: ticket and money swap in one transaction, and the artist earns a royalty |
+| **Sell in person** | At the gate, the seller shows a Solana Pay QR; the buyer scans it in the app and the swap happens instantly |
+| **Outside tickets (escrow)** | The buyer's money goes into a vault on Solana, not to the seller. Seller delivers → seller gets paid. Seller doesn't → buyer is refunded automatically |
+| **Live updates** | Order tracker, notifications ("your ticket sold", "your refund is back") and a live protection ticker on Discover, all pushed from onchain events |
+| **Verify** | `/verify/<address>` checks any listing on Solana before you pay: "Protected SeatSafe listing" or "Don't pay" |
+| **After you buy** | Add to calendar (Google or `.ics` with a reminder 24 h before), gate pass with rotating QR |
+| **AI agents** | Standing orders ("2 tickets under $90") filled automatically from a capped budget vault, with approval before larger purchases |
+
+## 3. How it works
 
 ### Two trust tiers
 
 | | Tier 1: SeatSafe tickets | Tier 2: outside tickets |
 | --- | --- | --- |
-| What | Tickets sold on SeatSafe (Token-2022, one mint per ticket) | Tickets from other platforms (Ticketmaster, AXS, …) |
-| Resale | Atomic swap: ticket and USDC move in **one transaction** | Escrow: buyer's USDC waits in a program vault |
-| Price | **Capped** by the artist (`price ≤ resale_cap`), enforced onchain | Set by the seller |
-| Protection | Trustless: the swap either fully happens or doesn't | Trust-minimized: seller bond + deadlines + automatic refund + disputes |
-| Artist | Earns a royalty on every resale | – |
+| What | Tickets issued on SeatSafe (Token-2022, one mint per ticket) | Tickets from Ticketmaster, AXS, team apps |
+| Resale | **Atomic swap**: ticket and USDC move in one transaction | **Escrow**: the buyer's USDC waits in a program vault |
+| Price | **Capped** by the artist, enforced onchain | Set by the seller |
+| Protection | Trustless: the swap fully happens or not at all | Trust-minimized: deadlines, automatic refund, disputes |
+| Artist | Royalty on every resale | none |
 
-### Money flow
+### Escrow protects both sides
 
-| Flow | Buyer pays | Seller / organizer gets | Royalty | SeatSafe fee (3%) |
-| --- | --- | --- | --- | --- |
-| Primary sale | face price | organizer: price − fee | – | ✓ |
-| Fan resale (swap) | listing price (≤ cap) | seller: price − royalty − fee | organizer | ✓ |
-| Escrow completed | price | seller: price − fee, plus bond back | – | ✓ |
-| Escrow refunded (seller missed the deadline) | gets back price + **seller's bond** | loses the bond | – | – |
-| Dispute resolved / timed out | split by the arbiter / price back | rest / bond back | – | – |
-
-Full table: [docs/program.md § Economics](docs/program.md#economics).
-
-### Escrow states
+- **Seller never sends the ticket:** after the ship deadline, anyone can trigger `refund_expired` and the buyer gets the money back. The seller can't withdraw early: the program rejects it.
+- **Buyer goes silent after the ticket is sent:** after the confirm window, anyone can trigger `release_expired` and the seller is paid.
+- **Disagreement:** either side opens a dispute; an arbiter can only split that order's own vault between buyer and seller. If the arbiter never acts, `dispute_timeout` refunds the buyer.
 
 ```
                   fund_escrow            mark_sent             confirm_receipt / release_expired
@@ -46,143 +65,112 @@ Full table: [docs/program.md § Economics](docs/program.md#economics).
    │ cancel_escrow_listing       │  │ open_dispute     │ open_dispute
    ▼                             │  └───────┐  ┌───────┘
  Cancelled         refund_expired│          ▼  ▼
- (bond back)    (ship deadline   │        Disputed ──resolve_dispute / dispute_timeout──▶ Resolved
-                 missed)         ▼
-                             Refunded (price + bond to buyer)
+                  (ship deadline │        Disputed ──resolve_dispute / dispute_timeout──▶ Resolved
+                   missed)       ▼
+                             Refunded (buyer gets the money back)
 ```
 
-In the app these map to the tracker's `HELD → IN_TRANSIT → RELEASED` (or `REFUNDED` / `DISPUTED`); see the table at the top of `app/lib/chain.ts`.
+The program also supports an optional seller bond that goes to the buyer if the seller misses the deadline. TODO(A): state whether the app uses a bond ($0 or the amount).
 
-### After you buy
+### Money flow
 
-- **Add to calendar:** Google Calendar or an `.ics` file (Apple, Outlook) with a reminder 24 h before. Offered in the purchase toast, on every ticket in **My tickets**, and on the event page.
-- **Can't go? Resell:** one tap from **My tickets**, prefilled at face value, capped by the artist.
-- **Is this listing protected?** `/verify/<address>` checks any listing on the chain, with no login, before you pay.
+| Flow | Buyer pays | Seller / organizer gets | Artist royalty | SeatSafe fee (3%) |
+| --- | --- | --- | --- | --- |
+| Primary sale | face price | organizer: price − fee | none | ✓ |
+| Fan resale (swap) | listing price (≤ cap) | seller: price − royalty − fee | ✓ | ✓ |
+| Escrow completed | price | seller: price − fee | none | ✓ |
+| Escrow refunded | gets the price back | nothing | none | none |
 
-## 3. Architecture
+Full economics: [docs/program.md § Economics](docs/program.md#economics).
+
+## 4. Architecture
 
 ```mermaid
 flowchart LR
   U[Fan / artist<br/>browser] -->|email or Google| P[Privy<br/>embedded Solana wallet]
-  U --> W[Next.js app<br/>app/]
-  W -->|build tx with lib/program.ts<br/>user signs with Privy| R[/api/relay<br/>relayer co-signs + pays gas/]
+  U --> W[Next.js app]
+  W -->|builds tx, user signs| R[/api/relay<br/>relayer co-signs, pays gas/]
   R --> S[(SeatSafe program<br/>Solana devnet)]
-  W -->|lib/chain.ts reads| S
+  W -->|reads accounts| S
   S -->|program events| Q[QuickNode Stream] --> B[(Supabase)]
-  B -->|live tracker / hooks| W
-  A[Agent crank<br/>app/app/agent] -->|fill_standing_order| R
+  B -->|Realtime: tracker, notifications, ticker| W
+  A[Agent crank] -->|fill_standing_order| R
+  X[Grok on X] -.->|verify links, resale concierge| W
 ```
 
-The six parts:
+| Part | What it does | Where |
+| --- | --- | --- |
+| Anchor program | Tickets, capped resale, atomic swap, escrow, standing orders. 19 instructions, 24 tests | `program/` · [docs/program.md](docs/program.md) |
+| Next.js app | 3D stadium, event pages, My tickets, sell, scan, verify, order tracker, agent console, Live Lab | `app/` |
+| Login + wallets | Privy: email/Google login creates an embedded Solana wallet; users hold 0 SOL | `app/lib/privy.tsx` |
+| Relayer | Checks every transaction against `lib/relay-policy.ts`, co-signs as fee payer, sends and confirms | `app/app/api/relay` |
+| Indexing + realtime | QuickNode Stream → webhook → Supabase → Realtime to the UI | `app/app/api/stream-webhook`, `supabase/` · [docs/backend.md](docs/backend.md) |
+| Agent | Plain English → standing order; crank fills matches within the budget vault | `app/app/agent`, `app/app/api/standing-orders` |
 
-1. **Anchor program** (`program/`): tickets, capped resale, escrow, standing orders. 19 instructions, 24 tests. Reference: [docs/program.md](docs/program.md).
-2. **Next.js app** (`app/`): event pages, My tickets, sell, creator, order tracker, agent console. Mock mode needs no keys.
-3. **Login and wallets** (Privy): email or Google login creates an embedded Solana wallet. Users never hold SOL.
-4. **Relayer** (`app/app/api/relay`): checks every transaction against `lib/relay-policy.ts` (SeatSafe instructions only, can't spend the relayer's SOL), co-signs as fee payer, sends and confirms.
-5. **Indexing and data** (QuickNode Streams → Supabase): mirrors onchain events into the live tracker. Owner B.
-6. **Agent and voice** (`app/app/agent`, ElevenLabs): standing orders filled by a crank from a capped budget vault, with voice approval. Owner D.
+## 5. How we use Solana
 
-## 4. How we use Solana
+- **Program:** `seatsafe` (Anchor), devnet [`7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy`](https://explorer.solana.com/address/7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy?cluster=devnet).
+- **Token Extensions (Token-2022) frozen tickets:** each ticket is its own mint (supply 1, decimals 0) with **DefaultAccountState = Frozen**. Mint and freeze authority is the `["ticket_authority"]` PDA, so every ticket account starts frozen and only the program can thaw it. A holder can't transfer a ticket peer to peer; a plain `transferChecked` fails with "Account is frozen" (tested). The only way to sell is `list_resale → swap_resale`, which enforces the cap.
+- **Atomic swap with royalty and fee split:** `swap_resale` moves the ticket and splits the buyer's USDC between seller, artist royalty and SeatSafe fee in one instruction.
+- **Escrow vaults:** each `EscrowOrder` PDA owns the USDC vault for that order. Deadlines use the cluster clock; anyone can trigger `refund_expired` / `release_expired` after they pass. No instruction lets an admin withdraw user funds.
+- **Standing orders:** a `StandingOrder` PDA owns a USDC budget vault; `fill_standing_order` checks event, max price, quantity, deadline and seller ≠ owner onchain.
+- **Gasless for users:** the relayer is the fee payer and the rent payer; users sign only and hold 0 SOL (proven on devnet in [docs/demo-checklist.md](docs/demo-checklist.md)).
+- **Solana Pay (in-person mode):** a **transaction request** endpoint (`/api/pay/swap`, GET label/icon, POST `{account}` → `{transaction, message}`, CORS) builds the same atomic `swap_resale` with the relayer as fee payer. The seller shows `solana:https://…/api/pay/swap?listing=<pda>` as a QR; the buyer scans it in the app (or any Solana Pay wallet on devnet) and adds the only missing signature. [Devnet proof](https://explorer.solana.com/tx/2rqbfipxdpvPQxxKx3MSTeDW6rA7dnSuBEshW7tK7YVwSmBAz54hBtar5ZP3cc6T9P4fQRh5grpKCcWho1H32dfN?cluster=devnet).
+- **USDC:** Circle devnet USDC `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`; prices shown in dollars.
 
-- **Program:** `seatsafe`, Anchor, on devnet at [`7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy`](https://explorer.solana.com/address/7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy?cluster=devnet).
-- **Token-2022 frozen tickets:** each ticket is its own mint (supply 1, decimals 0) with the **DefaultAccountState = Frozen** extension. Mint and freeze authority is the `["ticket_authority"]` PDA, so every ticket account starts frozen and only the program can thaw it. A holder can't transfer a ticket peer to peer; the only way to sell is `list_resale → swap_resale`, which enforces the cap. A plain `transferChecked` fails with "Account is frozen" (tested). See [docs/program.md § Plan B](docs/program.md#plan-b-ticket-design-why-the-cap-cant-be-bypassed).
-- **Atomic swap with royalty and fee split:** `swap_resale` moves the ticket out of the listing vault and splits the buyer's USDC between seller, organizer royalty and treasury fee in one transaction.
-- **Escrow vaults:** each `EscrowOrder` PDA owns a USDC account holding the buyer's payment plus the seller's bond. Deadlines use the cluster clock, so anyone can trigger `refund_expired` / `release_expired` after they pass. No admin can withdraw user funds.
-- **Standing orders (agents):** a `StandingOrder` PDA owns a USDC budget vault. `fill_standing_order` checks event, max price, quantity, deadline and seller ≠ owner onchain, so a crank can only buy what the owner allowed.
-- **Relayer as fee payer:** the relayer is the transaction fee payer and the `payer` for rent. Users sign only and hold **0 SOL** (proven on devnet: [docs/demo-checklist.md § 3](docs/demo-checklist.md#3-devnet-proof-2026-11-17-no-browser)).
-- **USDC:** Circle devnet USDC, mint `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`. All prices are USDC with 6 decimals, shown as dollars.
-- **Solana Pay (in-person mode):** at the gate, the seller taps **Sell in person** on a ticket. That lists it with the usual capped `list_resale` and shows a Solana Pay **transaction request** QR (`solana:https://…/api/pay/swap?listing=<pda>`). The buyer scans it with **Scan to buy** in the app. `/api/pay/swap` builds the same atomic `swap_resale` for that buyer, with the **relayer as fee payer**, checks it against the relay policy, simulates it and signs as fee payer. The buyer's wallet adds the only missing signature. Ticket and USDC change hands in one transaction, the artist's cap and royalty still apply, and the buyer needs no SOL. The endpoint follows the spec (GET label/icon, POST `{account}` → `{transaction, message}`, CORS), so external Solana Pay wallets on devnet (e.g. Phantom) can scan it too. Proven on devnet by `npm run check:pay` ([tx](https://explorer.solana.com/tx/2rqbfipxdpvPQxxKx3MSTeDW6rA7dnSuBEshW7tK7YVwSmBAz54hBtar5ZP3cc6T9P4fQRh5grpKCcWho1H32dfN?cluster=devnet)).
-
-## 5. QuickNode Streams
-
-The live stream is named **SeatSafe** and is delivering on Solana devnet. It posts matching transactions to `POST /api/stream-webhook`, which writes the order tracker in Supabase. A duplicate signature is ignored.
+## 6. QuickNode Streams
 
 - **Network:** Solana devnet
 - **Dataset:** Block
-- **Filter logic:** a JavaScript `main(stream)` keeps a transaction only when a log line contains program `7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy`. The filter is in [docs/backend.md](docs/backend.md).
-- **Destination:** `https://seat-safe-chi.vercel.app/api/stream-webhook`, header `x-webhook-secret`
-- **Why:** the tracker updates within about a second of a devnet purchase, without a refresh
+- **Filter:** a JavaScript `main(stream)` keeps a transaction only if its log lines mention program `7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy`, so the webhook receives only SeatSafe activity, not whole blocks. Code: [docs/backend.md](docs/backend.md).
+- **Destination:** webhook `https://seat-safe-chi.vercel.app/api/stream-webhook`, authenticated with an `x-webhook-secret` header.
+- **What happens on delivery:** the webhook decodes our Anchor events with the program IDL, updates orders, listings and tickets in Supabase (duplicate signatures ignored, orders only move forward), writes notifications, and Supabase Realtime pushes the change to open pages.
+- **Why:** it's the core data source for everything live: the order tracker moves within about a second of a purchase, buyers and sellers get notifications ("your ticket sold", "your refund is back"), and the protection ticker on Discover updates ($ protected, scams auto-refunded, fair resales, scalpers blocked) without polling.
 
-![SeatSafe QuickNode stream on Solana devnet](docs/quicknode-stream.png)
-
-The Stream also powers the **live protection ticker on Discover** ($ protected, scams auto-refunded, fair resales, scalpers blocked): each decoded event lands in Supabase (`/api/stats`), and Supabase Realtime pushes it to open pages within seconds (devnet resale → ticker in ~4 s). The Stream also triggers real-time notifications to buyers and sellers (e.g. "your ticket sold" or "your refund is back"): `lib/server/notify.ts` writes them as each event is applied, and the bell in the nav receives them over Supabase Realtime.
-
-## 6. ElevenLabs
-
-TODO(D/C): `app/components/VoiceApproval.tsx` is the voice-approval UI for agent purchases ("incoming call"). The ElevenLabs integration (text-to-speech for the prompt, spoken yes/no) is still a `TODO(D)` in that file. Describe which ElevenLabs products are used and how once it's built.
+![SeatSafe QuickNode stream](docs/quicknode-stream.png)
 
 ## 7. Grok Bot on X
 
-SeatSafe uses Grok to demonstrate how AI can support ticket listings and buyer education through X. In our demo, Grok generated a promotional post for a SeatSafe ticket listing and included a link to the marketplace. When asked whether the listing was legitimate, Grok explained how escrow can protect buyers by withholding payment until ticket delivery requirements are met. The conversation demonstrates how AI can help users understand ticket transaction risks and SeatSafe's proposed escrow protection.
-
-We then tested Grok as a trust checker and concierge:
-- **Trust check:** asked to help resell via our new `vercel.app` link, Grok told the fan not to trust it, because a brand-new site looks like a scam. Given the onchain data instead (`solana account`), Grok confirmed that the real listing is owned by the SeatSafe program, so the seller can't take the money, and that a fake "listing" address doesn't exist: "Do not send any money." The proof has to come from the blockchain, not the website. That's why the app has `/verify/<address>`.
-- **Resale concierge:** Grok wrote a step-by-step "can't go Saturday" message using the one-tap `/tickets?resell=<mint>` link, and a reply for a stranger offering to "just Venmo".
-- **Calendar:** Grok made a Google Calendar link and a day-before reminder, matching the app's Add to calendar.
+Grok is SeatSafe's trust checker and concierge on X. Given a listing's onchain account data, Grok confirms whether it's controlled by the SeatSafe program (the seller can't take the money) or is a fake address ("do not send any money"), and explains it in plain English. It guides fans who can't attend through a safe, price-capped resale using a one-tap `/tickets?resell=<mint>` link, answers "just Venmo me" offers, and creates calendar links and reminders for events. Asked to trust our new website on its own, Grok refused, which is exactly the problem SeatSafe solves: proof has to come from the blockchain, not the site.
 
 Chat export: [docs/grok-chat-export.md](docs/grok-chat-export.md).
 
-## 8. Economic design and risk assumptions
+## 8. ElevenLabs
 
-- **Fees:** 3% SeatSafe fee on primary sales, resales and completed escrows, read from the onchain `Config`. Artist royalty (set per event) on resales. `royalty + fee ≤ 50%` is enforced at `create_event`.
-- **Resale cap** is enforced in `list_resale`, and because tickets are frozen outside the program there is no other way to sell a Tier 1 ticket. Off-chain side deals (cash, then a listing at the cap) can't be stopped by any onchain design.
-- **Seller bond** (Tier 2) is lost to the buyer if the seller doesn't mark the ticket sent before the ship deadline.
-- **Tier 2 is trust-minimized, not trustless:** the program can't see an outside ticket. The buyer is protected by the confirm window and disputes.
-- **Arbiter** can only split a disputed escrow's own vault. If it never acts, `dispute_timeout` returns the price to the buyer and the bond to the seller.
-- **No admin backdoor:** no instruction lets anyone withdraw user funds. The upgrade authority (deployer key) is the real trust root on devnet.
-- **Crank trust:** the worst a malicious crank can do is fill a standing order with a listing that matches the owner's own rules. Seller ratings are off-chain, so `minSellerRating` is enforced by our crank only.
+TODO(D/C): keep this section only if voice approval works and appears in the demo video with audio; otherwise delete it and don't opt into the bounty.
+
+Draft: SeatSafe uses **ElevenLabs Agents** (Conversational AI) through the **ElevenLabs React SDK** (`@elevenlabs/react`) for voice approval of agent purchases. When a standing order finds a match above the approval threshold, the app opens an "incoming call" from the SeatSafe agent, which reads out the seat, price and seller and asks for a spoken yes/no; the agent's `approve` / `decline` client tools call `POST /api/standing-orders/:id/approve`, which then fills the order onchain. Code: `app/components/VoiceApproval.tsx`.
+
+## 9. Economic design and risk assumptions
+
+- **Fees:** 3% on primary sales, resales and completed escrows (from the onchain `Config`). Artist royalty set per event; `royalty + fee ≤ 50%` enforced at `create_event`.
+- **Resale cap** enforced in `list_resale`; because tickets are frozen outside the program, there's no other way to sell a Tier 1 ticket. Off-chain side deals can't be stopped by any onchain design.
+- **Tier 2 is trust-minimized, not trustless:** the program can't see an outside ticket; buyers are protected by deadlines, automatic refunds and disputes.
+- **Arbiter** can only split a disputed order's own vault; `dispute_timeout` refunds the buyer if it never acts.
+- **No admin backdoor:** no instruction withdraws user funds. On devnet the upgrade authority (deployer key) is the trust root.
+- **Relayer:** only co-signs transactions that pass `relay-policy.ts` (SeatSafe instructions only; can't spend its own SOL).
+- **Crank trust:** a malicious crank can only fill a standing order with a listing that matches the owner's own rules.
 
 Full list: [docs/program.md § Trust and risk assumptions](docs/program.md#trust-and-risk-assumptions).
 
-## 9. Deployed addresses (devnet)
+## 10. Deployed addresses (devnet)
 
 | What | Address |
 | --- | --- |
-| SeatSafe program | [`7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy`](https://explorer.solana.com/address/7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy?cluster=devnet) (full program, upgraded Nov 16, 2026) |
+| SeatSafe program | [`7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy`](https://explorer.solana.com/address/7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy?cluster=devnet) |
 | Config PDA | [`4fW9Z3ZkBHkCA4LubaWVox7Awu298oyLFhjQ7hi8XDry`](https://explorer.solana.com/address/4fW9Z3ZkBHkCA4LubaWVox7Awu298oyLFhjQ7hi8XDry?cluster=devnet) (fee 3%, dispute window 72 h) |
-| Ticket authority PDA (mint + freeze authority) | `ECzfNYDLy1VBARppGPu86SAoWRV9LAsX9jpybdYn5LjR` |
+| Ticket authority PDA | `ECzfNYDLy1VBARppGPu86SAoWRV9LAsX9jpybdYn5LjR` |
 | USDC mint (Circle devnet) | `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU` |
-| Deployer, admin and treasury | `2VHBVmwU6C5NLdKjpykvJdGYWoSUw5uHAq3EKTbLHTqv` |
+| Deployer, admin, treasury | `2VHBVmwU6C5NLdKjpykvJdGYWoSUw5uHAq3EKTbLHTqv` |
 | Relayer | `7r2SszeUx3xyJsjAeUYvveMMmvkjjvxbPhxUGiP78g61` |
 | Arbiter | `5AFvU5Cyxy6bUMbhumhmeJeRLbNxPjgr8bqKXENxnbjr` |
 | Demo event: Battle of the Bands ($10, cap $15) | [`EMhrDn2puUvJac9PZ15CCTUftj2Axv6E7wp81oV1RzxE`](https://explorer.solana.com/address/EMhrDn2puUvJac9PZ15CCTUftj2Axv6E7wp81oV1RzxE?cluster=devnet) |
 | Demo event: Neon Harbor ($75, cap $120) | `Hw1cWsKxef959oD338Qx86TjDt2km4XXRBqPgxjjvL7a` |
 | Demo event: UT vs. A&M ($85, cap $130) | `6hW7X8JNFfwhU7Qx3dFTyy3LUa5tsCvMWyFhREdZZXzs` |
 
-## 10. Setup
+## 11. Setup
 
-### Prerequisites
-
-| Tool | Version used | Needed for |
-| --- | --- | --- |
-| Node.js | 20+ (built with 24.14.0) | app |
-| npm | 11.9.0 | app |
-| Rust | 1.100.0 (program pins 1.89.0 via `program/rust-toolchain.toml`) | program |
-| Solana CLI (Agave) | 4.3.2 | program |
-| Anchor CLI (via avm) | 1.2.2 | program |
-| Surfpool | not needed | Anchor 1.x's default `anchor test` validator, but our tests use `solana-test-validator` via `npm test` (see below) |
-
-Frontend-only teammates need **only Node 20+**. Solana tooling install guide: https://solana.com/docs/intro/installation
-
-### Repo layout
-
-```
-program/     Anchor workspace (program: seatsafe)            owner A
-  scripts/     init-devnet, seed-devnet, reset-demo
-app/         Next.js app (App Router, TypeScript)
-  app/         routes (see CONTRIBUTING.md for who owns which)
-    api/         API routes                                     owner B (except /api/relay)
-  components/  shared UI (components/ui = shadcn/ui)
-  lib/         types.ts, program.ts (tx builders), tx.ts (relayer flow), chain.ts (readers), calendar.ts, …
-    idl/         generated program IDL + TS types (copied by `npm run sync-idl`)
-  scripts/     devnet / local verification scripts
-supabase/    schema and seed                                  owner B
-docs/        program reference, demo checklist
-```
-
-`app/lib/types.ts` is the contract the whole team codes against. UI gets data only through `useEvents()` / `useOrder()` in `app/lib/hooks.ts`.
-
-### Run the app with mocks (no keys needed)
+### Run the app with mock data (no keys)
 
 ```bash
 cd app
@@ -190,90 +178,72 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
-With no env vars the app uses mock data, login is disabled (a banner says so), and Supabase is `null`.
-
-Try these pages:
-- `/` Discover (event grid)
-- `/orders/ord_held`, `/orders/ord_transit`, `/orders/ord_released` (order tracker with simulate buttons)
-- `/agent`, `/tickets`, `/sell`, `/creator`, `/verify`
-- `/api/health`
-
-Other app scripts: `npm run lint`, `npm run build`.
-
 ### Run the app against devnet
 
-Copy `app/.env.example` to `app/.env.local` and fill it in. Never commit `.env.local`.
+Copy `app/.env.example` to `app/.env.local` and fill it in (never commit it):
 
-| Variable | Default | Notes |
-| --- | --- | --- |
-| `NEXT_PUBLIC_USE_MOCK` | `true` | Set to `false` for devnet |
-| `NEXT_PUBLIC_PRIVY_APP_ID` | empty | Empty means login disabled |
-| `NEXT_PUBLIC_SOLANA_RPC_URL` | `https://api.devnet.solana.com` | Devnet RPC (a QuickNode devnet URL works too) |
-| `NEXT_PUBLIC_USDC_MINT` | `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU` | Circle devnet USDC; verify at https://developers.circle.com |
-| `NEXT_PUBLIC_PROGRAM_ID` | `7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy` | SeatSafe program ID (devnet) |
-| `NEXT_PUBLIC_RELAYER_PUBKEY` | empty | `7r2SszeUx3xyJsjAeUYvveMMmvkjjvxbPhxUGiP78g61` |
-| `RELAYER_SECRET_KEY` | empty | Server only: the relayer's **secret** key (contents of `.keys/relayer.json`), not its public address |
-| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | empty | From B |
-| `SUPABASE_SERVICE_ROLE_KEY` | empty | Server only |
+| Variable | Notes |
+| --- | --- |
+| `NEXT_PUBLIC_USE_MOCK` | `false` for devnet |
+| `NEXT_PUBLIC_PRIVY_APP_ID` | Privy app with email/Google login and Solana embedded wallets |
+| `NEXT_PUBLIC_SOLANA_RPC_URL` | Devnet RPC (public or QuickNode) |
+| `NEXT_PUBLIC_USDC_MINT` | `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU` |
+| `NEXT_PUBLIC_PROGRAM_ID` | `7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy` |
+| `NEXT_PUBLIC_RELAYER_PUBKEY` / `RELAYER_SECRET_KEY` | Relayer public key / secret key (server only) |
+| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | Supabase project (service key server only) |
+| `STREAM_WEBHOOK_SECRET`, `CRON_SECRET` | Server only |
+| `NEXT_PUBLIC_APP_URL` | Deployed URL |
+| `NEXT_PUBLIC_ELEVENLABS_AGENT_ID`, `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` | Voice approval and agent parsing |
 
-Then `npm run dev` and follow [docs/demo-checklist.md](docs/demo-checklist.md). `npm run demo:devnet` runs the buy / over-cap / resale / escrow-refund flows on devnet without a browser.
+Apply `supabase/*.sql` to the Supabase project. `npm run demo:devnet` runs the buy / over-cap / resale / escrow-refund flows on devnet without a browser.
 
 ### Program: build, test, deploy
 
 ```bash
 cd program
-npm install                      # once, for the TypeScript tests
+npm install
 anchor build
-npm test                         # = anchor test --validator legacy (uses solana-test-validator)
-npm run sync-idl                 # copy target/idl + target/types into app/lib/idl/ after every build
-```
-
-**Run tests with `npm test` in `program/`; plain `anchor test` needs the legacy validator.** Anchor 1.x's `anchor test` starts Surfpool by default, and on this project the suite then fails before any test runs (`Blockhash not found` in the `before all` hook). Anchor.toml has no setting to change the default validator; Anchor reads it only from the `--validator` flag or the `ANCHOR_TEST_VALIDATOR` env var. If you want to type plain `anchor test`, either pass the flag (`anchor test --validator legacy`) or export `ANCHOR_TEST_VALIDATOR=legacy` in your shell first.
-
-Deploy to devnet (deployer = `~/.config/solana/id.json`):
-
-```bash
-solana config set --url devnet
-solana airdrop 2                 # or https://faucet.solana.com if rate limited
+npm test             # = anchor test --validator legacy
+npm run sync-idl     # copy the IDL + types into app/lib/idl/
 anchor deploy --provider.cluster devnet
 ```
 
-`Anchor.toml` has the same program ID under `[programs.localnet]` and `[programs.devnet]`. After changing the program keypair, run `anchor keys sync`.
-
-Keypairs live outside git: deployer in `~/.config/solana/id.json`, relayer and arbiter in `.keys/` at the repo root (git-ignored). Ask A for them; never commit or paste secret keys.
+Use `npm test` (plain `anchor test` in Anchor 1.x starts Surfpool, which fails on this project).
 
 ### Demo data
 
 ```bash
 cd program
-anchor run seed-devnet --provider.cluster devnet   # once: 3 events + seed seller tickets (idempotent)
-anchor run reset-demo  --provider.cluster devnet   # before each demo: fresh $14 resale + $20 escrow listing
+anchor run seed-devnet --provider.cluster devnet   # once: demo events
+anchor run reset-demo  --provider.cluster devnet   # before each demo: fresh resale + escrow listings
 ```
 
-`reset-demo` needs 12 devnet USDC in the seed seller (`29ZQN6eHpp5VJH3zLSgC7UVUYsrb6czgrqEKb61LnzUs`); top up at https://faucet.circle.com. For a faster RPC, pass `--provider.cluster https://<your-devnet-endpoint>`.
+`reset-demo` needs devnet USDC in the seed seller (`29ZQN6eHpp5VJH3zLSgC7UVUYsrb6czgrqEKb61LnzUs`); top up at https://faucet.circle.com.
 
-## 11. Team and roles
+### Repo layout
 
-| Member | Role | Owns |
-| --- | --- | --- |
-| A | Lead, Solana program, integration | `program/`, `app/lib/*`, `/events/[id]`, `/tickets`, `/sell`, `/creator`, `/verify`, `/api/relay` |
-| B | Backend | `app/api/*` (except `/api/relay`), Supabase, QuickNode Streams, real data behind `lib/hooks.ts` |
-| C | Pitch | Devpost page, demo video, pitch |
-| D | Frontend and agent | Discover, order tracker, agent console, chat, voice approval (ElevenLabs), gate pass |
+```
+program/     Anchor workspace (seatsafe) + scripts (init-devnet, seed-devnet, reset-demo)
+app/         Next.js app: routes, components, lib (program.ts, tx.ts, chain.ts, hooks.ts)
+supabase/    schema (orders, events, notifications, blocked_attempts)
+docs/        program reference, backend, demo checklist, Grok chat export
+```
 
-## Backend (Member B)
+## 12. What's next
 
-The API, Supabase schema, QuickNode stream, deadline cron, scam detector and standing-order matcher are documented in [docs/backend.md](docs/backend.md). Short version:
+- Mainnet launch with the same program; card onramp for fans without USDC
+- Partner APIs so outside tickets can be verified automatically
+- Dispute panel of verified fans instead of a single arbiter
+- Reminders and resale offers over email, Slack and Discord for student orgs
+- Organizer escrow: hold part of primary revenue until the event happens, refund everyone automatically if it's cancelled
 
-- Apply `supabase/schema.sql` and, for the mock-shaped data, `supabase/seed.sql`.
-- `POST /api/stream-webhook` decodes Anchor logs for program `7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy` and moves orders forward only. Duplicate signatures are ignored.
-- QuickNode stream **SeatSafe** is live on Solana **devnet**, dataset **Block**, destination `https://seat-safe-chi.vercel.app/api/stream-webhook`, header `x-webhook-secret`. The filter is in `docs/backend.md`. The stream is what makes the tracker move without a refresh. Screenshot: [docs/quicknode-stream.png](docs/quicknode-stream.png).
-- Vercel cron (`app/vercel.json`) calls `refund_expired` / `release_expired`, re-reads open escrows, and checks the relayer once a day, which is what the Hobby plan allows. Call those routes directly to run them during a demo.
-- `POST /api/chat` flags off-app payment, links and pressure. `POST /api/standing-orders` turns one English sentence into `{ eventId, quantity, maxPrice, minRating, deadline }`. A match at or above $75 waits for `POST /api/standing-orders/:id/approve` (the voice card). Below that, the relayer sends `fill_standing_order`.
+## 13. Team
 
-Set the Vercel project root to `app/`.
+| Member | Role |
+| --- | --- |
+| TODO(C): name + link | Lead: Solana program, integration |
+| TODO(C): name + link | Backend: API, Supabase, QuickNode Streams |
+| TODO(C): name + link | Pitch, Devpost, demo video |
+| TODO(C): name + link | Frontend: 3D stadium, tracker, agent, voice |
 
-## Contributing
-TODO(C): names and links for each member.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for branches, PRs, file ownership and deadlines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for branches, PRs and file ownership.
