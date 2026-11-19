@@ -70,7 +70,7 @@ Grok is SeatSafe's trust checker and concierge on X. Given a listing's onchain a
 
 ## ElevenLabs
 
-TODO(D/C): keep only if voice approval works and is in the video. Draft: we use **ElevenLabs Agents** via the React SDK for voice approval: when the agent finds tickets above the approval threshold, it calls the fan, reads out seat, price and seller, and a spoken "yes" triggers the onchain purchase (`app/components/VoiceApproval.tsx`).
+We use **ElevenLabs Agents** via the React SDK for voice approval: when the agent finds tickets above the approval threshold, it calls the fan, reads out seat, price and seller, and a spoken "yes" triggers the onchain purchase (`app/components/VoiceApproval.tsx`).
 
 ## Run it
 
