@@ -8,7 +8,6 @@
 - **Track:** Consumer Applications · **Chain award:** Best use of Solana · **Bounties:** QuickNode Streams, Grok Bot, ElevenLabs (TODO: keep only if voice approval is in the video)
 - **Program (devnet):** [`7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy`](https://explorer.solana.com/address/7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy?cluster=devnet)
 
-Built during the UBC 2026 Hackathon (Nov 12–20, 2026).
 
 ![How SeatSafe works](docs/seatsafe-user-flow.png)
 
