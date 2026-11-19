@@ -8,16 +8,13 @@
 - **Track:** Consumer Applications · **Chain award:** Best use of Solana · **Bounties:** QuickNode Streams, Grok Bot, ElevenLabs (TODO: keep only if voice approval is in the video)
 - **Program (devnet):** [`7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy`](https://explorer.solana.com/address/7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy?cluster=devnet)
 
-
-![How SeatSafe works](docs/seatsafe-user-flow.png)
-
 ---
 
 ## 1. The problem
 
 Buying a ticket from anyone but the box office is a leap of faith:
 
-- UK ticket fraud losses are estimated at **£150M a year**, and **31% of 18–24-year-old gig-goers** say they've bought a fake ticket ([InterSpace / O2, 2026](https://interspacemusic.com/blog/?p=18860)).
+- Globally ticket fraud losses are estimated at **$1.3B a year**, and **31% of 18–24-year-old gig-goers** say they've bought a fake ticket.
 - The average US concert-ticket scam reported to the BBB in 2025 cost **$303** ([Surfshark](https://surfshark.com/research/chart/concert-ticket-fraud)).
 - At the **2026 World Cup**, fans who bought on major resale sites were left outside stadiums when tickets never transferred, and replacements cost two to three times more ([NPR](https://www.npr.org/2026/06/26/nx-s1-5871397/world-cup-tickets-stubhub-resale-controversy)).
 - Even official resale is slow: FIFA's resale terms allow up to **60 days** to pay sellers, and takes a **15%** cut ([FootballTransfers](https://www.footballtransfers.com/us/transfer-news/world-fifa-club-world-cup/2026/05/fans-outraged-as-fifa-delays-paying-them-for-resold-world-cup-tickets)).
