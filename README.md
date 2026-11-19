@@ -11,18 +11,15 @@
 
 ## The problem
 
-UK ticket fraud costs an estimated **£150M a year**, and **31% of 18–24-year-old gig-goers** have bought a fake ticket ([O2 / InterSpace](https://interspacemusic.com/blog/?p=18860)). At the **2026 World Cup**, fans who bought on big resale sites were left outside stadiums when their tickets never transferred ([NPR](https://www.npr.org/2026/06/26/nx-s1-5871397/world-cup-tickets-stubhub-resale-controversy)). Buyers pay before they hold anything, and scalpers resell far above face value while artists get nothing.
+Global ticket fraud costs an estimated **$1.3B a year**, and **31% of 18–24-year-old gig-goers** have bought a fake ticket. At the **2026 World Cup**, fans who bought on big resale sites were left outside stadiums when their tickets never transferred ([NPR](https://www.npr.org/2026/06/26/nx-s1-5871397/world-cup-tickets-stubhub-resale-controversy)). Buyers pay before they hold anything, and scalpers resell far above face value while artists get nothing.
 
 ## What makes SeatSafe different
-
-Lots of hackathon projects put tickets on a blockchain. Here's what they usually miss and SeatSafe does:
 
 1. **The price cap can't be bypassed.** Most "NFT ticket" apps let the token move freely, so caps and royalties disappear the moment someone sells it elsewhere. SeatSafe tickets are **frozen Token-2022 accounts that only our program can move**, so the only way to resell is through the capped swap. A direct transfer fails (tested).
 2. **It works for tickets that aren't on a blockchain.** Onchain ticketing only helps if venues adopt it. SeatSafe also protects **Ticketmaster and AXS tickets today** through an escrow vault, so fans are safe from day one, before any artist signs up.
 3. **It protects both sides, without trusting us.** Seller never delivers → buyer refunded. Buyer goes silent → seller paid. These are deadlines **anyone can trigger** on Solana, and no admin can withdraw user funds.
 4. **Proof, not promises.** `/verify/<address>` and our Grok concierge check a listing **on the blockchain** before you pay. A scam site can copy our design; it can't fake an account owned by our program.
 5. **Crypto is genuinely invisible.** Email login, embedded wallet, dollars on screen, **users hold 0 SOL** (a relayer pays gas), and **Solana Pay** for in-person sales at the gate.
-6. **It's real and running.** A deployed Anchor program (19 instructions, 24 tests), every flow proven with devnet transactions, and live updates through QuickNode Streams.
 
 ## Features
 
@@ -84,6 +81,4 @@ cd program && npm install && npm test       # 24 program tests
 
 Devnet setup, environment variables and demo data: [docs/deployment.md](docs/deployment.md).
 
-## Team
-
-TODO(C): names and roles. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Built for University Blockchain Conference 🫶🏼
