@@ -30,7 +30,7 @@ export function Persona({
   const reduced = useReducedMotion() ?? false;
   const shown = useCountUp(usdc, reduced);
   return (
-    <div className={cn("relative flex w-full flex-col items-center rounded-3xl border bg-white/[0.06] p-4 backdrop-blur", TONE[tone].border, tone !== "neutral" && TONE[tone].glow)}>
+    <div className={cn("relative flex w-full flex-col items-center rounded-3xl border bg-[#15151B] p-4", TONE[tone].border, tone !== "neutral" && TONE[tone].glow)}>
       <div className="flex w-full items-center gap-3">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-lg font-bold">{initial}</span>
         <div className="min-w-0">

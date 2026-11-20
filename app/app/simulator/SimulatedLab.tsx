@@ -350,7 +350,7 @@ export function SimulatedLab() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={MOTION.dramatic}
-                className={cn("absolute inset-x-3 top-3 z-40 mx-auto max-w-xl rounded-2xl border-2 bg-black/80 px-4 py-3 text-center backdrop-blur md:top-6", TONE[banner.tone].border, TONE[banner.tone].glow)}
+                className={cn("absolute inset-x-3 top-3 z-40 mx-auto max-w-xl rounded-2xl border-2 bg-[#0B0B0F] px-4 py-3 text-center md:top-6", TONE[banner.tone].border, TONE[banner.tone].glow)}
                 role="status"
               >
                 <p className={cn("text-lg font-extrabold md:text-2xl", TONE[banner.tone].text)}>{banner.title}</p>

@@ -382,7 +382,7 @@ type SortBy = "price" | "best";
 
 export function SeatMap({ event, listings, onDone }: { event: PickerEvent; listings: ChainListing[]; onDone: () => Promise<void> }) {
   const { byId, states, loadRecords } = useStadiumStates(event, listings);
-  const { busy, buy } = useSeatBuy(event);
+  const { busy, done, buy } = useSeatBuy(event);
   const sports = event.category === "sports";
   const fan = isFanVenue(event.venue);
   const geo = useMemo(() => ({ ...geoFor(fan), category: event.category }), [fan, event.category]);
@@ -936,6 +936,7 @@ export function SeatMap({ event, listings, onDone }: { event: PickerEvent; listi
                 st={selSt}
                 vip={vip}
                 busy={busy}
+                done={done}
                 onBuy={() => void onBuy()}
                 onAnother={() => setSelected(null)}
                 onVip={toVip}

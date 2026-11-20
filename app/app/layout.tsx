@@ -4,6 +4,8 @@ import "./globals.css";
 import { Providers } from "@/lib/privy";
 import { TopNav, BottomTabs } from "@/components/AppNav";
 import { Toaster } from "@/components/ui/sonner";
+import { ConfettiHost } from "@/components/Confetti";
+import { SiteFooter } from "@/components/SiteFooter";
 
 const manrope = Manrope({
   variable: "--font-sans",
@@ -53,9 +55,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Providers>
           <TopNav />
           {/* bottom padding leaves room for the mobile tab bar */}
-          <main className="flex flex-1 flex-col pb-20 md:pb-0">{children}</main>
+          <main className="flex flex-1 flex-col">{children}</main>
+          <SiteFooter />
           <BottomTabs />
           <Toaster theme="dark" />
+          <ConfettiHost />
         </Providers>
       </body>
     </html>

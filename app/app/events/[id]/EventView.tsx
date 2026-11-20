@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Loader2, ShieldCheck, Ticket as TicketIcon } from "lucide-react";
+import { Check, Loader2, ShieldCheck, Ticket as TicketIcon } from "lucide-react";
 import { PublicKey } from "@solana/web3.js";
 import { getEvent as getMockEvent, getListingsForEvent as getMockListings, MOCK_USER_ID, tickets as mockTickets } from "@/lib/mock";
 import { getEvent, getListingsForEvent, getMyTickets, seatLabel, USE_MOCK, type ChainEvent, type ChainListing } from "@/lib/chain";
@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/form";
 import { EventArt } from "@/components/EventArt";
 import { AddToCalendar, CalendarLinks } from "@/components/AddToCalendar";
+import { burst } from "@/components/Confetti";
 import { cn } from "@/lib/utils";
 import { SeatPicker } from "@/components/SeatPicker"; // added by D: the 2D seat map (the only seat picker)
 import { formatSeat } from "@/lib/seat-format";
@@ -210,24 +211,32 @@ function Stat({ label, value }: { label: string; value: string }) {
 function BuyPrimaryButton({ event, soldOut, onDone }: { event: ViewEvent; soldOut: boolean; onDone: () => Promise<void> }) {
   const { run } = useRunTx();
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
 
   const buy = async () => {
     setBusy(true);
-    const opts = { pending: "Buying your ticket…", success: "Ticket bought! It's in My tickets.", successExtra: <CalendarLinks event={event} /> };
+    const opts = { pending: "Confirming on Solana…", success: "Ticket bought! It's in My tickets.", successExtra: <CalendarLinks event={event} /> };
+    let ok = false;
     if (USE_MOCK) {
-      await mockTx(opts);
+      ok = await mockTx(opts);
     } else {
       const seat = `GA ${(event.sold ?? 0) + 1}`; // general admission, numbered (≤ 32 bytes)
       const sent = await run((ctx) => buyPrimary(ctx, { event: new PublicKey(event.id), seat }), opts);
+      ok = sent !== null;
       if (sent) await onDone();
     }
     setBusy(false);
+    if (ok) {
+      burst();
+      setDone(true);
+      setTimeout(() => setDone(false), 2500);
+    }
   };
 
   return (
-    <Button className="h-11 w-full text-base" disabled={busy || soldOut} onClick={buy}>
-      {busy ? <Loader2 className="animate-spin" /> : <TicketIcon />}
-      {soldOut ? "Sold out" : `Buy ticket · ${formatUsd(event.priceFromUsd)}`}
+    <Button className="h-11 w-full text-base" disabled={busy || done || soldOut} onClick={buy} aria-live="polite">
+      {busy ? <Loader2 className="animate-spin" /> : done ? <Check /> : <TicketIcon />}
+      {soldOut ? "Sold out" : busy ? "Confirming on Solana…" : done ? "You're in!" : `Buy ticket · ${formatUsd(event.priceFromUsd)}`}
     </Button>
   );
 }
@@ -241,11 +250,15 @@ function ListingRow({ listing, event, onDone }: { listing: ChainListing; event: 
   const buy = async () => {
     setBusy(true);
     if (listing.tier === 1) {
-      const opts = { pending: "Swapping ticket and payment…", success: "Ticket bought! It's in My tickets.", successExtra: <CalendarLinks event={event} /> };
-      if (USE_MOCK) await mockTx(opts);
-      else if (listing.ticketMint) {
+      const opts = { pending: "Confirming on Solana…", success: "Ticket bought! It's in My tickets.", successExtra: <CalendarLinks event={event} /> };
+      if (USE_MOCK) {
+        if (await mockTx(opts)) burst();
+      } else if (listing.ticketMint) {
         const sent = await run((ctx) => swapResale(ctx, { ticketMint: new PublicKey(listing.ticketMint!) }), opts);
-        if (sent) await onDone();
+        if (sent) {
+          burst();
+          await onDone();
+        }
       }
     } else {
       const opts = { pending: "Locking your payment in the vault…", success: "Payment protected. Track your order.", successExtra: <CalendarLinks event={event} /> };
@@ -287,7 +300,7 @@ function ListingRow({ listing, event, onDone }: { listing: ChainListing; event: 
       </div>
       <Button size="sm" variant={listing.tier === 2 ? "outline" : "default"} disabled={busy || mine} onClick={buy} className="w-full sm:w-auto">
         {busy ? <Loader2 className="animate-spin" /> : listing.tier === 2 ? <ShieldCheck /> : null}
-        {mine ? "Yours" : listing.tier === 2 ? "Buy with escrow protection" : "Buy"}
+        {mine ? "Yours" : busy ? "Confirming on Solana…" : listing.tier === 2 ? "Buy with escrow protection" : "Buy"}
       </Button>
     </li>
   );

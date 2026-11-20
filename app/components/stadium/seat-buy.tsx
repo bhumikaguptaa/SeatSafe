@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Crown, Loader2, ShieldCheck, Ticket as TicketIcon } from "lucide-react";
+import { Check, Crown, Loader2, ShieldCheck, Ticket as TicketIcon } from "lucide-react";
 import { PublicKey } from "@solana/web3.js";
 import { buildLayout, mapSeats, seatCode, type SeatKind, type SeatSlot, type SeatState, type SectionId, type SectionLayout } from "@/lib/stadium-map";
 import { chainProgram, USE_MOCK, type ChainListing } from "@/lib/chain";
@@ -19,6 +19,7 @@ import { formatSeat } from "@/lib/seat-format";
 import { SEAT } from "@/lib/design";
 import type { Event } from "@/lib/types";
 import { CalendarLinks } from "@/components/AddToCalendar";
+import { burst } from "@/components/Confetti";
 import { mockSeatMix } from "@/lib/mock-seats"; // D: mock mode only, realistic seat mix
 
 export type PickerEvent = Event & { supply?: number; sold?: number; priceUsd?: number };
@@ -107,16 +108,23 @@ export function useSeatBuy(event: PickerEvent) {
   const router = useRouter();
   const { run } = useRunTx();
   const [busy, setBusy] = useState(false);
+  /** Briefly true after a buy lands: the button shows a check. */
+  const [done, setDone] = useState(false);
+  const celebrate = () => {
+    burst();
+    setDone(true);
+    setTimeout(() => setDone(false), 2500);
+  };
 
   const buy = async (slot: SeatSlot, st: SeatState): Promise<boolean> => {
     setBusy(true);
     const calendar = <CalendarLinks event={event} />;
     let okBuy = false;
     if (st.kind === "available") {
-      const opts = { pending: "Buying your seat…", success: `You're in! ${formatSeat(event, { stand: slot.section, row: slot.row, seat: slot.seat }).label}`, successExtra: calendar };
+      const opts = { pending: "Confirming on Solana…", success: `You're in! ${formatSeat(event, { stand: slot.section, row: slot.row, seat: slot.seat }).label}`, successExtra: calendar };
       okBuy = USE_MOCK ? await mockTx(opts) : (await run((ctx) => buyPrimary(ctx, { event: new PublicKey(event.id), seat: seatCode(slot) }), opts)) !== null;
     } else if (st.kind === "resale" && st.ticketMint) {
-      const opts = { pending: "Swapping ticket and payment…", success: "Ticket bought! It's in My tickets.", successExtra: calendar };
+      const opts = { pending: "Confirming on Solana…", success: "Ticket bought! It's in My tickets.", successExtra: calendar };
       okBuy = USE_MOCK ? await mockTx(opts) : (await run((ctx) => swapResale(ctx, { ticketMint: new PublicKey(st.ticketMint!) }), opts)) !== null;
     } else if (st.kind === "outside" && st.escrow) {
       const opts = { pending: "Locking your payment in the vault…", success: "Payment protected. Track your order.", successExtra: calendar };
@@ -130,10 +138,11 @@ export function useSeatBuy(event: PickerEvent) {
       return false;
     }
     setBusy(false);
+    if (okBuy) celebrate();
     return okBuy;
   };
 
-  return { busy, buy };
+  return { busy, done, buy };
 }
 
 /** The white ticket card shown when a seat is picked (3D and 2D). `thumbnail` fills the left box. */
@@ -144,6 +153,7 @@ export function TicketCard({
   vip,
   thumbnail,
   busy,
+  done = false,
   onBuy,
   onAnother,
   onVip,
@@ -155,6 +165,8 @@ export function TicketCard({
   vip: boolean;
   thumbnail: ReactNode;
   busy: boolean;
+  /** The buy just landed: show a check. */
+  done?: boolean;
   onBuy: () => void;
   onAnother: () => void;
   onVip: () => void;
@@ -196,12 +208,13 @@ export function TicketCard({
           {!vip && st && (st.kind === "available" || st.kind === "resale" || st.kind === "outside") && (
             <button
               type="button"
-              disabled={busy}
+              disabled={busy || done}
               onClick={onBuy}
+              aria-live="polite"
               className="btn-gradient flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold text-black hover:brightness-110 disabled:opacity-60"
             >
-              {busy ? <Loader2 className="size-4 animate-spin" /> : <TicketIcon className="size-4" />}
-              {st.kind === "outside" ? "Buy with escrow" : "Buy"} · {formatUsd(st.priceUsd ?? 0)}
+              {busy ? <Loader2 className="size-4 animate-spin" /> : done ? <Check className="size-4" /> : <TicketIcon className="size-4" />}
+              {busy ? "Confirming on Solana…" : done ? "You're in!" : <>{st.kind === "outside" ? "Buy with escrow" : "Buy"} · {formatUsd(st.priceUsd ?? 0)}</>}
             </button>
           )}
           <button type="button" onClick={onAnother} className="rounded-full border border-[#d4d4d8] px-4 py-2 text-sm font-semibold hover:bg-[#f4f4f5]">

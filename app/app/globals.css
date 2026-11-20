@@ -5,6 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ---------------------------------------------------------------------------
+   Polish pass (Nov 20, A): stadium-night tokens on top of D's orange theme: background #0B0B0F, surfaces
+   #15151B, borders #26262E, accent #E5383B (buttons, selection, focus rings). The orange → pink gradient is
+   unchanged. No glass, no blur, no backdrop-filter anywhere.
+
    Orange theme (Nov 19, D). Tokens mirror lib/design.ts COLORS.
    - Mostly SOLID and flat: black page, #1A1A1A surfaces with a thin #333333 border.
    - Orange #E85002 for main buttons, selected chips, price pins and links; black text on orange (white is 4.2:1).
@@ -15,15 +19,13 @@
 
 /* `glass` is kept as a name so existing markup keeps working, but it is a SOLID surface. */
 @utility glass {
-  background-color: #1a1a1a;
-  border: 1px solid #333333;
+  background-color: #15151b;
+  border: 1px solid #26262e;
 }
-/* The ONE real glass surface (3D ticket card): dark translucent, blurred backdrop, thin light edge. */
+/* Former glass card: now solid (no blur). */
 @utility glass-hero {
-  background-color: rgb(26 26 26 / 0.62);
-  border: 1px solid rgb(249 249 249 / 0.14);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  background-color: #15151b;
+  border: 1px solid #26262e;
   box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.8);
 }
 /* Brand gradient (orange → pink, with a touch of #CE0000 in between), used in a FEW places only:
@@ -163,30 +165,30 @@
 
 .dark {
   /* Orange theme (Nov 19, D): see the header comment. */
-  --background: #000000;
+  --background: #0b0b0f;
   --foreground: #f9f9f9;
-  --card: #1a1a1a;
+  --card: #15151b;
   --card-foreground: #f9f9f9;
-  --popover: #1a1a1a;
+  --popover: #15151b;
   --popover-foreground: #f9f9f9;
-  --primary: #e85002;
+  --primary: #e5383b;
   --primary-foreground: #000000;
-  --secondary: #242424;
+  --secondary: #1c1c23;
   --secondary-foreground: #f9f9f9;
-  --muted: #242424;
-  --muted-foreground: #a7a7a7; /* secondary text */
+  --muted: #1c1c23;
+  --muted-foreground: #a1a1aa; /* secondary text, 7.4:1 on #0B0B0F */
   --subtle: #646464; /* muted text: hints and disabled only (3.5:1 on black) */
   /* Second accent: hot pink for secondary buttons, active tabs/chips, highlights, badges, the agent page and
      the voice call. Black text on it (5.7:1); as text on black it is 5.7:1, on #1A1A1A 4.8:1. */
   --pink: #fe1c80;
   /* Light pink for small tags/labels on dark backgrounds (black text on it, or as text on black: 18:1). */
   --pink-light: #ffe3f1;
-  --accent: #242424;
+  --accent: #1c1c23;
   --accent-foreground: #f9f9f9;
   --destructive: #ef4444;
-  --border: #333333;
-  --input: #333333;
-  --ring: #e85002;
+  --border: #26262e;
+  --input: #26262e;
+  --ring: #e5383b;
   --page-gradient: none;
   --page-blob: none;
   --brand-button: none;
@@ -195,14 +197,14 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: #1a1a1a;
+  --sidebar: #15151b;
   --sidebar-foreground: #f9f9f9;
-  --sidebar-primary: #e85002;
+  --sidebar-primary: #e5383b;
   --sidebar-primary-foreground: #000000;
   --sidebar-accent: #242424;
   --sidebar-accent-foreground: #f9f9f9;
-  --sidebar-border: #333333;
-  --sidebar-ring: #e85002;
+  --sidebar-border: #26262e;
+  --sidebar-ring: #e5383b;
   /* Status colours: for status only, none of them orange. */
   --vault: #3b82f6;
   --released: #22c55e;
@@ -238,7 +240,21 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
   ::selection {
-    background-color: rgb(232 80 2 / 0.45);
+    background-color: rgb(229 56 59 / 0.45);
+  }
+  /* Visible focus everywhere: 2 px accent outline (keyboard only). */
+  :focus-visible {
+    outline: 2px solid #e5383b;
+    outline-offset: 2px;
+  }
+  /* Prices, stats, timers and balances don't jitter while counting. */
+  body {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Placeholders are clearly dimmer than typed values. */
+  ::placeholder {
+    color: #52525b;
+    opacity: 1;
   }
   /* Crisp 1px outline on every filled box that has no border of its own (tiles, chips, inner panels), so
      everything reads as put together. Outline, not border: no layout shift. */
@@ -278,8 +294,8 @@
 }
 /* shadcn Card: flat #1A1A1A surface with a thin #333333 outline (unlayered: beats the ring utility). */
 [data-slot="card"] {
-  --tw-ring-color: #333333;
-  box-shadow: 0 0 0 1px #333333;
+  --tw-ring-color: #26262e;
+  box-shadow: 0 0 0 1px #26262e;
 }
 
 /* ---------------------------------------------------------------------------
@@ -288,33 +304,32 @@
    --------------------------------------------------------------------------- */
 .surface-solid,
 [data-slot="dialog-content"] {
-  --card: #1a1a1a;
-  --popover: #1a1a1a;
-  --muted: #242424;
-  --secondary: #242424;
-  --accent: #242424;
-  --input: #333333;
-  --border: #333333;
-  --muted-foreground: #a7a7a7;
-  --ring: #e85002;
-  background-color: #1a1a1a;
+  --card: #15151b;
+  --popover: #15151b;
+  --muted: #1c1c23;
+  --secondary: #1c1c23;
+  --accent: #1c1c23;
+  --input: #26262e;
+  --border: #26262e;
+  --muted-foreground: #a1a1aa;
+  --ring: #e5383b;
+  background-color: #15151b;
   background-image: none;
-  backdrop-filter: none;
-  box-shadow: 0 0 0 1px #333333;
+  box-shadow: 0 0 0 1px #26262e;
 }
 .surface-solid :is([data-slot="input"], select, textarea),
 [data-slot="dialog-content"] :is([data-slot="input"], select, textarea) {
-  background-color: #242424;
-  border-color: #333333;
+  background-color: #0b0b0f;
+  border-color: #26262e;
   color: #f9f9f9;
 }
 .surface-solid :is([data-slot="input"], textarea)::placeholder,
 [data-slot="dialog-content"] :is([data-slot="input"], textarea)::placeholder {
-  color: #646464;
+  color: #52525b;
 }
 /* Toggles inside solid surfaces: on = orange. */
 .surface-solid input[role="switch"]:checked + span {
-  background-color: #e85002;
+  background-color: #e5383b;
 }
 
 /* Brand emphasis for selection / hover (not a status): crisp orange ring, flat. */
@@ -359,8 +374,9 @@
   pointer-events: none;
 }
 .scan-aura::before {
+  /* polish pass: no blur anywhere, so the soft halo is off; the crisp edge (::after) stays */
+  display: none;
   inset: -14px;
-  filter: blur(26px);
   opacity: 0.7;
   animation:
     aura-spin 5s linear infinite,
@@ -397,17 +413,17 @@
   0% {
     opacity: 0.8;
     transform: scale(1);
-    filter: blur(26px) brightness(1);
+    filter: brightness(1);
   }
   30% {
     opacity: 1;
     transform: scale(1.14);
-    filter: blur(34px) brightness(1.9);
+    filter: brightness(1.9);
   }
   100% {
     opacity: 0.55;
     transform: scale(1);
-    filter: blur(26px) brightness(1);
+    filter: brightness(1);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -457,20 +473,17 @@
   to {
     opacity: 0;
     transform: translateY(-10px) scale(0.985);
-    filter: blur(6px);
   }
 }
 @keyframes page-in {
   from {
     opacity: 0;
     transform: translateY(22px);
-    filter: blur(8px);
     clip-path: inset(0 0 70% 0 round 28px);
   }
   to {
     opacity: 1;
     transform: none;
-    filter: blur(0);
     clip-path: inset(0 0 0 0 round 0);
   }
 }

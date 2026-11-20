@@ -10,22 +10,23 @@
 
 import type { Transition } from "motion/react";
 
-/** Orange theme (Nov 19, D): flat solid surfaces, one orange brand colour, a brand gradient used in only two
+/** Polish pass (Nov 20): stadium-night tokens (#0B0B0F / #15151B / #26262E, accent #E5383B).
+ *  Orange theme (Nov 19, D): flat solid surfaces, one orange brand colour, a brand gradient used in only two
  *  places (Discover featured card, order-page vault) and glass on only the 3D ticket card. Mirrors the .dark
  *  tokens in app/globals.css; the 3D stadium uses these values directly. */
 export const COLORS = {
-  background: "#000000",
-  surface: "#1A1A1A",
+  background: "#0B0B0F",
+  surface: "#15151B",
   /** Raised surface inside a card (chips, inputs, inactive tiles). */
-  surfaceRaised: "#242424",
-  border: "#333333",
+  surfaceRaised: "#1C1C23",
+  border: "#26262E",
   text: "#F9F9F9",
-  textSecondary: "#A7A7A7",
-  textMuted: "#646464",
+  textSecondary: "#A1A1AA",
+  textMuted: "#71717A",
   overlay: "#FFFFFF",
   overlayText: "#000000",
   /** Brand orange: main buttons, selected chips, price pins, links. Text on it is black (white is only 4.2:1). */
-  accent: "#E85002",
+  accent: "#E5383B",
   accentText: "#000000",
   /** Second accent: hot pink (secondary buttons, active tabs/chips, highlights, badges, agent, voice call). */
   pink: "#FE1C80",

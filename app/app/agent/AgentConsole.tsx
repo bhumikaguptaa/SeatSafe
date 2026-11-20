@@ -212,9 +212,12 @@ const ORDER_STATUS: Record<StandingOrder["status"], { label: string; className: 
 function StandingOrdersCard({
   chain,
   events,
+  onExample,
 }: {
   chain: ReturnType<typeof useAgentChain>;
   events: Event[];
+  /** Empty state: fill the prompt with an example. */
+  onExample: (text: string) => void;
 }) {
   const sorted = [...chain.orders].sort((a, b) => b.deadline.localeCompare(a.deadline));
 
@@ -230,7 +233,24 @@ function StandingOrdersCard({
       ) : chain.ordersLoading && sorted.length === 0 ? (
         <Skeleton className="mt-4 h-20 rounded-2xl" />
       ) : sorted.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">No standing orders yet.</p>
+        <div className="mt-4">
+          <p className="text-sm text-muted-foreground">No standing orders yet. Try one:</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {SUGGESTIONS.map((ex) => (
+              <button
+                key={ex}
+                type="button"
+                onClick={() => {
+                  onExample(ex);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="rounded-full border border-border bg-[#0B0B0F] px-3 py-1.5 text-left text-xs font-medium hover:border-primary"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+        </div>
       ) : (
         <ul className="mt-3 divide-y divide-border">
           {sorted.map((o) => {
@@ -521,7 +541,7 @@ export function AgentConsole() {
       )}
 
       {!USE_MOCK && chain.me && <AgentRunCard crank={crank} />}
-      {!USE_MOCK && <StandingOrdersCard chain={chain} events={agent.events} />}
+      {!USE_MOCK && <StandingOrdersCard chain={chain} events={agent.events} onExample={setText} />}
 
       {USE_MOCK ? (
         <VoiceApproval
