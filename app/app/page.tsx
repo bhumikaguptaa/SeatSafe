@@ -6,6 +6,7 @@
 // The featured event is a <GlassHero brand>: the brand gradient (one of only two places it's used).
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, ShieldCheck } from "lucide-react";
 import { useEvents } from "@/lib/hooks";
@@ -33,6 +34,20 @@ function FeaturedEvent({ event }: { event: Event }) {
   return (
     <Link href={`/events/${event.id}`} className="group block">
       <GlassHero brand className="h-64 sm:h-72">
+        {event.imageUrl && (
+          <>
+            <Image
+              src={event.imageUrl}
+              alt=""
+              fill
+              loading="eager"
+              sizes="(min-width: 1024px) 1024px, 100vw"
+              className="-z-10 object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            />
+            {/* Scrim so the white title/price stay readable on any photo. */}
+            <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/35 to-black/10" />
+          </>
+        )}
         <div className="absolute top-4 left-4 flex gap-2">
           <span className="rounded-full bg-pink-light px-2.5 py-1 text-xs font-semibold text-black capitalize">
             Featured · {event.category}

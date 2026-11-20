@@ -15,6 +15,7 @@ export interface Event {
   city: string;
   startsAt: string;          // ISO
   imageGradient: string;     // Tailwind gradient classes, no external images
+  imageUrl?: string;         // optional event photo, a path under /public (e.g. "/events/concert.jpg")
   priceFromUsd: number;
   resaleCapUsd: number | null;
   royaltyBps: number;        // 500 = 5%

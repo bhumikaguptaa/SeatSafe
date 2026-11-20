@@ -20,7 +20,8 @@ const now = Date.now();
 const fromNow = (ms: number) => new Date(now + ms).toISOString();
 
 // ---------------------------------------------------------------------------
-// Events (6): 2 concerts, 2 sports, 2 campus. Times are US Central (UTC-6).
+// Events (11): 4 concerts, 4 sports, 3 campus. Times are US Central (UTC-6).
+// imageUrl photos live in public/events/; events without one fall back to the category icon art.
 // ---------------------------------------------------------------------------
 export const events: Event[] = [
   {
@@ -31,6 +32,7 @@ export const events: Event[] = [
     city: "Austin, TX",
     startsAt: "2026-11-21T20:00:00-06:00",
     imageGradient: "bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-900",
+    imageUrl: "/events/concert.jpg",
     priceFromUsd: 75,
     resaleCapUsd: 120,
     royaltyBps: 500,
@@ -57,6 +59,7 @@ export const events: Event[] = [
     city: "Austin, TX",
     startsAt: "2026-11-28T18:30:00-06:00",
     imageGradient: "bg-gradient-to-br from-orange-600 via-amber-700 to-red-950",
+    imageUrl: "/events/football_stadium.jpg",
     priceFromUsd: 85,
     resaleCapUsd: 150,
     royaltyBps: 300,
@@ -70,6 +73,7 @@ export const events: Event[] = [
     city: "Austin, TX",
     startsAt: "2026-12-12T15:00:00-06:00",
     imageGradient: "bg-gradient-to-br from-emerald-500 via-green-700 to-slate-900",
+    imageUrl: "/events/soccer_stadium.jpg",
     priceFromUsd: 35,
     resaleCapUsd: 60,
     royaltyBps: 500,
@@ -83,6 +87,7 @@ export const events: Event[] = [
     city: "Austin, TX",
     startsAt: "2026-12-04T19:00:00-06:00",
     imageGradient: "bg-gradient-to-br from-sky-400 via-blue-600 to-indigo-950",
+    imageUrl: "/events/theatre.jpg",
     priceFromUsd: 20,
     resaleCapUsd: 30,
     royaltyBps: 0,
@@ -100,6 +105,76 @@ export const events: Event[] = [
     resaleCapUsd: null, // no cap: free-for-all campus event
     royaltyBps: 0,
     organizerName: "Campus Radio KSRF",
+  },
+  {
+    id: "evt_concert",
+    title: "Concert",
+    category: "concert",
+    venue: "Lakeshore Festival Grounds",
+    city: "Austin, TX",
+    startsAt: "2026-12-19T20:00:00-06:00",
+    imageGradient: "bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-900",
+    imageUrl: "/events/concert.jpg",
+    priceFromUsd: 65,
+    resaleCapUsd: 110,
+    royaltyBps: 600,
+    organizerName: "Lakeshore Live",
+  },
+  {
+    id: "evt_football_stadium",
+    title: "Football Stadium",
+    category: "sports",
+    venue: "Capital City Stadium",
+    city: "Austin, TX",
+    startsAt: "2027-01-09T19:00:00-06:00",
+    imageGradient: "bg-gradient-to-br from-orange-600 via-amber-700 to-red-950",
+    imageUrl: "/events/football_stadium.jpg",
+    priceFromUsd: 95,
+    resaleCapUsd: 160,
+    royaltyBps: 300,
+    organizerName: "Capital City Athletics",
+  },
+  {
+    id: "evt_opera",
+    title: "Opera",
+    category: "concert",
+    venue: "Meridian Symphony Hall",
+    city: "Austin, TX",
+    startsAt: "2026-12-11T19:30:00-06:00",
+    imageGradient: "bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-900",
+    imageUrl: "/events/opera.jpg",
+    priceFromUsd: 45,
+    resaleCapUsd: 70,
+    royaltyBps: 500,
+    organizerName: "Meridian Philharmonic",
+  },
+  {
+    id: "evt_soccer_stadium",
+    title: "Soccer Stadium",
+    category: "sports",
+    venue: "Eastside Soccer Park",
+    city: "Austin, TX",
+    startsAt: "2027-01-16T17:00:00-06:00",
+    imageGradient: "bg-gradient-to-br from-emerald-500 via-green-700 to-slate-900",
+    imageUrl: "/events/soccer_stadium.jpg",
+    priceFromUsd: 40,
+    resaleCapUsd: 65,
+    royaltyBps: 400,
+    organizerName: "Austin United FC",
+  },
+  {
+    id: "evt_theatre",
+    title: "Theatre",
+    category: "campus",
+    venue: "Old Main Lyric Theatre",
+    city: "Austin, TX",
+    startsAt: "2026-12-06T19:00:00-06:00",
+    imageGradient: "bg-gradient-to-br from-sky-400 via-blue-600 to-indigo-950",
+    imageUrl: "/events/theatre.jpg",
+    priceFromUsd: 15,
+    resaleCapUsd: 25,
+    royaltyBps: 0,
+    organizerName: "Campus Theatre Guild",
   },
 ];
 

@@ -18,6 +18,8 @@ export interface EventMeta {
   venue: string;
   city: string;
   imageGradient: string;
+  /** Optional event photo under /public, e.g. "/events/concert.jpg". */
+  imageUrl?: string;
   organizerName: string;
   /** Test/smoke events: kept off Discover, /sell and other lists (still reachable by URL). */
   hidden?: boolean;

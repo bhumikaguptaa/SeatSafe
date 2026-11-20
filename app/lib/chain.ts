@@ -70,6 +70,7 @@ function toEvent(address: PublicKey, e: RawEvent, meta: MetaMap): ChainEvent {
     city: m.city,
     startsAt: iso(e.startsAt),
     imageGradient: m.imageGradient,
+    imageUrl: m.imageUrl,
     priceFromUsd: price,
     resaleCapUsd: usd(e.resaleCap),
     royaltyBps: e.royaltyBps,

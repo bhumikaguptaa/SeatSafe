@@ -6,7 +6,8 @@
       "venue": "Riverside Amphitheater",
       "city": "Austin, TX",
       "organizerName": "Neon Harbor",
-      "imageGradient": "bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-900"
+      "imageGradient": "bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-900",
+      "imageUrl": "/events/concert.jpg"
     },
     "6hW7X8JNFfwhU7Qx3dFTyy3LUa5tsCvMWyFhREdZZXzs": {
       "title": "UT vs. A&M: Rivalry Game",
@@ -14,7 +15,8 @@
       "venue": "Memorial Stadium",
       "city": "Austin, TX",
       "organizerName": "UT Athletics",
-      "imageGradient": "bg-gradient-to-br from-orange-600 via-amber-700 to-red-950"
+      "imageGradient": "bg-gradient-to-br from-orange-600 via-amber-700 to-red-950",
+      "imageUrl": "/events/football_stadium.jpg"
     },
     "EMhrDn2puUvJac9PZ15CCTUftj2Axv6E7wp81oV1RzxE": {
       "title": "Battle of the Bands: Dorm Edition",
