@@ -27,7 +27,7 @@ const ROTATE_MS = 10_000;
 
 const DEMO_TICKETS: Ticket[] = [
   { id: "tkt_01", eventId: "evt_neon_harbor", section: "GA", row: "-", seat: "-", tier: 1, ownerId: "user_me" },
-  { id: "tkt_05", eventId: "evt_lila_vance", section: "Balcony", row: "F", seat: "22", tier: 2, ownerId: "user_me" },
+  { id: "tkt_05", eventId: "evt_concert", section: "Balcony", row: "F", seat: "22", tier: 2, ownerId: "user_me" },
   { id: "tkt_08", eventId: "evt_ut_am", section: "Student", row: "GA", seat: "-", tier: 1, ownerId: "user_me" },
 ];
 

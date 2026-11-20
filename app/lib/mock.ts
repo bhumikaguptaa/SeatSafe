@@ -20,8 +20,8 @@ const now = Date.now();
 const fromNow = (ms: number) => new Date(now + ms).toISOString();
 
 // ---------------------------------------------------------------------------
-// Events (11): 4 concerts, 4 sports, 3 campus. Times are US Central (UTC-6).
-// imageUrl photos live in public/events/; events without one fall back to the category icon art.
+// Events (9): 3 concerts, 4 sports, 2 campus. Times are US Central (UTC-6).
+// Every event has a photo in public/events/ (imageUrl).
 // ---------------------------------------------------------------------------
 export const events: Event[] = [
   {
@@ -37,19 +37,6 @@ export const events: Event[] = [
     resaleCapUsd: 120,
     royaltyBps: 500,
     organizerName: "Neon Harbor",
-  },
-  {
-    id: "evt_lila_vance",
-    title: "Lila Vance & The Static",
-    category: "concert",
-    venue: "The Foundry Hall",
-    city: "Dallas, TX",
-    startsAt: "2026-12-05T19:30:00-06:00",
-    imageGradient: "bg-gradient-to-br from-orange-500 via-rose-600 to-red-900",
-    priceFromUsd: 55,
-    resaleCapUsd: 90,
-    royaltyBps: 750,
-    organizerName: "Static Sound Co.",
   },
   {
     id: "evt_ut_am",
@@ -92,19 +79,6 @@ export const events: Event[] = [
     resaleCapUsd: 30,
     royaltyBps: 0,
     organizerName: "Student Activities Board",
-  },
-  {
-    id: "evt_battle_bands",
-    title: "Battle of the Bands: Dorm Edition",
-    category: "campus",
-    venue: "West Quad Lawn",
-    city: "Austin, TX",
-    startsAt: "2026-12-15T18:00:00-06:00",
-    imageGradient: "bg-gradient-to-br from-yellow-400 via-lime-600 to-teal-900",
-    priceFromUsd: 10,
-    resaleCapUsd: null, // no cap: free-for-all campus event
-    royaltyBps: 0,
-    organizerName: "Campus Radio KSRF",
   },
   {
     id: "evt_concert",
@@ -179,21 +153,20 @@ export const events: Event[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Tickets (12), mixed Tier 1 (onchain, has mintAddress) and Tier 2 (outside ticket).
+// Tickets (11), mixed Tier 1 (onchain, has mintAddress) and Tier 2 (outside ticket).
 // ---------------------------------------------------------------------------
 export const tickets: Ticket[] = [
   { id: "tkt_01", eventId: "evt_neon_harbor", section: "GA", row: "-", seat: "-", tier: 1, ownerId: MOCK_USER_ID, mintAddress: "MockMint1111111111111111111111111111111111" },
   { id: "tkt_02", eventId: "evt_neon_harbor", section: "101", row: "C", seat: "12", tier: 1, ownerId: "user_jordan", mintAddress: "MockMint2222222222222222222222222222222222" },
   { id: "tkt_03", eventId: "evt_neon_harbor", section: "101", row: "C", seat: "13", tier: 1, ownerId: "user_jordan", mintAddress: "MockMint3333333333333333333333333333333333" },
-  { id: "tkt_04", eventId: "evt_lila_vance", section: "Floor", row: "A", seat: "4", tier: 2, ownerId: "user_priya" },
-  { id: "tkt_05", eventId: "evt_lila_vance", section: "Balcony", row: "F", seat: "22", tier: 2, ownerId: MOCK_USER_ID },
+  { id: "tkt_04", eventId: "evt_concert", section: "Floor", row: "A", seat: "4", tier: 2, ownerId: "user_priya" },
+  { id: "tkt_05", eventId: "evt_concert", section: "Balcony", row: "F", seat: "22", tier: 2, ownerId: MOCK_USER_ID },
   { id: "tkt_06", eventId: "evt_ut_am", section: "112", row: "28", seat: "5", tier: 2, ownerId: "user_marcus" },
   { id: "tkt_07", eventId: "evt_ut_am", section: "112", row: "28", seat: "6", tier: 2, ownerId: "user_marcus" },
   { id: "tkt_08", eventId: "evt_ut_am", section: "Student", row: "GA", seat: "-", tier: 1, ownerId: MOCK_USER_ID, mintAddress: "MockMint8888888888888888888888888888888888" },
   { id: "tkt_09", eventId: "evt_soccer", section: "Supporters", row: "B", seat: "9", tier: 1, ownerId: "user_sam", mintAddress: "MockMint9999999999999999999999999999999999" },
   { id: "tkt_10", eventId: "evt_soccer", section: "204", row: "K", seat: "17", tier: 2, ownerId: "user_priya" },
   { id: "tkt_11", eventId: "evt_winter_gala", section: "GA", row: "-", seat: "-", tier: 1, ownerId: "user_alex", mintAddress: "MockMintAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" },
-  { id: "tkt_12", eventId: "evt_battle_bands", section: "Lawn", row: "-", seat: "-", tier: 1, ownerId: "user_alex", mintAddress: "MockMintBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -204,7 +177,7 @@ export const listings: Listing[] = [
   // SCALPER DEMO: Tier 1 listing priced ABOVE the event's resaleCapUsd ($120).
   // The program must reject this listing ("scalper blocked" demo).
   { id: "lst_02", ticketId: "tkt_03", eventId: "evt_neon_harbor", sellerId: "user_jordan", sellerName: "Jordan P.", sellerRating: 4.8, priceUsd: 260, tier: 1, bondUsd: 0, createdAt: "2026-11-14T16:07:00Z" },
-  { id: "lst_03", ticketId: "tkt_04", eventId: "evt_lila_vance", sellerId: "user_priya", sellerName: "Priya S.", sellerRating: 4.6, priceUsd: 82, tier: 2, bondUsd: 10, createdAt: "2026-11-13T21:40:00Z" },
+  { id: "lst_03", ticketId: "tkt_04", eventId: "evt_concert", sellerId: "user_priya", sellerName: "Priya S.", sellerRating: 4.6, priceUsd: 82, tier: 2, bondUsd: 10, createdAt: "2026-11-13T21:40:00Z" },
   { id: "lst_04", ticketId: "tkt_06", eventId: "evt_ut_am", sellerId: "user_marcus", sellerName: "Marcus T.", sellerRating: 4.2, priceUsd: 95, tier: 2, bondUsd: 15, createdAt: "2026-11-15T02:10:00Z" },
   { id: "lst_05", ticketId: "tkt_07", eventId: "evt_ut_am", sellerId: "user_marcus", sellerName: "Marcus T.", sellerRating: 4.2, priceUsd: 95, tier: 2, bondUsd: 15, createdAt: "2026-11-15T02:11:00Z" },
   { id: "lst_06", ticketId: "tkt_09", eventId: "evt_soccer", sellerId: "user_sam", sellerName: "Sam R.", sellerRating: 5.0, priceUsd: 48, tier: 1, bondUsd: 0, createdAt: "2026-11-12T18:30:00Z" },
@@ -236,7 +209,7 @@ export const orders: Order[] = [
   {
     id: "ord_transit",
     listingId: "lst_03",
-    eventId: "evt_lila_vance",
+    eventId: "evt_concert",
     buyerId: MOCK_USER_ID,
     sellerId: "user_priya",
     amountUsd: 82,
