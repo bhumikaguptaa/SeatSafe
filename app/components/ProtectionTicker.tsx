@@ -12,6 +12,8 @@ import { USE_MOCK } from "@/lib/chain";
 import { supabase } from "@/lib/supabase";
 import { useNow } from "@/lib/use-chain";
 import type { ActivityItem, Stats } from "@/lib/server/stats";
+import { timeAgo } from "@/lib/format";
+import { cleanFeed } from "@/lib/feed";
 
 const MOCK_STATS: Stats = {
   source: "mock",
@@ -33,7 +35,7 @@ const MOCK_STATS: Stats = {
   ],
 };
 
-/** Counts from the previous value to `value` (~0.8 s); shows the final value instantly with reduced motion. */
+/** Counts from the previous value to `value` (400 ms, ease-out); shows the final value instantly with reduced motion. */
 function useCountUp(value: number, reduced: boolean): number {
   const [shown, setShown] = useState(value);
   const from = useRef(value);
@@ -47,7 +49,7 @@ function useCountUp(value: number, reduced: boolean): number {
     const a = from.current;
     let raf = 0;
     const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / 800);
+      const p = Math.min(1, (t - start) / 400);
       setShown(a + (value - a) * (1 - Math.pow(1 - p, 3)));
       if (p < 1) raf = requestAnimationFrame(tick);
       else from.current = value;
@@ -60,8 +62,9 @@ function useCountUp(value: number, reduced: boolean): number {
 
 function Counter({ value, label, money = false, reduced }: { value: number; label: string; money?: boolean; reduced: boolean }) {
   const shown = useCountUp(value, reduced);
-  const text = money ? `$${Math.round(shown).toLocaleString("en-US")}` : Math.round(shown).toLocaleString("en-US");
-  const final = money ? `$${Math.round(value).toLocaleString("en-US")}` : value.toLocaleString("en-US");
+  // A zero stat reads as broken on a demo screen: show a quiet dash instead.
+  const text = value === 0 ? "—" : money ? `$${Math.round(shown).toLocaleString("en-US")}` : Math.round(shown).toLocaleString("en-US");
+  const final = value === 0 ? "none yet" : money ? `$${Math.round(value).toLocaleString("en-US")}` : value.toLocaleString("en-US");
   return (
     <div className="min-w-0">
       {/* Screen readers get the final value, not every animation frame. */}
@@ -72,15 +75,6 @@ function Counter({ value, label, money = false, reduced }: { value: number; labe
   );
 }
 
-/** `now` from useNow(): 0 during prerender, so no time is shown until mounted (Date.now() can't run there). */
-function timeAgo(iso: string, now: number): string {
-  if (!now) return "";
-  const s = Math.max(0, (now - new Date(iso).getTime()) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
-  if (s < 86_400) return `${Math.floor(s / 3600)} h ago`;
-  return `${Math.floor(s / 86_400)} d ago`;
-}
 
 export function ProtectionTicker() {
   const reduced = useReducedMotion() ?? false;
@@ -125,7 +119,7 @@ export function ProtectionTicker() {
     };
   }, []);
 
-  if (!stats) return <div className="mb-6 h-28 animate-pulse rounded-2xl bg-white/5" aria-hidden />;
+  if (!stats) return <div className="mb-6 h-[212px] animate-pulse rounded-2xl border border-[#26262E] bg-[#15151B] md:h-[172px]" aria-hidden />;
 
   return (
     <section aria-label="SeatSafe protection, live" className="mb-6 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-vault/25 via-white/[0.04] to-released/10 p-4 text-white md:p-5">
@@ -152,16 +146,17 @@ export function ProtectionTicker() {
       {stats.recent.length > 0 && (
         <ul className="no-scrollbar -mx-4 mt-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0" aria-label="Recent activity">
           <AnimatePresence initial={false}>
-            {stats.recent.map((item: ActivityItem) => (
+            {cleanFeed(stats.recent).map((item: ActivityItem) => (
               <motion.li
                 key={item.id}
                 layout={!reduced}
-                initial={reduced ? false : { opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={reduced ? false : { opacity: 0, y: -6, boxShadow: "0 0 0 1.5px #E5383B" }}
+                animate={{ opacity: 1, y: 0, boxShadow: "0 0 0 0px rgba(229,56,59,0)" }}
+                transition={{ duration: 0.4, ease: "easeOut", boxShadow: { duration: 1.6, ease: "easeOut" } }}
                 className="flex min-w-[16rem] shrink-0 snap-start items-center gap-2 rounded-lg bg-secondary px-3 py-2 text-xs md:min-w-0"
               >
                 <span className="min-w-0 flex-1 truncate" title={item.text}>{item.text}</span>
-                <span className="shrink-0 text-white/50">{timeAgo(item.at, now)}</span>
+                <time dateTime={item.at} title={new Date(item.at).toLocaleString("en-US")} className="shrink-0 text-white/60 tabular-nums">{timeAgo(item.at, now)}</time>
                 {item.explorerUrl && (
                   <a href={item.explorerUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 text-white/70 hover:text-white" aria-label="View transaction on Solana Explorer">
                     <ExternalLink className="size-3.5" />

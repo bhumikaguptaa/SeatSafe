@@ -34,7 +34,7 @@ export function Providers({ children }: { children: ReactNode }) {
         loginMethods: ["email", "google"],
         appearance: {
           theme: "dark",
-          accentColor: "#e85002",
+          accentColor: "#e5383b",
           walletChainType: "solana-only",
         },
         embeddedWallets: {

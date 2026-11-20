@@ -3,26 +3,53 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, Compass, Palette, ScanLine, Tag, Ticket } from "lucide-react";
+import { Bot, Compass, FlaskConical, MoreHorizontal, Palette, ScanLine, Tag, Ticket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AuthButton } from "@/components/AuthButton";
 import { UsdcBalance } from "@/components/UsdcBalance";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { BrandMark } from "@/components/BrandMark"; // D: new logo (replaces the shield icon)
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
+// Polish pass (A): "Creator" is "For artists" (route unchanged), "Live Lab" (/simulator) is in the nav with a
+// green devnet dot, and phones get a 5-tab bar (Discover, Tickets, Scan, Sell, More).
 const NAV_ITEMS = [
   { href: "/", label: "Discover", icon: Compass },
   { href: "/tickets", label: "My tickets", icon: Ticket },
   { href: "/scan", label: "Scan to buy", icon: ScanLine },
   { href: "/sell", label: "Sell", icon: Tag },
   { href: "/agent", label: "Agent", icon: Bot },
-  { href: "/creator", label: "Creator", icon: Palette },
+  { href: "/creator", label: "For artists", icon: Palette },
+  { href: "/simulator", label: "Live Lab", icon: FlaskConical, devnet: true },
 ] as const;
+
+const TABS = [
+  { href: "/", label: "Discover", icon: Compass },
+  { href: "/tickets", label: "Tickets", icon: Ticket },
+  { href: "/scan", label: "Scan", icon: ScanLine },
+  { href: "/sell", label: "Sell", icon: Tag },
+] as const;
+const MORE = NAV_ITEMS.filter((n) => !TABS.some((t) => t.href === n.href));
 
 function isActive(pathname: string | null, href: string) {
   if (!pathname) return false;
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
+}
+
+/** Small pulsing green dot: this page runs on Solana devnet. */
+function DevnetDot() {
+  return (
+    <span className="relative ml-1.5 inline-flex size-1.5 align-middle" title="Runs on Solana devnet" aria-label="devnet">
+      <span className="absolute inline-flex size-full animate-ping rounded-full bg-released opacity-60 motion-reduce:hidden" />
+      <span className="relative inline-flex size-1.5 rounded-full bg-released" />
+    </span>
+  );
 }
 
 // With Cache Components on, usePathname() must sit behind <Suspense> so dynamic routes
@@ -38,17 +65,19 @@ function ActiveMobileTabs() {
 
 function DesktopLinks({ pathname }: { pathname: string | null }) {
   return (
-    <nav className="hidden items-center gap-1 md:flex">
-      {NAV_ITEMS.map(({ href, label }) => (
+    <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
+      {NAV_ITEMS.map((item) => (
         <Link
-          key={href}
-          href={href}
+          key={item.href}
+          href={item.href}
+          aria-current={isActive(pathname, item.href) ? "page" : undefined}
           className={cn(
-            "rounded-md px-3 py-1.5 text-sm text-white/80 transition-colors hover:text-white",
-            isActive(pathname, href) && "bg-accent-pink/15 text-accent-pink",
+            "rounded-md px-3 py-1.5 text-sm whitespace-nowrap text-white/80 transition-colors hover:text-white",
+            isActive(pathname, item.href) && "bg-primary/15 text-white",
           )}
         >
-          {label}
+          {item.label}
+          {"devnet" in item && <DevnetDot />}
         </Link>
       ))}
     </nav>
@@ -56,34 +85,45 @@ function DesktopLinks({ pathname }: { pathname: string | null }) {
 }
 
 function MobileTabs({ pathname }: { pathname: string | null }) {
+  const tab = "relative flex w-full flex-col items-center gap-0.5 py-2 text-[11px] text-[#A1A1AA]";
+  const active = "text-white after:absolute after:top-0 after:h-0.5 after:w-8 after:rounded-full after:bg-primary";
+  const moreActive = MORE.some((m) => isActive(pathname, m.href));
   return (
     <ul className="grid grid-cols-5">
-      {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+      {TABS.map(({ href, label, icon: Icon }) => (
         <li key={href}>
-          <Link
-            href={href}
-            className={cn(
-              "relative flex flex-col items-center gap-0.5 py-2 text-[11px] text-muted-foreground",
-              isActive(pathname, href) &&
-                "text-accent-pink after:absolute after:top-0 after:h-0.5 after:w-8 after:rounded-full after:bg-accent-pink",
-            )}
-          >
-            <Icon className="size-5" />
+          <Link href={href} aria-current={isActive(pathname, href) ? "page" : undefined} className={cn(tab, isActive(pathname, href) && active)}>
+            <Icon className="size-5" aria-hidden />
             {label}
           </Link>
         </li>
       ))}
+      <li>
+        <DropdownMenu>
+          <DropdownMenuTrigger aria-label="More pages" className={cn(tab, moreActive && active)}>
+            <MoreHorizontal className="size-5" aria-hidden />
+            More
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="top" className="w-48">
+            {MORE.map((item) => (
+              <DropdownMenuItem key={item.href} render={<Link href={item.href} />}>
+                <item.icon aria-hidden /> {item.label}
+                {"devnet" in item && <DevnetDot />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </li>
     </ul>
   );
 }
 
-/** Top bar: logo + links (desktop), balance + login (all sizes). */
+/** Top bar: logo + links (desktop), balance + login (all sizes). Solid, no blur. */
 export function TopNav() {
   return (
-    // Transparent over the page gradient; the blur keeps it legible once content scrolls underneath.
-    <header className="sticky top-0 z-40 bg-transparent backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
+    <header className="sticky top-0 z-40 border-b border-[#26262E] bg-[#0B0B0F]">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 lg:gap-6">
+        <Link href="/" aria-label="SeatSafe home" className="flex shrink-0 items-center gap-2 font-semibold tracking-tight">
           <BrandMark priority swivel className="h-6" />
           <span className="font-heading text-lg tracking-wide">SeatSafe</span>
         </Link>
@@ -117,7 +157,7 @@ export function TopNav() {
 /** Bottom tab bar (mobile only). */
 export function BottomTabs() {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur md:hidden">
+    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#26262E] bg-[#0B0B0F] pb-[env(safe-area-inset-bottom)] md:hidden">
       <Suspense fallback={<MobileTabs pathname={null} />}>
         <ActiveMobileTabs />
       </Suspense>

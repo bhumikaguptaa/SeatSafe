@@ -4,7 +4,8 @@ import "./globals.css";
 import { Providers } from "@/lib/privy";
 import { TopNav, BottomTabs } from "@/components/AppNav";
 import { Toaster } from "@/components/ui/sonner";
-import { WaveBackground } from "@/components/WaveBackground"; // D: animated wireframe wave behind every page
+import { ConfettiHost } from "@/components/Confetti";
+import { SiteFooter } from "@/components/SiteFooter";
 
 const manrope = Manrope({
   variable: "--font-sans",
@@ -23,13 +24,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://seat-safe-chi.vercel.app";
+
 export const metadata: Metadata = {
-  title: "SeatSafe",
-  description: "Tickets you can trust. Fair resale, protected payments.",
+  metadataBase: new URL(SITE),
+  title: { default: "SeatSafe", template: "%s · SeatSafe" },
+  description: "Your money only moves when the ticket does. Fair resale capped by the artist, outside tickets held in escrow.",
+  applicationName: "SeatSafe",
+  openGraph: {
+    title: "SeatSafe",
+    description: "Your money only moves when the ticket does.",
+    siteName: "SeatSafe",
+    type: "website",
+  },
+  twitter: { card: "summary_large_image", title: "SeatSafe", description: "Your money only moves when the ticket does." },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#0B0B0F",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -40,13 +52,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`dark ${manrope.variable} ${oxanium.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <WaveBackground />
         <Providers>
           <TopNav />
           {/* bottom padding leaves room for the mobile tab bar */}
-          <main className="flex flex-1 flex-col pb-20 md:pb-0">{children}</main>
+          <main className="flex flex-1 flex-col">{children}</main>
+          <SiteFooter />
           <BottomTabs />
           <Toaster theme="dark" />
+          <ConfettiHost />
         </Providers>
       </body>
     </html>

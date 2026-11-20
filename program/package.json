@@ -4,6 +4,7 @@
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
     "test": "anchor test --validator legacy",
+    "demo:prep": "anchor run demo-prep --provider.cluster devnet",
     "sync-idl": "mkdir -p ../app/lib/idl && cp target/idl/seatsafe.json ../app/lib/idl/seatsafe.json && cp target/types/seatsafe.ts ../app/lib/idl/seatsafe.ts"
   },
   "dependencies": {

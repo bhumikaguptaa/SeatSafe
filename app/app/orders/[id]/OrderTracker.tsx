@@ -9,6 +9,7 @@
 // filled blue is reserved for primary buttons.
 
 import { useSyncExternalStore } from "react";
+import { EscrowTimeline } from "./EscrowTimeline"; // Added by A
 import { useParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -322,6 +323,8 @@ export function OrderTracker() {
           </div>
         )}
       </section>
+
+      {view.tier === 2 && <EscrowTimeline state={view.state} events={view.events} msLeft={msLeft} />} {/* Added by A: escrow stepper */}
 
       {/* Activity, newest first. */}
       {latestFirst.length > 0 && (

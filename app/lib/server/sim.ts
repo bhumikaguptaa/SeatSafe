@@ -45,7 +45,7 @@ async function isDevnet(): Promise<boolean> {
 }
 
 /** Battle of the Bands ($10, cap $15, 0% royalty): the event the live scenarios use. */
-function demoEventId(): PublicKey {
+export function demoEventId(): PublicKey {
   const events = (bundledMeta as { events?: Record<string, { title?: string }> }).events ?? {};
   const id = Object.entries(events).find(([, m]) => /battle of the bands/i.test(m.title ?? ""))?.[0];
   if (!id) throw new Error("Battle of the Bands not found in event-meta.json");

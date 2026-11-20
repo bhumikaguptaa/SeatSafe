@@ -1,8 +1,9 @@
 // Owner: B to review, added by A.
 // GET  /api/stats  -> Stats (lib/server/stats.ts) for the Discover protection ticker. Always 200; zeros with
 //                     source "empty" if Supabase is unconfigured or has no data. Edge-cached for 10 s.
-// POST /api/stats  { eventId?, priceUsd, capUsd } -> records one over-cap listing the program rejected
-//                     (AboveResaleCap) in blocked_attempts. No wallet or personal data. Rate-limited.
+// POST /api/stats  { eventId?, priceUsd, capUsd, wallet? } -> records one over-cap listing the program rejected
+//                     (AboveResaleCap) in blocked_attempts (a "scalper blocked" row). The wallet is only the
+//                     rate-limit key (one row per wallet per minute) and is never stored.
 
 import { connection as dynamicRequest, NextResponse, type NextRequest } from "next/server";
 import { computeStats } from "@/lib/server/stats";
@@ -22,12 +23,16 @@ export async function POST(req: NextRequest) {
   if (!rateLimit(`blocked:${clientIp(req.headers)}`, 10, 60_000)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
-  const body = (await req.json().catch(() => null)) as { eventId?: unknown; priceUsd?: unknown; capUsd?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { eventId?: unknown; priceUsd?: unknown; capUsd?: unknown; wallet?: unknown } | null;
   const price = Number(body?.priceUsd);
   const cap = Number(body?.capUsd);
   // Only a real over-cap attempt counts.
   if (!Number.isFinite(price) || !Number.isFinite(cap) || cap < 0 || price <= cap || price > 1_000_000) {
     return NextResponse.json({ error: "Not an over-cap attempt" }, { status: 400 });
+  }
+  const wallet = typeof body?.wallet === "string" && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(body.wallet) ? body.wallet : clientIp(req.headers);
+  if (!rateLimit(`blocked-wallet:${wallet}`, 1, 60_000)) {
+    return NextResponse.json({ stored: false, reason: "Already counted this minute" });
   }
   const eventId = typeof body?.eventId === "string" && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(body.eventId) ? body.eventId : null;
   const db = supabaseAdmin();

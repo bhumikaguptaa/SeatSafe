@@ -46,8 +46,11 @@ export default function CreatorPage() {
   const r = Number(royalty);
   const s = Math.floor(Number(supply));
   const capTooLow = p > 0 && c < p;
-  const royaltyTooHigh = r + 3 > 50;
-  const valid = title.trim() && p > 0 && s > 0 && !capTooLow && r >= 0 && !royaltyTooHigh;
+  // Inline rules (the program allows more; the app keeps royalties in a fair 0–20% band).
+  const royaltyOut = royalty !== "" && (!Number.isFinite(r) || r < 0 || r > 20);
+  const priceBad = price !== "" && !(p > 0);
+  const supplyBad = supply !== "" && !(s > 0);
+  const valid = title.trim() && p > 0 && s > 0 && !capTooLow && royalty !== "" && !royaltyOut;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,8 +113,8 @@ export default function CreatorPage() {
 
       <Card variant="solid" className="mt-6 p-4 md:p-6">
         <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-          <Field label="Title" htmlFor="c-title" className="sm:col-span-2">
-            <Input id="c-title" placeholder="Neon Harbor: Midnight Tides Tour" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
+          <Field label="Title" htmlFor="c-title" hint="e.g. Neon Harbor: Midnight Tides Tour" className="sm:col-span-2">
+            <Input id="c-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
           </Field>
           <Field label="Category" htmlFor="c-category">
             <NativeSelect id="c-category" value={category} onChange={(e) => setCategory(e.target.value as Event["category"])}>
@@ -120,23 +123,23 @@ export default function CreatorPage() {
               <option value="campus">Campus</option>
             </NativeSelect>
           </Field>
-          <Field label="Artist / organizer name" htmlFor="c-org">
-            <Input id="c-org" placeholder="Neon Harbor" value={organizerName} onChange={(e) => setOrganizerName(e.target.value)} maxLength={80} />
+          <Field label="Artist / organizer name" htmlFor="c-org" hint="e.g. Neon Harbor">
+            <Input id="c-org" value={organizerName} onChange={(e) => setOrganizerName(e.target.value)} maxLength={80} />
           </Field>
-          <Field label="Venue" htmlFor="c-venue">
-            <Input id="c-venue" placeholder="Riverside Amphitheater" value={venue} onChange={(e) => setVenue(e.target.value)} maxLength={120} />
+          <Field label="Venue" htmlFor="c-venue" hint="e.g. Riverside Amphitheater">
+            <Input id="c-venue" value={venue} onChange={(e) => setVenue(e.target.value)} maxLength={120} />
           </Field>
-          <Field label="City" htmlFor="c-city">
-            <Input id="c-city" placeholder="Austin, TX" value={city} onChange={(e) => setCity(e.target.value)} maxLength={80} />
+          <Field label="City" htmlFor="c-city" hint="e.g. Austin, TX">
+            <Input id="c-city" value={city} onChange={(e) => setCity(e.target.value)} maxLength={80} />
           </Field>
           <Field label="Date and time" htmlFor="c-start" hint="Leave empty for next Saturday, 8 PM." className="sm:col-span-2">
             <Input id="c-start" type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
           </Field>
-          <Field label="Ticket price (USD)" htmlFor="c-price">
-            <Input id="c-price" type="number" inputMode="decimal" min="0" step="0.01" placeholder="75" value={price} onChange={(e) => setPrice(e.target.value)} />
+          <Field label="Ticket price (USD)" htmlFor="c-price" hint={priceBad ? <span className="text-disputed">Enter a price above $0.</span> : "e.g. 75"}>
+            <Input id="c-price" type="number" inputMode="decimal" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} aria-invalid={priceBad || undefined} />
           </Field>
-          <Field label="Tickets available" htmlFor="c-supply">
-            <Input id="c-supply" type="number" inputMode="numeric" min="1" step="1" value={supply} onChange={(e) => setSupply(e.target.value)} />
+          <Field label="Tickets available" htmlFor="c-supply" hint={supplyBad ? <span className="text-disputed">At least 1 ticket.</span> : undefined}>
+            <Input id="c-supply" type="number" inputMode="numeric" min="1" step="1" value={supply} onChange={(e) => setSupply(e.target.value)} aria-invalid={supplyBad || undefined} />
           </Field>
           <Field
             label="Resale cap (USD)"
@@ -145,18 +148,18 @@ export default function CreatorPage() {
               capTooLow ? (
                 <span className="text-disputed">Must be at least the ticket price ({formatUsd(p)}).</span>
               ) : (
-                "Fans can't resell above this. Default 150% of price."
+                p > 0 && cap === "" ? `Fans can't resell above this. Empty = ${formatUsd(c)} (150% of price).` : "Fans can't resell above this. Must be at least the ticket price."
               )
             }
           >
-            <Input id="c-cap" type="number" inputMode="decimal" min="0" step="0.01" placeholder={p > 0 ? String(c) : "120"} value={cap} onChange={(e) => setCap(e.target.value)} aria-invalid={capTooLow || undefined} />
+            <Input id="c-cap" type="number" inputMode="decimal" min="0" step="0.01" value={cap} onChange={(e) => setCap(e.target.value)} aria-invalid={capTooLow || undefined} />
           </Field>
           <Field
             label="Your royalty on resales (%)"
             htmlFor="c-royalty"
-            hint={royaltyTooHigh ? <span className="text-disputed">Royalty + 3% fee can&apos;t exceed 50%.</span> : "Paid to you on every resale."}
+            hint={royaltyOut ? <span className="text-disputed">Royalty must be between 0% and 20%.</span> : "Paid to you on every resale. 0–20%."}
           >
-            <Input id="c-royalty" type="number" inputMode="decimal" min="0" max="47" step="0.5" value={royalty} onChange={(e) => setRoyalty(e.target.value)} aria-invalid={royaltyTooHigh || undefined} />
+            <Input id="c-royalty" type="number" inputMode="decimal" min="0" max="20" step="0.5" value={royalty} onChange={(e) => setRoyalty(e.target.value)} aria-invalid={royaltyOut || undefined} />
           </Field>
           <Button type="submit" className="h-10 sm:col-span-2" disabled={!valid || busy}>
             {busy ? <Loader2 className="animate-spin" /> : <CalendarPlus />} Create event

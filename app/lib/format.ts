@@ -1,15 +1,34 @@
 // Display formatting helpers. Users only ever see dollars, never token units.
 
-const usd = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-/** 95 -> "$95.00" */
+/**
+ * One price format everywhere: whole dollars without cents ("$75"), otherwise two decimals ("$75.50").
+ * Never "$75.00". Thousands get separators ("$1,240").
+ */
 export function formatUsd(amount: number): string {
-  return usd.format(amount);
+  const n = Math.round(amount * 100) / 100;
+  const whole = Number.isInteger(n);
+  return `${n < 0 ? "-" : ""}$${Math.abs(n).toLocaleString("en-US", {
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: whole ? 0 : 2,
+  })}`;
+}
+
+/**
+ * Relative time: "just now" under a minute, then "4m ago", "13h ago", "2d ago" (no space).
+ * `now` comes from useNow() and is 0 during prerender, so nothing is shown until mounted.
+ */
+export function timeAgo(iso: string, now: number): string {
+  if (!now) return "";
+  const s = Math.max(0, (now - new Date(iso).getTime()) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86_400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86_400)}d ago`;
+}
+
+/** Base58 address -> "7fnV…jypy". */
+export function shortAddress(address: string, chars = 4): string {
+  return address.length <= chars * 2 + 1 ? address : `${address.slice(0, chars)}…${address.slice(-chars)}`;
 }
 
 /**

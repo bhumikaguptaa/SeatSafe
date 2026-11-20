@@ -440,6 +440,42 @@ export function LiveLab() {
     ];
   }, [scenario, s, mint, escrow, me, now, wallet, setParams]);
 
+  // ---- "Prepare demo" (button, or automatic on ?demo=1) ----
+  // Presenter wallets: Sam gets a ticket (a_prepare), then lists it at the fair price (a_list), so the lab
+  // opens on a real listing instead of an empty $0 / $0 / $0 stage. Each step is one real devnet transaction.
+  const [prep, setPrep] = useState<"idle" | "ticket" | "list" | "done">("idle");
+  const prepStarted = useRef(false);
+  const startPrep = useCallback(() => {
+    prepStarted.current = true;
+    setParams({ driver: "presenter", role: null, scenario: "fair" });
+    setPrep("ticket");
+  }, [setParams]);
+  const demoParam = params.get("demo") === "1";
+  useEffect(() => {
+    if (!demoParam || prepStarted.current || !presenter?.enabled) return;
+    const t = setTimeout(startPrep, 0);
+    return () => clearTimeout(t);
+  }, [demoParam, presenter?.enabled, startPrep]);
+  useEffect(() => {
+    if (prep === "idle" || prep === "done" || busy || driver !== "presenter" || scenario !== "fair") return;
+    const step = async () => {
+      if (prep === "ticket") {
+        if (mint) return setPrep("list");
+        const a = actions.find((x) => x.key === "prepare");
+        if (a) await run(a);
+        setPrep("list");
+      } else if (prep === "list") {
+        if (s?.listingOpen) return setPrep("done");
+        if (!mint || s?.ticket?.holder !== "seller") return; // wait for the snapshot to show Sam's ticket
+        const a = actions.find((x) => x.key === "list");
+        if (a) await run(a);
+        setPrep("done");
+      }
+    };
+    const t = setTimeout(() => void step(), 0);
+    return () => clearTimeout(t);
+  }, [prep, busy, driver, scenario, mint, s, actions, run]);
+
   // Stack strip: what the latest run used.
   const latest = runs[0];
   const active = useMemo(() => {
@@ -507,6 +543,10 @@ export function LiveLab() {
             <p className="text-sm text-white/70">Every number, padlock and coin on this screen is read from Solana, after confirmation.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs">
+            <Button size="sm" variant="outline" disabled={!presenter?.enabled || (prep !== "idle" && prep !== "done")} title={presenter?.enabled ? "Sam gets a ticket and lists it at $14 (real devnet transactions)" : presenter?.reason} onClick={startPrep}>
+              {prep === "ticket" || prep === "list" ? <Loader2 className="animate-spin" /> : null}
+              {prep === "ticket" ? "Preparing ticket…" : prep === "list" ? "Listing at $14…" : prep === "done" ? "Demo ready" : "Prepare demo"}
+            </Button>
             <div className="flex items-center gap-1 rounded-full border border-white/15 bg-black/30 p-1" role="group" aria-label="Who signs">
               <button type="button" onClick={() => setParams({ driver: null })} className={cn("rounded-full px-3 py-1.5 font-semibold", driver === "users" && "bg-white text-black")}>Two real users</button>
               <button type="button" disabled={!presenter?.enabled} title={presenter?.enabled ? "Server demo wallets sign" : presenter?.reason} onClick={() => setParams({ driver: "presenter", role: null })} className={cn("rounded-full px-3 py-1.5 font-semibold disabled:opacity-40", driver === "presenter" && "bg-primary text-primary-foreground")}>Presenter</button>
@@ -587,7 +627,7 @@ export function LiveLab() {
                   </div>
                 </div>
                 <p className="mt-3 text-center text-[11px] text-white/50">
-                  {snap ? <>slot {snap.slot.toLocaleString()} · read {now ? Math.max(0, Math.round((now - snap.at) / 1000)) : 0}s ago{rpcSlow && <span className="text-transit"> · RPC busy, slowing down</span>}</> : scenario === "fair" ? "Prepare a ticket to start." : "List an outside ticket to start."}
+                  {snap ? <>slot {snap.slot.toLocaleString()} · read {now ? Math.max(0, Math.round((now - snap.at) / 1000)) : 0}s ago{rpcSlow && <span className="text-transit"> · RPC busy, slowing down</span>}</> : "Pick a scenario: A (fair resale) or B (scam stopped)."}
                 </p>
 
                 {flights.map((f) => (
@@ -604,7 +644,7 @@ export function LiveLab() {
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0 }}
                       transition={MOTION.dramatic}
-                      className={cn("absolute inset-x-3 top-3 z-40 mx-auto max-w-xl rounded-2xl border-2 bg-black/85 px-4 py-3 text-center backdrop-blur", TONE[banner.tone].border, TONE[banner.tone].glow)}
+                      className={cn("absolute inset-x-3 top-3 z-40 mx-auto max-w-xl rounded-2xl border-2 bg-[#0B0B0F] px-4 py-3 text-center", TONE[banner.tone].border, TONE[banner.tone].glow)}
                       role="status"
                     >
                       <p className={cn("text-xl font-extrabold md:text-2xl", TONE[banner.tone].text)}>{banner.title}</p>

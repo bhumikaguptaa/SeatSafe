@@ -4,12 +4,15 @@
 //   cd program && anchor run reset-demo --provider.cluster devnet
 //   Faster RPC: anchor run reset-demo --provider.cluster https://<your-devnet-endpoint>
 //
-// Seller = ../.keys/seed-seller.json (signs; needs 12 USDC: $10 ticket + $2 bond).
+// Seller = ../.keys/seed-seller.json (signs; needs 10 USDC: the $10 ticket; the escrow listing has bond 0).
 // Payer  = deployer (ANCHOR_WALLET): pays every fee and rent.
-// 1. Buys 1 primary ticket ($10)               -> new ticket mint (next seat number)
-// 2. Lists it for resale at $14 (cap $15)      -> new listing PDA (one per mint)
+// 1. Buys 1 primary ticket ($10)               -> new ticket mint, stored with a stadium seat code
+//    (e.g. "WL R5 S4", varied per run) so the seat map shows it on a real row
+// 1b. Tries to list it at $50 (simulation only)  -> the program rejects it (AboveResaleCap). If APP_URL is set,
+//    the rejection is reported to APP_URL/api/stats so the Discover ticker's "scalpers blocked" counts it.
+// 2. Lists it for resale at a fair price ≤ the $15 cap (varies $12–$15 per run) -> new listing PDA
 // 3. Creates an outside-ticket escrow listing  -> new escrow PDA (order_id = Date.now())
-//    $20, $2 bond, 60-second ship/confirm windows
+//    $20, bond 0 (the program only needs price > 0 and windows > 0), 60-second ship/confirm windows
 // 4. Adds the escrow's seat to ../app/lib/event-meta.json (commit it so Vercel shows the seat).
 // Every tx: fresh blockhash, "confirmed", 60 s timeout, one retry. Never prints secret keys.
 
@@ -23,8 +26,11 @@ import idl from "../target/idl/seatsafe.json";
 import { Seatsafe } from "../target/types/seatsafe";
 
 const EVENT = new PublicKey("EMhrDn2puUvJac9PZ15CCTUftj2Axv6E7wp81oV1RzxE"); // Battle of the Bands: $10, cap $15
-const RESALE_PRICE = 14;
-const ESCROW = { price: 20, bond: 2, windowSecs: 60, seat: "Lawn GA (outside ticket)" };
+const CAP = 15;
+const OVER_CAP = 50;
+const RESALE_PRICES = [14, 12, 15, 13]; // all ≤ the cap; one per run (by the event's sold count)
+const ESCROW = { price: 20, bond: 0, windowSecs: 60, seat: "Sec 112 Row 8 Seat 5 (outside ticket)" };
+const APP_URL = process.env.APP_URL; // e.g. https://seat-safe-chi.vercel.app (set by demo-prep)
 const SELLER_FILE = path.resolve(__dirname, "../../.keys/seed-seller.json");
 const META_FILE = path.resolve(__dirname, "../../app/lib/event-meta.json");
 const TIMEOUT_MS = 60_000;
@@ -106,7 +112,10 @@ async function main() {
   log("Step 1: buy primary ticket");
   const ev = await program.account.event.fetch(EVENT);
   const mint = pda(Buffer.from("ticket_mint"), EVENT.toBuffer(), u32(ev.sold));
-  const seat = `Lawn GA ${ev.sold + 1}`;
+  // Stadium seat code (lib/stadium-map.ts format), varied per run so the market shows different rows.
+  const STANDS = ["WL", "EL", "N", "S", "NE", "SW"];
+  const seat = `${STANDS[ev.sold % STANDS.length]} R${3 + (ev.sold % 9)} S${2 + ((ev.sold * 5) % 7)}`;
+  const RESALE_PRICE = RESALE_PRICES[ev.sold % RESALE_PRICES.length];
   const buySig = await send(conn, wallet, [...cu, await program.methods
     .buyPrimary(seat)
     .accountsPartial({
@@ -116,16 +125,36 @@ async function main() {
     })
     .instruction()], [seller], `buy_primary ${seat}`);
 
-  // 2. List it at $14
-  log("Step 2: list for resale");
   const listing = pda(Buffer.from("listing"), mint.toBuffer());
+  const listAccounts = {
+    payer: deployer, seller: seller.publicKey, ticketMint: mint, event: EVENT,
+    sellerTicketAccount: ticketAta(mint, seller.publicKey), listing,
+    listingVault: ticketAta(mint, listing), ticketTokenProgram: TOKEN_2022_PROGRAM_ID,
+  };
+
+  // 1b. Above-cap attempt: simulated (nothing lands, no fee); the program must reject it.
+  log(`Step 1b: try to list at $${OVER_CAP} (cap $${CAP})`);
+  {
+    const { blockhash } = await conn.getLatestBlockhash("confirmed");
+    const tx = new Transaction({ feePayer: deployer, blockhash, lastValidBlockHeight: 0 }).add(...cu, await program.methods.listResale(USDC(OVER_CAP)).accountsPartial(listAccounts).instruction());
+    const sim = await conn.simulateTransaction(tx);
+    const rejected = (sim.value.logs ?? []).some((l) => /AboveResaleCap/.test(l));
+    log(rejected ? "  rejected by the program: AboveResaleCap (as expected)" : `  unexpected: ${JSON.stringify(sim.value.err)}`);
+    if (rejected && APP_URL) {
+      const r = await fetch(`${APP_URL}/api/stats`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ eventId: EVENT.toBase58(), priceUsd: OVER_CAP, capUsd: CAP, wallet: seller.publicKey.toBase58() }),
+      }).then((x) => x.json()).catch((e) => ({ error: String(e) }));
+      log("  reported to the ticker:", JSON.stringify(r));
+    }
+  }
+
+  // 2. List it at a fair price
+  log("Step 2: list for resale");
   const listSig = await send(conn, wallet, [...cu, await program.methods
     .listResale(USDC(RESALE_PRICE))
-    .accountsPartial({
-      payer: deployer, seller: seller.publicKey, ticketMint: mint, event: EVENT,
-      sellerTicketAccount: ticketAta(mint, seller.publicKey), listing,
-      listingVault: ticketAta(mint, listing), ticketTokenProgram: TOKEN_2022_PROGRAM_ID,
-    })
+    .accountsPartial(listAccounts)
     .instruction()], [seller], `list_resale $${RESALE_PRICE}`);
 
   // 3. New escrow listing (timestamp order_id -> new PDA each run)

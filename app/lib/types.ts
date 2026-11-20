@@ -14,7 +14,8 @@ export interface Event {
   venue: string;
   city: string;
   startsAt: string;          // ISO
-  imageGradient: string;     // Tailwind gradient classes, no external images
+  imageGradient: string;     // Tailwind gradient classes (legacy; art now comes from imageUrl)
+  imageUrl?: string;         // original art in public/events/ (lib/event-image.ts picks a default)
   priceFromUsd: number;
   resaleCapUsd: number | null;
   royaltyBps: number;        // 500 = 5%

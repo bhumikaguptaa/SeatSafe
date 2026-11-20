@@ -21,7 +21,6 @@ import {
   Lock,
   Search,
   Sparkles,
-  Star,
   Ticket,
   Users,
   X,
@@ -39,8 +38,8 @@ import { useAgentChain } from "./useAgentChain";
 import { useAgentCrank } from "./useAgentCrank";
 
 const SUGGESTIONS = [
-  "2 tickets for UT vs A&M under $90, 4+ star sellers, before Friday",
-  "1 ticket for Neon Harbor under $100, 4.5+ star sellers",
+  "2 tickets for UT vs A&M under $90 before Friday",
+  "1 ticket for Neon Harbor under $100",
   "4 tickets for Battle of the Bands under $20",
 ];
 
@@ -109,11 +108,6 @@ function RulesGrid({ rules }: { rules: ParsedRules }) {
         label="Max price"
         value={rules.maxPriceUsd !== null ? `${formatUsd(rules.maxPriceUsd)} each` : "Add a max, e.g. “under $90”"}
         missing={rules.maxPriceUsd === null}
-      />
-      <RuleCard
-        icon={Star}
-        label="Sellers"
-        value={rules.minSellerRating !== null ? `${rules.minSellerRating}★ and up` : "Any rating"}
       />
       <RuleCard
         icon={CalendarClock}
@@ -218,9 +212,12 @@ const ORDER_STATUS: Record<StandingOrder["status"], { label: string; className: 
 function StandingOrdersCard({
   chain,
   events,
+  onExample,
 }: {
   chain: ReturnType<typeof useAgentChain>;
   events: Event[];
+  /** Empty state: fill the prompt with an example. */
+  onExample: (text: string) => void;
 }) {
   const sorted = [...chain.orders].sort((a, b) => b.deadline.localeCompare(a.deadline));
 
@@ -228,7 +225,7 @@ function StandingOrdersCard({
     <section className="surface-solid rounded-3xl p-5 sm:p-6">
       <h2 className="text-lg font-bold">Your standing orders</h2>
       <p className="mt-0.5 text-xs text-muted-foreground">
-        Live on devnet. Seller-rating rules aren&apos;t stored onchain yet, so they aren&apos;t enforced.
+        Your agent only buys within your budget and price limit. Both are enforced onchain.
       </p>
 
       {!chain.me ? (
@@ -236,7 +233,24 @@ function StandingOrdersCard({
       ) : chain.ordersLoading && sorted.length === 0 ? (
         <Skeleton className="mt-4 h-20 rounded-2xl" />
       ) : sorted.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">No standing orders yet.</p>
+        <div className="mt-4">
+          <p className="text-sm text-muted-foreground">No standing orders yet. Try one:</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {SUGGESTIONS.map((ex) => (
+              <button
+                key={ex}
+                type="button"
+                onClick={() => {
+                  onExample(ex);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="rounded-full border border-border bg-[#0B0B0F] px-3 py-1.5 text-left text-xs font-medium hover:border-primary"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+        </div>
       ) : (
         <ul className="mt-3 divide-y divide-border">
           {sorted.map((o) => {
@@ -321,7 +335,7 @@ export function AgentConsole() {
       <section className="bg-brand-top rounded-3xl border border-accent-pink/30 p-5">
         <h2 className="text-[28px] leading-tight font-bold tracking-tight">What should your agent buy?</h2>
         <p className="mt-2 text-[15px] text-muted-foreground">
-          Say it in plain English. Your agent only buys inside the rules you approve, from a budget you lock.
+          Say it in plain English. Your agent only buys within your budget and price limit. Both are enforced onchain.
         </p>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-3">
@@ -351,7 +365,7 @@ export function AgentConsole() {
             id="agent-request"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="2 tickets for UT vs A&M under $90, 4+ star sellers, before Friday"
+            placeholder="2 tickets for UT vs A&M under $90 before Friday"
             className="h-10 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
           />
           <Button
@@ -527,7 +541,7 @@ export function AgentConsole() {
       )}
 
       {!USE_MOCK && chain.me && <AgentRunCard crank={crank} />}
-      {!USE_MOCK && <StandingOrdersCard chain={chain} events={agent.events} />}
+      {!USE_MOCK && <StandingOrdersCard chain={chain} events={agent.events} onExample={setText} />}
 
       {USE_MOCK ? (
         <VoiceApproval

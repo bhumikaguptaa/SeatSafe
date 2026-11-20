@@ -6,16 +6,17 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { AlertTriangle, ExternalLink, Search, ShieldCheck } from "lucide-react";
-import { addressFromInput, getVerifyInfo, type VerifyInfo } from "@/lib/chain";
+import { AlertTriangle, Check, Copy, ExternalLink, Search, ShieldCheck } from "lucide-react";
+import { addressFromInput, chainProgram, getVerifyInfo, type VerifyInfo } from "@/lib/chain";
 import { useAsyncData, useNow } from "@/lib/use-chain";
-import { formatCountdown, formatDate, formatUsd } from "@/lib/format";
+import { formatCountdown, formatDate, formatUsd, shortAddress } from "@/lib/format";
 import { explorerAddress } from "@/lib/solana";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatSeat } from "@/lib/seat-format";
 
 export function VerifyForm({ initial = "" }: { initial?: string }) {
   const router = useRouter();
@@ -59,7 +60,10 @@ export function VerifyView({ address }: { address: string }) {
             Couldn&apos;t reach Solana right now. Try again in a moment.
           </Card>
         ) : data ? (
-          <Result info={data} />
+          <>
+            <Result info={data} />
+            {(data.kind === "listing" || data.kind === "escrow" || data.kind === "event" || data.kind === "other") && <ProgramProof address={address} />}
+          </>
         ) : null}
       </div>
       <div className="mt-8 space-y-2">
@@ -67,6 +71,35 @@ export function VerifyView({ address }: { address: string }) {
         <VerifyForm />
       </div>
     </section>
+  );
+}
+
+/** Proof anyone can check: the account on Explorer, and the program that controls it (with copy). */
+function ProgramProof({ address }: { address: string }) {
+  const programId = chainProgram().programId.toBase58();
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(programId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // clipboard blocked: the id is still on screen (title)
+    }
+  };
+  return (
+    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#26262E] bg-[#15151B] px-4 py-3 text-sm">
+      <span className="flex flex-wrap items-center gap-1.5 text-[#A1A1AA]">
+        Controlled by program
+        <code className="rounded bg-[#0B0B0F] px-1.5 py-0.5 font-mono text-white" title={programId}>{shortAddress(programId)}</code>
+        <button type="button" onClick={copy} aria-label="Copy program ID" className="rounded p-1 text-[#A1A1AA] hover:bg-white/10 hover:text-white">
+          {copied ? <Check className="size-3.5 text-released" /> : <Copy className="size-3.5" />}
+        </button>
+      </span>
+      <a href={explorerAddress(address)} target="_blank" rel="noopener noreferrer" className="font-semibold text-white underline-offset-4 hover:underline">
+        View on Solana Explorer ↗
+      </a>
+    </div>
   );
 }
 
@@ -172,7 +205,7 @@ function Result({ info }: { info: VerifyInfo }) {
           <dl>
             <Row label="Event">{info.event?.title ?? "SeatSafe event"}</Row>
             {info.event && <Row label="Date">{formatDate(info.event.startsAt)}</Row>}
-            <Row label="Seat">{info.seat || "General admission"}</Row>
+            <Row label="Seat">{formatSeat(info.event, info.seat).label}</Row>
             <Row label="Price">
               {formatUsd(info.priceUsd)}
               {info.event?.resaleCapUsd != null && (
@@ -198,7 +231,7 @@ function Result({ info }: { info: VerifyInfo }) {
         <Protected title="Protected SeatSafe escrow">
           <dl>
             <Row label="Event">{info.event?.title ?? "Outside ticket"}</Row>
-            {e.seat && <Row label="Seat">{e.seat}</Row>}
+            {e.seat && <Row label="Seat">{formatSeat(info.event, e.seat).label}</Row>}
             <Row label="Price">{formatUsd(e.priceUsd)}</Row>
             <Row label="Seller bond">
               {formatUsd(e.bondUsd)}

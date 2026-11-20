@@ -5,7 +5,8 @@
 // See lib/server/sim.ts. Never returns secret keys.
 
 import { connection as dynamicRequest, NextResponse, type NextRequest } from "next/server";
-import { balances, runStep, simWallets, type StepContext } from "@/lib/server/sim";
+import { balances, demoEventId, runStep, SIM, simWallets, type StepContext } from "@/lib/server/sim";
+import { supabaseAdmin } from "@/lib/server/supabase-admin";
 import { clientIp, rateLimit } from "@/lib/server/rate-limit";
 import type { LiveAction } from "@/app/simulator/scenarios";
 
@@ -39,6 +40,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = await runStep(s.w, action, context);
+    // The program rejected an over-cap listing: count it as a blocked scalper on the Discover ticker
+    // (one row per minute, so repeated demo clicks don't inflate it).
+    if (action === "a_list_over" && !result.ok && result.errorName === "AboveResaleCap" && rateLimit("blocked-wallet:sim-seller", 1, 60_000)) {
+      await supabaseAdmin()
+        ?.from("blocked_attempts")
+        .insert({ event_id: demoEventId().toBase58(), price_usd: SIM.over, cap_usd: 15 })
+        .then(({ error }) => error && console.warn("blocked_attempts insert failed:", error.message));
+    }
     return NextResponse.json({ ...result, balances: await balances(s.w).catch(() => null) });
   } catch (err) {
     return NextResponse.json({ ok: false, message: err instanceof Error ? err.message : String(err), context }, { status: 500 });

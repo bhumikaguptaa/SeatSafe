@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
-import { Check, Copy, ExternalLink, Loader2, LogIn, LogOut, Ticket } from "lucide-react";
+import { Check, Copy, ExternalLink, Loader2, LogIn, LogOut, Ticket, Wallet } from "lucide-react";
 import { PRIVY_ENABLED } from "@/lib/privy";
 import { explorerAddress } from "@/lib/solana";
 import { shortAddress, useSolanaWallet } from "@/lib/useSolanaWallet";
@@ -49,6 +49,8 @@ function PrivyAuthButton() {
   }
 
   const email = user?.email?.address ?? user?.google?.email ?? "Account";
+  // First letter of the email's name part ("bea.smith@…" -> "B").
+  const initial = (email.split("@")[0].match(/[a-z0-9]/i)?.[0] ?? "?").toUpperCase();
 
   const copyAddress = async () => {
     if (!address) return;
@@ -68,7 +70,7 @@ function PrivyAuthButton() {
         className={buttonVariants({ variant: "ghost", size: "icon" })}
       >
         <Avatar className="size-7">
-          <AvatarFallback>{email.slice(0, 1).toUpperCase()}</AvatarFallback>
+          <AvatarFallback className="bg-primary font-bold text-black">{initial}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
@@ -87,7 +89,7 @@ function PrivyAuthButton() {
             <DropdownMenuItem
               render={<a href={explorerAddress(address)} target="_blank" rel="noopener noreferrer" />}
             >
-              <ExternalLink /> View on Solana Explorer (devnet)
+              <ExternalLink /> View on Solana Explorer ↗
             </DropdownMenuItem>
           </>
         ) : (
@@ -99,8 +101,13 @@ function PrivyAuthButton() {
         <DropdownMenuItem onClick={() => router.push("/tickets")}>
           <Ticket /> My tickets
         </DropdownMenuItem>
+        {address && (
+          <DropdownMenuItem render={<a href={explorerAddress(address)} target="_blank" rel="noopener noreferrer" />}>
+            <Wallet /> Wallet
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={() => logout()}>
-          <LogOut /> Log out
+          <LogOut /> Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

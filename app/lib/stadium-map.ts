@@ -98,6 +98,34 @@ export function buildLayout(): SectionLayout[] {
   });
 }
 
+/**
+ * Inventory order inside a section (display only): seats come in small clusters (2–6 together) spread over
+ * the rows, front rows a little more likely, so the market reads like a real one (varied rows and group
+ * sizes) instead of every listing being "Row 1". Deterministic: same section → same order on every device.
+ * The seat you click is the seat you buy (its code is stored onchain), so this never changes what's sold.
+ */
+function inventoryOrder(l: SectionLayout): number[] {
+  const h01 = (k: string) => (fnv(k) % 10_000) / 10_000;
+  const runs: { score: number; seats: number[] }[] = [];
+  const byRow = new Map<number, SeatSlot[]>();
+  for (const s of l.slots) byRow.set(s.row, [...(byRow.get(s.row) ?? []), s]);
+  for (const [row, slots] of byRow) {
+    slots.sort((a, b) => a.seat - b.seat);
+    let k = 1 + Math.floor(h01(`${l.def.id}|${row}|o`) * 3);
+    while (k < slots.length) {
+      const len = 2 + Math.floor(h01(`${l.def.id}|${row}|${k}|n`) * 5);
+      const run = slots.slice(k, k + len).map((s) => s.index);
+      // Keep ~30% of the runs per row so the inventory spreads over many rows (long front rows don't dominate).
+      if (h01(`${l.def.id}|${row}|${k}|keep`) < 0.3) runs.push({ score: (row / l.def.rows) * 0.5 + h01(`${l.def.id}|${row}|${k}|s`), seats: run });
+      k += len + 1 + Math.floor(h01(`${l.def.id}|${row}|${k}|g`) * 4);
+    }
+  }
+  runs.sort((a, b) => a.score - b.score);
+  const order = runs.flatMap((r) => r.seats);
+  const seen = new Set(order);
+  return [...order, ...bestOrder(l).filter((i) => !seen.has(i))];
+}
+
 /** Best seats first inside a section: front rows, then closest to the centre of the row. */
 function bestOrder(l: SectionLayout): number[] {
   const mid = (l.def.from + l.def.to) / 2;
@@ -172,7 +200,7 @@ export function mapSeats(layout: SectionLayout[], m: MapInput): Map<SectionId, S
   const out = new Map<SectionId, SeatState[]>();
   for (const l of layout) out.set(l.def.id, l.slots.map(() => ({ kind: "off" as SeatKind })));
   const main = layout.filter((l) => l.def.tier !== "vip");
-  const orders = new Map(main.map((l) => [l.def.id, bestOrder(l)]));
+  const orders = new Map(main.map((l) => [l.def.id, inventoryOrder(l)]));
   const used = new Map(main.map((l) => [l.def.id, 0]));
   const resaleByMint = new Map(m.resale.map((r) => [r.ticketMint, r]));
 
