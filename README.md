@@ -3,7 +3,7 @@
 **Buy and resell tickets without getting scammed or price-gouged.** Your money only moves when the ticket does: SeatSafe tickets live on Solana with a resale price cap enforced in code, fan resales are atomic swaps, and tickets from other platforms are sold through an escrow vault that refunds the buyer automatically if the seller never delivers. Fans never see crypto: email login, prices in dollars, no gas.
 
 - **Live app:** https://seat-safe-chi.vercel.app
-- **Demo video (3 min):** TODO(C)
+- **Demo video:** [TODO(C)](https://youtu.be/swQPF1YEKTo?si=RfsLgHIriUET1KQb)
 - **Program (Solana devnet):** [`7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy`](https://explorer.solana.com/address/7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy?cluster=devnet)
 - **Track:** Consumer Applications · **Chain award:** Best use of Solana · **Bounties:** QuickNode Streams, Grok Bot, ElevenLabs 
 
