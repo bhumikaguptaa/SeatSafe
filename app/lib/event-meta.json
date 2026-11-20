@@ -6,7 +6,8 @@
       "venue": "Riverside Amphitheater",
       "city": "Austin, TX",
       "organizerName": "Neon Harbor",
-      "imageGradient": "bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-900"
+      "imageGradient": "bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-900",
+      "imageUrl": "/events/concert.jpg"
     },
     "6hW7X8JNFfwhU7Qx3dFTyy3LUa5tsCvMWyFhREdZZXzs": {
       "title": "UT vs. A&M: Rivalry Game",
@@ -14,7 +15,8 @@
       "venue": "Memorial Stadium",
       "city": "Austin, TX",
       "organizerName": "UT Athletics",
-      "imageGradient": "bg-gradient-to-br from-orange-600 via-amber-700 to-red-950"
+      "imageGradient": "bg-gradient-to-br from-orange-600 via-amber-700 to-red-950",
+      "imageUrl": "/events/football_stadium.jpg"
     },
     "EMhrDn2puUvJac9PZ15CCTUftj2Axv6E7wp81oV1RzxE": {
       "title": "Battle of the Bands: Dorm Edition",
@@ -22,7 +24,8 @@
       "venue": "West Quad Lawn",
       "city": "Austin, TX",
       "organizerName": "Campus Radio KSRF",
-      "imageGradient": "bg-gradient-to-br from-yellow-400 via-lime-600 to-teal-900"
+      "imageGradient": "bg-gradient-to-br from-yellow-400 via-lime-600 to-teal-900",
+      "imageUrl": "/events/concert.jpg"
     },
     "2aiG3Nznw6g4hfQCR85juQKj36HRyaDB33G1CUbVzCRy": {
       "title": "Relay smoke test",
@@ -32,6 +35,51 @@
       "imageGradient": "",
       "organizerName": "test",
       "hidden": true
+    },
+    "CvkinsiPW31Qbdu1vZSNuaVS5NnTKsghLsDfzJffCMSM": {
+      "title": "Concert",
+      "category": "concert",
+      "venue": "Lakeshore Festival Grounds",
+      "city": "Austin, TX",
+      "organizerName": "Lakeshore Live",
+      "imageGradient": "bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-900",
+      "imageUrl": "/events/concert.jpg"
+    },
+    "AVGQ8QH1QxcnV6WB2GwTqDfN1nQVunB1AyJdgvML7Ceo": {
+      "title": "Football Stadium",
+      "category": "sports",
+      "venue": "Capital City Stadium",
+      "city": "Austin, TX",
+      "organizerName": "Capital City Athletics",
+      "imageGradient": "bg-gradient-to-br from-orange-600 via-amber-700 to-red-950",
+      "imageUrl": "/events/football_stadium.jpg"
+    },
+    "ChS528UfiCv7qoHGD2nh5T1ghKxnKCuzeASLd6GzHWuC": {
+      "title": "Opera",
+      "category": "concert",
+      "venue": "Meridian Symphony Hall",
+      "city": "Austin, TX",
+      "organizerName": "Meridian Philharmonic",
+      "imageGradient": "bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-900",
+      "imageUrl": "/events/opera.jpg"
+    },
+    "8wB5xdzxuGYRZLTujDADadF3jrc1b94NKPwyj3sqF8ou": {
+      "title": "Soccer Stadium",
+      "category": "sports",
+      "venue": "Eastside Soccer Park",
+      "city": "Austin, TX",
+      "organizerName": "Austin United FC",
+      "imageGradient": "bg-gradient-to-br from-emerald-500 via-green-700 to-slate-900",
+      "imageUrl": "/events/soccer_stadium.jpg"
+    },
+    "8utkK4Ys8ovgAxzbGW5A9vJfAs8hSEVLWcaecXV6Dmqw": {
+      "title": "Theatre",
+      "category": "campus",
+      "venue": "Old Main Lyric Theatre",
+      "city": "Austin, TX",
+      "organizerName": "Campus Theatre Guild",
+      "imageGradient": "bg-gradient-to-br from-sky-400 via-blue-600 to-indigo-950",
+      "imageUrl": "/events/theatre.jpg"
     }
   },
   "escrows": {

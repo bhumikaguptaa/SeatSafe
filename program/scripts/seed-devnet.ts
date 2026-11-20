@@ -14,10 +14,16 @@
 //             fail (same USDC account twice -> ConstraintDuplicateMutableAccount, see docs/program.md).
 // Seller    = ../.keys/seed-seller.json (created if missing; git-ignored). Needs devnet USDC.
 //
-// 1. Three events (fixed event_ids under the organizer, so re-runs find them):
+// 1. Eight events (fixed event_ids under the organizer, so re-runs find them):
 //      "Neon Harbor: Midnight Tides Tour"   $75, cap $120, royalty 5%
 //      "UT vs. A&M: Rivalry Game"            $85, cap $130, royalty 3%
 //      "Battle of the Bands: Dorm Edition"   $10, cap $15,  royalty 0%
+//      "Concert"                             $65, cap $110, royalty 6%
+//      "Football Stadium"                    $95, cap $160, royalty 3%
+//      "Opera"                               $45, cap $70,  royalty 5%
+//      "Soccer Stadium"                      $40, cap $65,  royalty 4%
+//      "Theatre"                             $15, cap $25,  royalty 0%
+//    meta.imageUrl points at a photo in app/public/events/.
 // Amounts are kept small so the Circle faucet covers them: everything uses the $10 campus event.
 // 2. The seller buys 2 Battle of the Bands tickets ($10 each). Funds the seller with 0.2 SOL from the deployer, and with
 //    USDC if the deployer has devnet USDC; otherwise prints the seller address and stops so you can
@@ -74,6 +80,7 @@ const EVENTS = [
       title: "Neon Harbor: Midnight Tides Tour", category: "concert",
       venue: "Riverside Amphitheater", city: "Austin, TX", organizerName: "Neon Harbor",
       imageGradient: "bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-900",
+      imageUrl: "/events/concert.jpg",
     },
   },
   {
@@ -84,6 +91,7 @@ const EVENTS = [
       title: "UT vs. A&M: Rivalry Game", category: "sports",
       venue: "Memorial Stadium", city: "Austin, TX", organizerName: "UT Athletics",
       imageGradient: "bg-gradient-to-br from-orange-600 via-amber-700 to-red-950",
+      imageUrl: "/events/football_stadium.jpg",
     },
   },
   {
@@ -94,6 +102,62 @@ const EVENTS = [
       title: "Battle of the Bands: Dorm Edition", category: "campus",
       venue: "West Quad Lawn", city: "Austin, TX", organizerName: "Campus Radio KSRF",
       imageGradient: "bg-gradient-to-br from-yellow-400 via-lime-600 to-teal-900",
+      imageUrl: "/events/concert.jpg",
+    },
+  },
+  {
+    eventId: 1004,
+    price: 65, cap: 110, royaltyBps: 600, supply: 300,
+    startsAt: "2026-12-19T20:00:00-06:00",
+    meta: {
+      title: "Concert", category: "concert",
+      venue: "Lakeshore Festival Grounds", city: "Austin, TX", organizerName: "Lakeshore Live",
+      imageGradient: "bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-900",
+      imageUrl: "/events/concert.jpg",
+    },
+  },
+  {
+    eventId: 1005,
+    price: 95, cap: 160, royaltyBps: 300, supply: 250,
+    startsAt: "2027-01-09T19:00:00-06:00",
+    meta: {
+      title: "Football Stadium", category: "sports",
+      venue: "Capital City Stadium", city: "Austin, TX", organizerName: "Capital City Athletics",
+      imageGradient: "bg-gradient-to-br from-orange-600 via-amber-700 to-red-950",
+      imageUrl: "/events/football_stadium.jpg",
+    },
+  },
+  {
+    eventId: 1006,
+    price: 45, cap: 70, royaltyBps: 500, supply: 120,
+    startsAt: "2026-12-11T19:30:00-06:00",
+    meta: {
+      title: "Opera", category: "concert",
+      venue: "Meridian Symphony Hall", city: "Austin, TX", organizerName: "Meridian Philharmonic",
+      imageGradient: "bg-gradient-to-br from-fuchsia-600 via-purple-700 to-indigo-900",
+      imageUrl: "/events/opera.jpg",
+    },
+  },
+  {
+    eventId: 1007,
+    price: 40, cap: 65, royaltyBps: 400, supply: 200,
+    startsAt: "2027-01-16T17:00:00-06:00",
+    meta: {
+      title: "Soccer Stadium", category: "sports",
+      venue: "Eastside Soccer Park", city: "Austin, TX", organizerName: "Austin United FC",
+      imageGradient: "bg-gradient-to-br from-emerald-500 via-green-700 to-slate-900",
+      imageUrl: "/events/soccer_stadium.jpg",
+    },
+  },
+  {
+    eventId: 1008,
+    price: 15, cap: 25, royaltyBps: 0, supply: 100,
+    startsAt: "2026-12-06T19:00:00-06:00",
+    meta: {
+      title: "Theatre", category: "campus",
+      venue: "Old Main Lyric Theatre", city: "Austin, TX", organizerName: "Campus Theatre Guild",
+      imageGradient: "bg-gradient-to-br from-sky-400 via-blue-600 to-indigo-950",
+      imageUrl: "/events/theatre.jpg",
     },
   },
 ];

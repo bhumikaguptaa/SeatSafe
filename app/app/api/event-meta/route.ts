@@ -38,6 +38,8 @@ const Entry = z.discriminatedUnion("kind", [
       venue: z.string().max(120),
       city: z.string().max(80),
       imageGradient: z.string().max(200),
+      // Local path only (served from /public), so meta can't point the app at arbitrary hosts.
+      imageUrl: z.string().max(200).regex(/^\/events\/[\w-]+\.(jpe?g|png|webp)$/).optional(),
       organizerName: z.string().max(80),
       hidden: z.boolean().optional(),
     }),
