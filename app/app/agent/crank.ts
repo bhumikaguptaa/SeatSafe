@@ -18,6 +18,8 @@ export interface MatchResult {
   own: number;
   outside: number;
   declined: number;
+  /** Cheapest listing skipped only for being over the max (null if none). */
+  cheapestOverMaxUsd: number | null;
 }
 
 /** Floating-point slack: USD amounts come from 6-decimal base units. */
@@ -29,7 +31,7 @@ export function matchListings(
   me: string,
   declinedListingIds: ReadonlySet<string>,
 ): MatchResult {
-  const result: MatchResult = { match: null, seen: 0, overMax: 0, own: 0, outside: 0, declined: 0 };
+  const result: MatchResult = { match: null, seen: 0, overMax: 0, own: 0, outside: 0, declined: 0, cheapestOverMaxUsd: null };
   const candidates: ChainListing[] = [];
 
   for (const l of listings) {
@@ -41,6 +43,7 @@ export function matchListings(
       result.own++;
     } else if (l.priceUsd > order.maxPriceUsd + EPSILON) {
       result.overMax++;
+      if (result.cheapestOverMaxUsd === null || l.priceUsd < result.cheapestOverMaxUsd) result.cheapestOverMaxUsd = l.priceUsd;
     } else if (declinedListingIds.has(l.id)) {
       result.declined++;
     } else {
@@ -84,6 +87,49 @@ export function describeScan(r: MatchResult, maxPriceUsd: number): string {
     r.declined && `${r.declined} you declined`,
   ].filter(Boolean);
   const head = `Checked ${r.seen} ${r.seen === 1 ? "listing" : "listings"}`;
-  if (r.seen === 0) return "Checked: no resale listings for this event yet.";
-  return skipped.length ? `${head}: skipped ${skipped.join(", ")}.` : `${head}.`;
+  if (r.seen === 0) return "Checked: no resale listings for this event yet. Your agent keeps watching.";
+  const summary = skipped.length ? `${head}: skipped ${skipped.join(", ")}.` : `${head}.`;
+  // Nothing buyable but a ticket is listed just above the max: say how to get it, not just "skipped".
+  if (!r.match && r.cheapestOverMaxUsd !== null) {
+    const ask = Math.ceil(r.cheapestOverMaxUsd - EPSILON);
+    return `${summary} The cheapest is $${r.cheapestOverMaxUsd}, above your $${maxPriceUsd} max. To buy it, Close & refund this order below and ask again "under $${ask}".`;
+  }
+  return summary;
+}
+
+/**
+ * Live-mode suggestion cards, built from what's listed right now so the agent always finds a match:
+ * per event, "1 ticket ... under $<cheapest>" and, with 2+ listings, "2 tickets ... under $<2nd cheapest>".
+ * Skips my own listings and events not shown on Discover. Cheapest budgets first; when the wallet
+ * balance is known, only budgets it can cover. cheapestBudgetUsd is the smallest budget overall (for
+ * the "top up" note when none are affordable).
+ */
+export function buildSuggestions(
+  listings: { eventId: string; priceUsd: number; sellerId: string }[],
+  events: { id: string; title: string }[],
+  me: string | null,
+  balanceUsd: number | null,
+): { suggestions: string[]; cheapestBudgetUsd: number | null } {
+  // "Battle of the Bands: Dorm Edition" -> "Battle of the Bands" (still matches the parser).
+  const names = new Map(events.map((e) => [e.id, e.title.split(":")[0].trim()]));
+  const pricesByEvent = new Map<string, number[]>();
+  for (const l of listings) {
+    if (l.sellerId === me || !names.has(l.eventId)) continue;
+    pricesByEvent.set(l.eventId, [...(pricesByEvent.get(l.eventId) ?? []), l.priceUsd]);
+  }
+
+  const options: { text: string; budget: number }[] = [];
+  for (const [eventId, prices] of pricesByEvent) {
+    prices.sort((a, b) => a - b);
+    const name = names.get(eventId)!;
+    const max1 = Math.ceil(prices[0] - EPSILON);
+    options.push({ text: `1 ticket for ${name} under $${max1}`, budget: max1 });
+    if (prices.length >= 2) {
+      const max2 = Math.ceil(prices[1] - EPSILON);
+      options.push({ text: `2 tickets for ${name} under $${max2}`, budget: 2 * max2 });
+    }
+  }
+  options.sort((a, b) => a.budget - b.budget);
+  const affordable = balanceUsd === null ? options : options.filter((o) => o.budget <= balanceUsd + EPSILON);
+  return { suggestions: affordable.slice(0, 3).map((o) => o.text), cheapestBudgetUsd: options[0]?.budget ?? null };
 }

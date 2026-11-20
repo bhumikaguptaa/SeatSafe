@@ -120,6 +120,14 @@ export interface ChainListing extends Listing {
 
 const shortKey = (k: string) => `${k.slice(0, 4)}…${k.slice(-4)}`;
 
+/** Every Tier 1 resale listing on devnet (event, price, seller), in one request. Used for agent suggestions. */
+export async function getResaleListingPrices(): Promise<{ eventId: string; priceUsd: number; sellerId: string }[]> {
+  const rows = await chainProgram().account.listing.all();
+  return rows
+    .map((l) => ({ eventId: l.account.event.toBase58(), priceUsd: usd(l.account.price), sellerId: l.account.seller.toBase58() }))
+    .sort((a, b) => a.priceUsd - b.priceUsd);
+}
+
 export async function getListingsForEvent(eventPda: string): Promise<ChainListing[]> {
   const program = chainProgram();
   const event = new PublicKey(eventPda);
