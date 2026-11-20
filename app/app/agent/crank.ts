@@ -53,6 +53,28 @@ export function matchListings(
   return result;
 }
 
+/**
+ * Listings a new order with these rules could buy right now, cheapest first. Same rules as matchListings
+ * (Tier 1, not mine, at or under the max), used to warn before locking a budget the agent can't spend.
+ */
+export function buyableListings(
+  listings: ChainListing[],
+  rules: { eventId: string; maxPriceUsd: number },
+  me: string,
+): ChainListing[] {
+  const order = { eventId: rules.eventId, maxPriceUsd: rules.maxPriceUsd } as StandingOrder;
+  const buyable: ChainListing[] = [];
+  const seenIds = new Set<string>();
+  // matchListings returns the cheapest candidate; peel candidates off one at a time.
+  for (;;) {
+    const { match } = matchListings(order, listings, me, seenIds);
+    if (!match) break;
+    buyable.push(match);
+    seenIds.add(match.id);
+  }
+  return buyable;
+}
+
 /** One-line summary for the decision log, e.g. "Checked 3 listings: 1 over $15, 1 yours." */
 export function describeScan(r: MatchResult, maxPriceUsd: number): string {
   const skipped = [
