@@ -3,8 +3,19 @@
 // `?calendar=1` opens the Add to calendar menu on load (shareable link, e.g. from the Grok bot).
 // id = event PDA in real mode (NEXT_PUBLIC_USE_MOCK=false), a mock id like "evt_neon_harbor" otherwise.
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EventView } from "./EventView";
+import seededMeta from "@/lib/event-meta.json";
+import { events as mockEvents } from "@/lib/mock";
+
+/** Tab title per event ("Neon Harbor · SeatSafe"), from bundled display data (no network). */
+export async function generateMetadata({ params }: PageProps<"/events/[id]">): Promise<Metadata> {
+  const { id } = await params;
+  const meta = (seededMeta as { events: Record<string, { title?: string }> }).events[id];
+  const title = meta?.title ?? mockEvents.find((e) => e.id === id)?.title ?? "Event";
+  return { title: title.split(":")[0].trim() };
+}
 
 export default function EventPage({ params, searchParams }: PageProps<"/events/[id]">) {
   return (

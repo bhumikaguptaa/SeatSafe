@@ -25,6 +25,7 @@ const fromNow = (ms: number) => new Date(now + ms).toISOString();
 export const events: Event[] = [
   {
     id: "evt_neon_harbor",
+    imageUrl: "/events/concert-neon.svg",
     title: "Neon Harbor: Midnight Tides Tour",
     category: "concert",
     venue: "Riverside Amphitheater",
@@ -38,6 +39,7 @@ export const events: Event[] = [
   },
   {
     id: "evt_lila_vance",
+    imageUrl: "/events/concert-warm.svg",
     title: "Lila Vance & The Static",
     category: "concert",
     venue: "The Foundry Hall",
@@ -51,6 +53,7 @@ export const events: Event[] = [
   },
   {
     id: "evt_ut_am",
+    imageUrl: "/events/sports.svg",
     title: "UT vs. A&M: Rivalry Game",
     category: "sports",
     venue: "Memorial Stadium",
@@ -64,6 +67,7 @@ export const events: Event[] = [
   },
   {
     id: "evt_soccer",
+    imageUrl: "/events/sports.svg",
     title: "Austin Riverhawks vs. Dallas Comets",
     category: "sports",
     venue: "Lakeside Park Stadium",
@@ -77,6 +81,7 @@ export const events: Event[] = [
   },
   {
     id: "evt_winter_gala",
+    imageUrl: "/events/campus.svg",
     title: "Campus Lights Winter Gala",
     category: "campus",
     venue: "Student Union Ballroom",
@@ -90,6 +95,7 @@ export const events: Event[] = [
   },
   {
     id: "evt_battle_bands",
+    imageUrl: "/events/campus.svg",
     title: "Battle of the Bands: Dorm Edition",
     category: "campus",
     venue: "West Quad Lawn",

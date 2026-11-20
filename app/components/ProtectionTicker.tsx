@@ -119,7 +119,7 @@ export function ProtectionTicker() {
     };
   }, []);
 
-  if (!stats) return <div className="mb-6 h-28 animate-pulse rounded-2xl bg-white/5" aria-hidden />;
+  if (!stats) return <div className="mb-6 h-[212px] animate-pulse rounded-2xl border border-[#26262E] bg-[#15151B] md:h-[172px]" aria-hidden />;
 
   return (
     <section aria-label="SeatSafe protection, live" className="mb-6 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-vault/25 via-white/[0.04] to-released/10 p-4 text-white md:p-5">

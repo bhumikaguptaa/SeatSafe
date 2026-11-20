@@ -20,5 +20,6 @@ test = "npx ts-mocha -p ./tsconfig.json -t 1000000 \"tests/**/*.ts\""
 init-devnet = "npx ts-node -P ./tsconfig.json scripts/init-devnet.ts"
 seed-devnet = "npx ts-node -P ./tsconfig.json scripts/seed-devnet.ts"
 reset-demo = "npx ts-node -P ./tsconfig.json scripts/reset-demo.ts"
+demo-prep = "npx ts-node -P ./tsconfig.json scripts/demo-prep.ts"
 
 [hooks]

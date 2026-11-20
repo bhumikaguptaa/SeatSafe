@@ -187,6 +187,6 @@ export function WaveBackground() {
     };
   }, []);
 
-  // Fixed behind all content (above the body's black ::before at z-index -2), low opacity.
-  return <canvas ref={ref} aria-hidden className="pointer-events-none fixed inset-0 h-full w-full opacity-70" style={{ zIndex: -1 }} />;
+  // Fixed behind all content (above the body's black ::before at z-index -2). Polish pass: Discover only, 40%.
+  return <canvas ref={ref} aria-hidden className="pointer-events-none fixed inset-0 h-full w-full opacity-40" style={{ zIndex: -1 }} />;
 }

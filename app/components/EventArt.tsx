@@ -1,48 +1,33 @@
-import { GraduationCap, Music, Trophy, type LucideIcon } from "lucide-react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { eventImage } from "@/lib/event-image";
 import type { Event } from "@/lib/types";
 
-// Owner: D (used on A's pages too). Event artwork in the orange theme: flat.
-// Every event gets one solid dark-grey shade (picked from its id, so it's stable) and its orange category icon,
-// so events stay distinguishable without per-event rainbow colours.
-// event.imageGradient (from mocks / event-meta) is intentionally ignored.
-
-const SHADES = ["#242424", "#2b2b2b", "#1f1f1f", "#303030"] as const;
-
-const CATEGORY_ICON: Record<Event["category"], LucideIcon> = {
-  concert: Music,
-  sports: Trophy,
-  campus: GraduationCap,
-};
-
-function shadeFor(id: string): string {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return SHADES[h % SHADES.length];
-}
+// Owner: D (used on A's pages too). Event artwork: the event's image (public/events/, original abstract
+// renders, lib/event-image.ts) on a dark base. Polish pass (A): replaces the flat grey + icon.
 
 export function EventArt({
   event,
   size = "banner",
   className,
+  priority = false,
 }: {
-  event: Pick<Event, "id" | "category">;
-  /** tile = small square thumbnail (icon centred); banner = wide header (large faint icon) */
+  event: Pick<Event, "id" | "category"> & { imageUrl?: string };
+  /** tile = small square thumbnail; banner = wide header */
   size?: "tile" | "banner";
   className?: string;
+  priority?: boolean;
 }) {
-  const Icon = CATEGORY_ICON[event.category] ?? Music;
   return (
-    <div
-      aria-hidden
-      className={cn("relative overflow-hidden", className)}
-      style={{ backgroundColor: shadeFor(event.id) }}
-    >
-      {size === "tile" ? (
-        <Icon className="absolute inset-0 m-auto size-6 text-primary" />
-      ) : (
-        <Icon className="absolute -right-4 -bottom-6 size-40 text-primary/25" strokeWidth={1.25} />
-      )}
+    <div aria-hidden className={cn("relative overflow-hidden bg-[#15151B]", className)}>
+      <Image
+        src={eventImage(event)}
+        alt=""
+        fill
+        priority={priority}
+        sizes={size === "tile" ? "80px" : "(min-width: 1024px) 1100px, 100vw"}
+        className="object-cover"
+      />
     </div>
   );
 }
