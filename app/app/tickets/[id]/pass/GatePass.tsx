@@ -17,6 +17,7 @@ import { formatDate } from "@/lib/format";
 import type { Ticket } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GlassHero } from "@/components/GlassHero";
+import { BrandMark } from "@/components/BrandMark";
 
 const ROTATE_MS = 10_000;
 
@@ -84,6 +85,7 @@ export function GatePass() {
   if (!ticket || !event) {
     return (
       <div className="mx-auto max-w-sm rounded-3xl glass p-6 text-center">
+        <BrandMark className="mx-auto mb-3 h-8 opacity-70 grayscale-[35%]" />
         <p className="font-semibold">No pass for this ticket</p>
         <p className="mt-1 text-sm text-muted-foreground">It isn&apos;t one of your tickets, or it was resold.</p>
         <Link href="/tickets" className="mt-4 inline-block text-sm underline underline-offset-4">
@@ -107,14 +109,17 @@ export function GatePass() {
       </Link>
 
       <GlassHero as="article">
-        {/* Event details on the hero glass (soft light blobs show through) */}
-        <div className="relative overflow-hidden p-5 pb-6">
+        {/* Event details on the brand gradient (black under the text, orange → pink to the right). */}
+        <div className="bg-brand-side relative overflow-hidden p-5 pb-6">
           <div className="relative">
             <div className="flex items-center justify-between gap-2">
-              <span className="rounded-full bg-black/40 px-2.5 py-0.5 text-xs font-medium text-white">
-                {ticket.tier === 1 ? "SeatSafe ticket" : "Outside ticket"}
+              <span className="flex items-center gap-2">
+                <BrandMark className="h-6" />
+                <span className="rounded-full bg-pink-light px-2.5 py-0.5 text-xs font-semibold text-black">
+                  {ticket.tier === 1 ? "SeatSafe ticket" : "Outside ticket"}
+                </span>
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-0.5 text-xs font-medium text-white">
+              <span className="inline-flex items-center gap-1 rounded-full bg-black px-2.5 py-0.5 text-xs font-semibold text-white">
                 <ShieldCheck className="size-3.5" />
                 Protected
               </span>

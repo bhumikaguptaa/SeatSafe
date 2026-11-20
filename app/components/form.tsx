@@ -1,6 +1,7 @@
 // Owner: A. Small form helpers for A's pages (no shadcn label/select/switch in this repo yet).
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { BrandMark } from "@/components/BrandMark"; // D: brand mark on empty states
 
 export function Field({
   label,
@@ -78,6 +79,7 @@ export function Toggle({
 export function EmptyState({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <div className="rounded-xl border border-dashed border-border p-6 text-center">
+      <BrandMark className="mx-auto mb-3 h-7 opacity-70 grayscale-[35%]" />
       <p className="font-medium">{title}</p>
       {children && <div className="mt-1 text-sm text-muted-foreground">{children}</div>}
     </div>

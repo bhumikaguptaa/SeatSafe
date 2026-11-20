@@ -23,6 +23,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AuthButton } from "@/components/AuthButton";
 import { CalendarLinks } from "@/components/AddToCalendar";
+import { ScanAura } from "@/components/ScanAura"; // added by D: colour-burst aura (visual only)
 
 // Camera access + ZXing only in the browser.
 const Scanner = dynamic(() => import("@yudiel/react-qr-scanner").then((m) => m.Scanner), {
@@ -152,7 +153,8 @@ export default function ScanPage() {
       </p>
 
       {offer ? (
-        <Card className="mt-6 gap-4 p-5">
+        <ScanAura state="burst" className="mt-6">
+        <Card className="gap-4 p-5">
           <div className="flex items-center gap-2 text-vault">
             <ShieldCheck className="size-5" aria-hidden />
             <p className="font-semibold">Protected by {offer.label}</p>
@@ -179,9 +181,11 @@ export default function ScanPage() {
           )}
           <Button variant="ghost" disabled={busy} onClick={reset}>Scan another</Button>
         </Card>
+        </ScanAura>
       ) : (
         <div className="mt-6 space-y-4">
-          <div className="overflow-hidden rounded-2xl border border-border">
+          <ScanAura state={paused ? "burst" : "scanning"}>
+          <div className="overflow-hidden rounded-2xl border border-border bg-black">
             <Scanner
               paused={paused}
               formats={["qr_code"]}
@@ -192,6 +196,7 @@ export default function ScanPage() {
               onError={() => setProblem("Camera unavailable. Allow camera access, or paste the link below.")}
             />
           </div>
+          </ScanAura>
           {problem && (
             <p className="flex items-start gap-2 rounded-lg border border-disputed/40 bg-disputed/5 p-3 text-sm">
               <TriangleAlert className="mt-0.5 size-4 shrink-0 text-disputed" aria-hidden />

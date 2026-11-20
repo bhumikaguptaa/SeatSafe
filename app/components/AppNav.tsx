@@ -3,12 +3,13 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, Compass, Palette, ScanLine, ShieldCheck, Tag, Ticket } from "lucide-react";
+import { Bot, Compass, Palette, ScanLine, Tag, Ticket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AuthButton } from "@/components/AuthButton";
 import { UsdcBalance } from "@/components/UsdcBalance";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { BrandMark } from "@/components/BrandMark"; // D: new logo (replaces the shield icon)
 
 const NAV_ITEMS = [
   { href: "/", label: "Discover", icon: Compass },
@@ -44,7 +45,7 @@ function DesktopLinks({ pathname }: { pathname: string | null }) {
           href={href}
           className={cn(
             "rounded-md px-3 py-1.5 text-sm text-white/80 transition-colors hover:text-white",
-            isActive(pathname, href) && "bg-white/15 text-white",
+            isActive(pathname, href) && "bg-accent-pink/15 text-accent-pink",
           )}
         >
           {label}
@@ -64,7 +65,7 @@ function MobileTabs({ pathname }: { pathname: string | null }) {
             className={cn(
               "relative flex flex-col items-center gap-0.5 py-2 text-[11px] text-muted-foreground",
               isActive(pathname, href) &&
-                "text-foreground after:absolute after:top-0 after:h-0.5 after:w-8 after:rounded-full after:bg-primary",
+                "text-accent-pink after:absolute after:top-0 after:h-0.5 after:w-8 after:rounded-full after:bg-accent-pink",
             )}
           >
             <Icon className="size-5" />
@@ -83,8 +84,8 @@ export function TopNav() {
     <header className="sticky top-0 z-40 bg-transparent backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <ShieldCheck className="size-5 text-white" />
-          SeatSafe
+          <BrandMark priority swivel className="h-6" />
+          <span className="font-heading text-lg tracking-wide">SeatSafe</span>
         </Link>
         <Suspense fallback={<DesktopLinks pathname={null} />}>
           <ActiveDesktopLinks />
