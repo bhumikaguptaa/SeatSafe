@@ -78,6 +78,12 @@ We use **ElevenLabs Agents** via the React SDK for voice approval: when the agen
 cd app && npm install && npm run dev        # mock data, no keys needed
 cd program && npm install && npm test       # 24 program tests
 ```
+## Next steps
+
+- **Buy and resell tickets right from X with Bankr.** At **UBC we met the Bankr team and saw their X extension**. We'd love to integrate it so fans can buy or resell a SeatSafe ticket directly from a post on X, with the same price cap and escrow protection, and our Grok concierge verifying the listing onchain in the same thread.
+- A **card onramp** so fans without USDC can pay with a card or Apple Pay.
+- **Partner integrations** to verify outside-ticket transfers automatically instead of relying on buyer confirmation.
+- **Organizer escrow:** hold part of primary revenue until the event happens, and refund every fan automatically if it's cancelled.
 
 Devnet setup, environment variables and demo data: [docs/deployment.md](docs/deployment.md).
 
