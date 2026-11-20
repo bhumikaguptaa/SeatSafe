@@ -27,8 +27,10 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { USE_MOCK } from "@/lib/chain";
+import { getListingsForEvent, USE_MOCK } from "@/lib/chain";
+import { useAsyncData } from "@/lib/use-chain";
 import { formatDate, formatUsd } from "@/lib/format";
+import { fetchUsdcBalance } from "@/components/UsdcBalance";
 import { cn } from "@/lib/utils";
 import type { Event, StandingOrder } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -37,12 +39,23 @@ import { VoiceApproval } from "@/components/VoiceApproval";
 import { useAgentDemo, type AgentLogEntry, type ParsedRules } from "./useAgentDemo";
 import { useAgentChain } from "./useAgentChain";
 import { useAgentCrank } from "./useAgentCrank";
+import { buyableListings } from "./crank";
 
-const SUGGESTIONS = [
-  "2 tickets for UT vs A&M under $90, 4+ star sellers, before Friday",
-  "1 ticket for Neon Harbor under $100, 4.5+ star sellers",
-  "4 tickets for Battle of the Bands under $20",
-];
+// Demo suggestions sized to what's really on devnet: Battle of the Bands is the only event with Tier 1
+// resale listings (two at $14, one at $15, Nov 20 2026), so each of these finds a match on the first
+// check and locks a small budget. The first one is the main demo.
+// Mock mode simulates the scan against lib/mock.ts events (no Battle of the Bands there), so it keeps its own.
+const SUGGESTIONS = USE_MOCK
+  ? [
+      "2 tickets for UT vs A&M under $90, 4+ star sellers, before Friday",
+      "1 ticket for Neon Harbor under $100, 4.5+ star sellers",
+      "1 ticket for Austin Riverhawks under $40",
+    ]
+  : [
+      "1 ticket for Battle of the Bands under $15",
+      "1 ticket for Battle of the Bands under $14, 4+ star sellers",
+      "2 tickets for Battle of the Bands under $15",
+    ];
 
 const LOG_ICON: Record<AgentLogEntry["kind"], LucideIcon> = {
   lock: Lock,
@@ -127,6 +140,86 @@ function RulesGrid({ rules }: { rules: ParsedRules }) {
         missing={rules.budgetUsd === null}
       />
     </div>
+  );
+}
+
+interface Preflight {
+  balanceUsd: number;
+  /** Listings the agent could buy right now under these rules. */
+  buyable: number;
+  /** Cheapest listing the agent could buy at any price (null: no buyable listings at all). */
+  cheapestUsd: number | null;
+}
+
+/**
+ * Real mode, before locking: my devnet USDC and how many listings these rules can buy right now,
+ * so the order isn't placed into a failure (not enough USDC) or a silent wait (nothing to buy).
+ */
+function usePreflight(rules: ParsedRules | null, me: string | null, enabled: boolean) {
+  const event = rules?.event ?? null;
+  const max = rules?.maxPriceUsd ?? null;
+  const key = enabled && me && event && max !== null ? `agent:preflight:${me}:${event.id}:${max}` : null;
+  return useAsyncData<Preflight>(key, async () => {
+    const [balanceUsd, listings] = await Promise.all([fetchUsdcBalance(me!), getListingsForEvent(event!.id)]);
+    const buyable = buyableListings(listings, { eventId: event!.id, maxPriceUsd: max! }, me!);
+    const anyPrice = buyableListings(listings, { eventId: event!.id, maxPriceUsd: Infinity }, me!);
+    return { balanceUsd, buyable: buyable.length, cheapestUsd: anyPrice[0]?.priceUsd ?? null };
+  });
+}
+
+function PreflightNotice({
+  rules,
+  check,
+}: {
+  rules: ParsedRules;
+  check: ReturnType<typeof usePreflight>;
+}) {
+  const p = check.data;
+  const budget = rules.budgetUsd ?? 0;
+  const max = rules.maxPriceUsd ?? 0;
+  const title = rules.event?.title ?? "this event";
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+  let tone: "ok" | "warn" | "block" = "ok";
+  let message: string;
+  if (!p) {
+    if (check.error) {
+      tone = "warn";
+      message = "Couldn't check your wallet and listings just now. You can still lock, or try again in a moment.";
+    } else {
+      message = "Checking your wallet and listings…";
+    }
+  } else if (p.balanceUsd + 1e-9 < budget) {
+    tone = "block";
+    message =
+      p.balanceUsd === 0
+        ? `Your wallet has no devnet USDC, and this locks ${formatUsd(budget)}. Get test USDC at faucet.circle.com (Solana Devnet), or ask for fewer tickets.`
+        : `Your wallet has ${formatUsd(p.balanceUsd)} devnet USDC, but this locks ${formatUsd(budget)}. Ask for fewer tickets or a lower max price, or top up at faucet.circle.com.`;
+  } else if (p.buyable === 0) {
+    tone = "warn";
+    message =
+      p.cheapestUsd !== null
+        ? `Nothing for ${title} is listed at ${formatUsd(max)} or less right now (cheapest is ${formatUsd(p.cheapestUsd)}). Raise your max to buy right away, or lock it and your agent waits for a cheaper listing.`
+        : `There are no resale listings for ${title} right now. If you lock this, your agent holds ${formatUsd(budget)} and waits for one.`;
+  } else if (p.buyable < rules.quantity) {
+    tone = "warn";
+    message = `Only ${plural(p.buyable, "listing matches", "listings match")} right now. Your agent buys ${p.buyable === 1 ? "it" : "those"} and keeps watching for the rest.`;
+  } else {
+    message = `${plural(p.buyable, "listing matches", "listings match")} right now. Your wallet has ${formatUsd(p.balanceUsd)} devnet USDC.`;
+  }
+
+  return (
+    <p
+      role={tone === "ok" ? "status" : "alert"}
+      className={cn(
+        "mt-3 rounded-2xl border px-4 py-3 text-sm",
+        tone === "ok" && "border-border text-muted-foreground",
+        tone === "warn" && "border-transit/40 bg-transit/10 text-foreground",
+        tone === "block" && "border-destructive/50 bg-destructive/10 text-foreground",
+      )}
+    >
+      {message}
+    </p>
   );
 }
 
@@ -300,6 +393,9 @@ export function AgentConsole() {
   const started = phase === "running" || phase === "awaiting" || phase === "filled" || phase === "locked";
   const needsLogin = !USE_MOCK && !chain.me;
   const locking = chain.busy === "open";
+  const preflight = usePreflight(rules, chain.me, !USE_MOCK && phase === "review" && !!ready);
+  const notEnoughUsdc =
+    !!preflight.data && rules?.budgetUsd != null && preflight.data.balanceUsd + 1e-9 < rules.budgetUsd;
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -351,7 +447,7 @@ export function AgentConsole() {
             id="agent-request"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="2 tickets for UT vs A&M under $90, 4+ star sellers, before Friday"
+            placeholder={SUGGESTIONS[0]}
             className="h-10 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
           />
           <Button
@@ -393,16 +489,19 @@ export function AgentConsole() {
                   <Button
                     size="lg"
                     className="h-12 w-full rounded-2xl text-[15px] font-semibold"
-                    disabled={!ready || needsLogin || locking}
+                    disabled={!ready || needsLogin || locking || notEnoughUsdc}
                     onClick={onApproveRules}
                   >
                     {locking ? <Loader2 className="animate-spin" /> : <Lock />}
                     {needsLogin
                       ? "Log in to lock a budget"
-                      : ready
-                        ? `Approve rules & lock ${formatUsd(rules.budgetUsd!)}`
-                        : "Approve rules"}
+                      : notEnoughUsdc
+                        ? "Not enough USDC for this budget"
+                        : ready
+                          ? `Approve rules & lock ${formatUsd(rules.budgetUsd!)}`
+                          : "Approve rules"}
                   </Button>
+                  {ready && !USE_MOCK && chain.me && <PreflightNotice rules={rules} check={preflight} />}
                   {!ready && (
                     <p className="mt-2 text-center text-xs text-muted-foreground">
                       Add an event and a max price to your request, then send it again.
