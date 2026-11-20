@@ -1,8 +1,9 @@
 "use client";
 
 // Owner: D. Full-screen gate pass: ticket card + a QR that rotates every 10 s with a visible countdown.
-// The event comes from useEvents(). The ticket itself is DEMO data seeded below, because lib/hooks.ts
-// has no ticket hook yet. TODO(B): add useTicket(id) (real mode: getMyTickets() in lib/chain.ts).
+// The ticket is loaded the same way as /tickets: mock mode uses the mock user's tickets (lib/mock.ts);
+// real mode reads the logged-in wallet's tickets from devnet (getMyTickets, id = ticket mint) and the
+// event from its PDA. A ticket that isn't the viewer's, or is listed for resale, has no pass.
 // The QR payload is a DEMO token, not a security feature: a real pass needs a token signed by the
 // server (or the owner's wallet) that the gate scanner verifies, plus an onchain ownership check.
 
@@ -12,24 +13,37 @@ import { useParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronLeft, ShieldCheck } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import { useEvents } from "@/lib/hooks";
+import { getEvent as getMockEvent, MOCK_USER_ID, tickets as mockTickets } from "@/lib/mock";
+import { getEvent, getMyTickets, USE_MOCK } from "@/lib/chain";
+import { useTxWallet } from "@/lib/tx";
+import { useAsyncData } from "@/lib/use-chain";
 import { formatDate } from "@/lib/format";
-import type { Ticket } from "@/lib/types";
+import type { Event, Ticket } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GlassHero } from "@/components/GlassHero";
 import { BrandMark } from "@/components/BrandMark";
+import { AuthButton } from "@/components/AuthButton";
 
 const ROTATE_MS = 10_000;
 
 // ---------------------------------------------------------------------------
-// Demo data (replace with useTicket from lib/hooks.ts): the mock user's tickets.
+// Data: the viewer's ticket + its event, or null when it isn't theirs.
 // ---------------------------------------------------------------------------
 
-const DEMO_TICKETS: Ticket[] = [
-  { id: "tkt_01", eventId: "evt_neon_harbor", section: "GA", row: "-", seat: "-", tier: 1, ownerId: "user_me" },
-  { id: "tkt_05", eventId: "evt_concert", section: "Balcony", row: "F", seat: "22", tier: 2, ownerId: "user_me" },
-  { id: "tkt_08", eventId: "evt_ut_am", section: "Student", row: "GA", seat: "-", tier: 1, ownerId: "user_me" },
-];
+type PassData = { ticket: Ticket; event: Event } | null;
+
+async function loadMockPass(id: string): Promise<PassData> {
+  const ticket = mockTickets.find((t) => t.id === id && t.ownerId === MOCK_USER_ID);
+  const event = ticket ? getMockEvent(ticket.eventId) : undefined;
+  return ticket && event ? { ticket, event } : null;
+}
+
+async function loadChainPass(id: string, owner: string): Promise<PassData> {
+  const ticket = (await getMyTickets(owner)).find((t) => t.id === id && !t.listed);
+  if (!ticket) return null;
+  const event = await getEvent(ticket.eventId);
+  return event ? { ticket, event } : null;
+}
 
 /** FNV-1a, hex. Only makes the demo token look different each window; not a signature. */
 function demoHash(s: string): string {
@@ -75,13 +89,39 @@ function SeatCell({ label, value }: { label: string; value: string }) {
 
 export function GatePass() {
   const { id } = useParams<{ id: string }>();
-  const { events, loading } = useEvents();
+  const wallet = useTxWallet();
+  const owner = wallet?.address.toBase58() ?? null;
+  const key = USE_MOCK ? `pass:mock:${id}` : owner ? `pass:${owner}:${id}` : null;
+  const { data, loading, error, refresh } = useAsyncData(key, () =>
+    USE_MOCK ? loadMockPass(id) : loadChainPass(id, owner!),
+  );
   const now = useNow();
 
-  const ticket = DEMO_TICKETS.find((t) => t.id === id) ?? null;
-  const event = ticket ? (events.find((e) => e.id === ticket.eventId) ?? null) : null;
-
-  if (loading) return <Skeleton className="mx-auto h-[36rem] w-full max-w-sm rounded-3xl" />;
+  if (!USE_MOCK && !owner) {
+    return (
+      <div className="mx-auto max-w-sm rounded-3xl glass p-6 text-center">
+        <BrandMark className="mx-auto mb-3 h-8 opacity-70 grayscale-[35%]" />
+        <p className="font-semibold">Log in to show your gate pass</p>
+        <p className="mt-1 text-sm text-muted-foreground">Your pass is tied to the wallet that holds the ticket.</p>
+        <span className="mt-4 inline-block"><AuthButton /></span>
+      </div>
+    );
+  }
+  if (loading && data === undefined) return <Skeleton className="mx-auto h-[36rem] w-full max-w-sm rounded-3xl" />;
+  if (error && data === undefined) {
+    return (
+      <div className="mx-auto max-w-sm rounded-3xl glass p-6 text-center">
+        <BrandMark className="mx-auto mb-3 h-8 opacity-70 grayscale-[35%]" />
+        <p className="font-semibold">Couldn&apos;t load your pass</p>
+        <p className="mt-1 text-sm text-muted-foreground">The network didn&apos;t respond. Check your connection and try again.</p>
+        <button type="button" onClick={() => void refresh()} className="mt-4 text-sm underline underline-offset-4">
+          Try again
+        </button>
+      </div>
+    );
+  }
+  const ticket = data?.ticket ?? null;
+  const event = data?.event ?? null;
   if (!ticket || !event) {
     return (
       <div className="mx-auto max-w-sm rounded-3xl glass p-6 text-center">
