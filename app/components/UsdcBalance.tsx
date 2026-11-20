@@ -1,13 +1,24 @@
 "use client";
 
+// Header wallet chip: devnet USDC balance. Click -> popover with the short address, copy, and Explorer link.
+
 import { useEffect, useState } from "react";
 import { useSolanaWallet } from "@/lib/useSolanaWallet";
 import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { Wallet } from "lucide-react";
+import { Check, Copy, ExternalLink, Wallet } from "lucide-react";
 import { PRIVY_ENABLED } from "@/lib/privy";
-import { connection, USDC_MINT } from "@/lib/solana";
-import { formatUsd } from "@/lib/format";
+import { connection, explorerAddress, USDC_MINT } from "@/lib/solana";
+import { formatUsd, shortAddress } from "@/lib/format";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const REFRESH_MS = 15_000;
 
@@ -29,6 +40,7 @@ export function UsdcBalance() {
 function PrivyUsdcBalance() {
   const { address } = useSolanaWallet();
   const [balance, setBalance] = useState<{ address: string; usd: number } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!address) return;
@@ -52,13 +64,43 @@ function PrivyUsdcBalance() {
   if (!address) return null;
   const text = balance?.address === address ? formatUsd(balance.usd) : "…";
 
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // clipboard blocked: the address is still shown
+    }
+  };
+
   return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium tabular-nums"
-      title="Devnet USDC balance"
-    >
-      <Wallet className="size-3.5 text-primary" />
-      {text}
-    </span>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        title="Devnet USDC in your SeatSafe wallet"
+        aria-label={`Wallet: ${text} devnet USDC`}
+        className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[#26262E] bg-[#15151B] px-2.5 text-xs font-medium tabular-nums hover:border-[#3f3f46]"
+      >
+        <Wallet className="size-3.5 text-primary" aria-hidden />
+        {text}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>
+            <span className="block text-xs font-normal text-muted-foreground">Devnet USDC in your SeatSafe wallet</span>
+            <span className="num block text-lg font-bold">{text}</span>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem closeOnClick={false} onClick={copy} title={address}>
+          {copied ? <Check className="text-released" /> : <Copy />}
+          <span className="font-mono">{shortAddress(address)}</span>
+          <span className="ml-auto text-xs text-muted-foreground">{copied ? "Copied" : "Copy"}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem render={<a href={explorerAddress(address)} target="_blank" rel="noopener noreferrer" />}>
+          <ExternalLink /> View on Solana Explorer ↗
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

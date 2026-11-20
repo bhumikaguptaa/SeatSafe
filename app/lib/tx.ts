@@ -211,7 +211,7 @@ export function useRunTx() {
           id,
           description: successDescription(sent.sponsored ? "Gas paid by SeatSafe." : undefined, opts.successExtra),
           duration: opts.successExtra ? 10_000 : undefined,
-          action: { label: "View tx", onClick: () => window.open(sent.explorerUrl, "_blank", "noopener") },
+          action: { label: "View transaction ↗", onClick: () => window.open(sent.explorerUrl, "_blank", "noopener") },
         });
         return sent;
       } catch (err) {
@@ -222,7 +222,7 @@ export function useRunTx() {
         toast.error(f.message, {
           id,
           action: f.signature
-            ? { label: "View tx", onClick: () => window.open(explorerTx(f.signature!), "_blank", "noopener") }
+            ? { label: "View transaction ↗", onClick: () => window.open(explorerTx(f.signature!), "_blank", "noopener") }
             : undefined,
         });
         return null;

@@ -7,12 +7,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, ExternalLink } from "lucide-react";
+import { Bell, CircleDollarSign, ExternalLink, PackageCheck, RotateCcw, ShieldAlert, Tag, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { USE_MOCK } from "@/lib/chain";
 import { supabase } from "@/lib/supabase";
 import { useTxWallet } from "@/lib/tx";
 import { useNow } from "@/lib/use-chain";
+import { timeAgo } from "@/lib/format";
 import { explorerTx } from "@/lib/solana";
 import { notifications as mockNotifications } from "@/lib/mock";
 import type { AppNotification } from "@/lib/notifications";
@@ -43,13 +44,14 @@ function writeSeen(wallet: string, iso: string) {
   }
 }
 
-function ago(iso: string, now: number): string {
-  if (!now) return "";
-  const s = Math.max(0, (now - new Date(iso).getTime()) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
-  if (s < 86_400) return `${Math.floor(s / 3600)} h ago`;
-  return `${Math.floor(s / 86_400)} d ago`;
+/** Icon per notification kind (refund, sold, delivered, ...). */
+function iconFor(kind: string): { Icon: LucideIcon; className: string } {
+  const k = kind.toLowerCase();
+  if (/refund/.test(k)) return { Icon: RotateCcw, className: "text-released" };
+  if (/sold|swap|paid|release/.test(k)) return { Icon: CircleDollarSign, className: "text-released" };
+  if (/deliver|sent|confirm/.test(k)) return { Icon: PackageCheck, className: "text-vault" };
+  if (/dispute/.test(k)) return { Icon: ShieldAlert, className: "text-disputed" };
+  return { Icon: Tag, className: "text-primary" };
 }
 
 export function NotificationBell() {
@@ -128,7 +130,7 @@ export function NotificationBell() {
         <div className="flex items-center justify-between px-1.5 py-1">
           <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
           {unread > 0 && (
-            <button type="button" onClick={markAllRead} className="text-xs text-muted-foreground underline-offset-4 hover:underline">
+            <button type="button" onClick={markAllRead} aria-label="Mark all notifications read" className="text-xs text-muted-foreground underline-offset-4 hover:underline">
               Mark all read
             </button>
           )}
@@ -137,17 +139,22 @@ export function NotificationBell() {
         {items.length === 0 ? (
           <p className="px-2 py-6 text-center text-sm text-muted-foreground">Nothing yet. Sales, refunds and deliveries show up here instantly.</p>
         ) : (
-          items.map((n) => (
+          items.slice(0, 10).map((n) => {
+            const { Icon, className } = iconFor(n.kind);
+            return (
             <DropdownMenuItem
               key={n.id}
               onClick={() => n.url && router.push(n.url)}
               className="flex items-start gap-2 py-2"
             >
-              <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", !n.read_at && n.created_at > seen ? "bg-primary" : "bg-transparent")} aria-hidden />
+              <span className="relative mt-0.5 shrink-0">
+                <Icon className={cn("size-4", className)} aria-hidden />
+                {!n.read_at && n.created_at > seen && <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-primary" aria-label="unread" />}
+              </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm leading-snug font-medium">{n.title}</span>
                 {n.body && <span className="block text-xs text-muted-foreground">{n.body}</span>}
-                <span className="block text-[11px] text-muted-foreground">{ago(n.created_at, now)}</span>
+                <time dateTime={n.created_at} title={new Date(n.created_at).toLocaleString("en-US")} className="block text-[11px] text-muted-foreground">{timeAgo(n.created_at, now)}</time>
               </span>
               {n.tx_signature && (
                 <a
@@ -162,7 +169,8 @@ export function NotificationBell() {
                 </a>
               )}
             </DropdownMenuItem>
-          ))
+            );
+          })
         )}
       </DropdownMenuContent>
     </DropdownMenu>

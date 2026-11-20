@@ -1,6 +1,7 @@
 "use client";
 
-// Owner: A. List an OUTSIDE ticket (Tier 2 escrow with a seller bond) and manage escrow sales.
+// Owner: A. List an OUTSIDE ticket (Tier 2 escrow) and manage escrow sales. The seller bond defaults to 0
+// (the program only requires price > 0 and both windows > 0); an optional bond sits under "Advanced".
 // SeatSafe tickets (Tier 1) are resold from My tickets -> Resell.
 
 import Link from "next/link";
@@ -40,7 +41,7 @@ export default function SellPage() {
       <h1 className="text-2xl font-bold tracking-tight">Sell an outside ticket</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Got a ticket from another site? List it here. The buyer&apos;s payment waits in a SeatSafe vault until they
-        confirm it works. Your bond shows buyers you&apos;re serious. Selling a SeatSafe ticket?{" "}
+        confirm it works, and it comes back to them automatically if you don&apos;t deliver. Selling a SeatSafe ticket?{" "}
         <Link href="/tickets" className="underline">Resell it from My tickets</Link>.
       </p>
 
@@ -58,7 +59,9 @@ export default function SellPage() {
           ) : sales.loading && !sales.data ? (
             <Skeleton className="h-20 rounded-xl" />
           ) : !sales.data?.length ? (
-            <EmptyState title="No escrow sales yet" />
+            <EmptyState title="No escrow sales yet">
+              <a href="#sell-form" className="mt-1 inline-block font-semibold text-foreground underline underline-offset-4">List an outside ticket</a>
+            </EmptyState>
           ) : (
             <ul className="space-y-2">
               {sales.data.map((s) => (
@@ -93,16 +96,19 @@ function ListingForm({
 
   const selectedEvent = eventId || events[0]?.id || "";
   const p = Number(price);
-  const b = bond === "" ? Math.round(p * 0.1 * 100) / 100 : Number(bond);
+  // Bond is optional: empty = 0 (the program accepts 0).
+  const b = bond === "" ? 0 : Number(bond);
   const shipSecs = demo ? DEMO_WINDOW : Math.round(Number(shipHours) * HOUR);
   const confirmSecs = demo ? DEMO_WINDOW : Math.round(Number(confirmHours) * HOUR);
+  const priceError = price !== "" && !(p > 0) ? "Enter a price above $0." : null;
+  const bondError = bond !== "" && !(b >= 0) ? "Bond can't be negative." : null;
   const valid = selectedEvent && seat.trim() && p > 0 && b >= 0 && shipSecs > 0 && confirmSecs > 0;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!valid) return;
     setBusy(true);
-    const opts = { pending: "Posting your bond and listing…", success: "Listed! Buyers can now pay into escrow." };
+    const opts = { pending: b > 0 ? "Posting your bond and listing…" : "Listing your ticket…", success: "Listed! Buyers can now pay into escrow." };
     if (USE_MOCK) {
       await mockTx(opts);
     } else {
@@ -122,7 +128,7 @@ function ListingForm({
   };
 
   return (
-    <Card variant="solid" className="mt-6 p-4 md:p-6">
+    <Card variant="solid" id="sell-form" className="mt-6 scroll-mt-20 p-4 md:p-6">
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
         <Field label="Event" htmlFor="sell-event" className="sm:col-span-2">
           <NativeSelect id="sell-event" value={selectedEvent} onChange={(e) => setEventId(e.target.value)} disabled={loadingEvents}>
@@ -134,15 +140,20 @@ function ListingForm({
             ))}
           </NativeSelect>
         </Field>
-        <Field label="Seat" htmlFor="sell-seat" hint="As printed on the ticket" className="sm:col-span-2">
-          <Input id="sell-seat" placeholder="Sec 112 Row 28 Seat 5" value={seat} onChange={(e) => setSeat(e.target.value)} maxLength={80} />
+        <Field label="Seat" htmlFor="sell-seat" hint="As printed on the ticket, e.g. Sec 112 Row 28 Seat 5" className="sm:col-span-2">
+          <Input id="sell-seat" value={seat} onChange={(e) => setSeat(e.target.value)} maxLength={80} />
         </Field>
-        <Field label="Price (USD)" htmlFor="sell-price">
-          <Input id="sell-price" type="number" inputMode="decimal" min="0" step="0.01" placeholder="90" value={price} onChange={(e) => setPrice(e.target.value)} />
+        <Field label="Price (USD)" htmlFor="sell-price" className="sm:col-span-2" hint={priceError ? <span className="text-disputed">{priceError}</span> : "e.g. 90"}>
+          <Input id="sell-price" type="number" inputMode="decimal" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} aria-invalid={!!priceError || undefined} />
         </Field>
-        <Field label="Seller bond (USD)" htmlFor="sell-bond" hint="Refunded when the sale completes. Default 10%.">
-          <Input id="sell-bond" type="number" inputMode="decimal" min="0" step="0.01" placeholder={p > 0 ? String(b) : "9"} value={bond} onChange={(e) => setBond(e.target.value)} />
-        </Field>
+        <details className="group sm:col-span-2">
+          <summary className="cursor-pointer list-none text-sm font-medium text-[#A1A1AA] hover:text-foreground">
+            <span className="mr-1 inline-block transition-transform group-open:rotate-90">›</span> Advanced
+          </summary>
+          <Field label="Optional seller bond (shows buyers you're serious)" htmlFor="sell-bond" className="mt-3" hint={bondError ? <span className="text-disputed">{bondError}</span> : "Leave empty for no bond. If set, it goes to the buyer if you don't deliver, and back to you when the sale completes."}>
+            <Input id="sell-bond" type="number" inputMode="decimal" min="0" step="0.01" value={bond} onChange={(e) => setBond(e.target.value)} aria-invalid={!!bondError || undefined} />
+          </Field>
+        </details>
         <div className="sm:col-span-2">
           <Toggle
             id="sell-demo"
@@ -164,7 +175,7 @@ function ListingForm({
         )}
         <Button type="submit" className="h-10 sm:col-span-2" disabled={!valid || busy}>
           {busy ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
-          List with {p > 0 ? `${formatUsd(b)} bond` : "escrow protection"}
+          {b > 0 ? `List with ${formatUsd(b)} bond` : "List with escrow protection"}
         </Button>
       </form>
     </Card>
@@ -208,7 +219,7 @@ function SaleRow({ sale, events, onDone }: { sale: ChainEscrow; events: Event[];
         <div className="min-w-0">
           <p className="truncate font-medium">{ev?.title ?? "Outside ticket"}</p>
           <p className="truncate text-xs text-muted-foreground">
-            {sale.seat || "Seat not recorded"} · {formatUsd(sale.priceUsd)} · bond {formatUsd(sale.bondUsd)}
+            {sale.seat || "Seat not recorded"} · {formatUsd(sale.priceUsd)}{sale.bondUsd > 0 && ` · bond ${formatUsd(sale.bondUsd)}`}
           </p>
           {sale.state === "HELD" && sale.shipDeadline && (
             <p className="text-xs text-muted-foreground">Send by {formatDate(sale.shipDeadline)}</p>

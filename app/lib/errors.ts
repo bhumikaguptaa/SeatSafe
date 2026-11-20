@@ -25,7 +25,7 @@ const usd = (n: number) => `$${n.toFixed(n % 1 === 0 ? 0 : 2)}`;
 const MESSAGES: Record<ProgramErrorName, (c: ErrorContext) => string> = {
   AboveResaleCap: (c) =>
     c.resaleCapUsd != null
-      ? `This artist caps resale at ${usd(c.resaleCapUsd)}. Lower your price to ${usd(c.resaleCapUsd)} or less.`
+      ? `That's above the artist's cap of ${usd(c.resaleCapUsd)}. Lower your price to ${usd(c.resaleCapUsd)} or less.`
       : "That price is above this event's resale cap.",
   DeadlineNotReached: (c) =>
     c.action === "refund"

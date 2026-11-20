@@ -9,7 +9,7 @@
 import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CalendarX2, Loader2, Lock, QrCode, ScanLine, ShieldCheck, Tag, X } from "lucide-react";
+import { Loader2, QrCode, ScanLine, ShieldCheck, Tag, X } from "lucide-react";
 import { PublicKey } from "@solana/web3.js";
 import { events as mockEvents, MOCK_USER_ID, tickets as mockTickets } from "@/lib/mock";
 import { chainProgram, getEvents, getMyTickets, seatLabel, USE_MOCK, type ChainTicket } from "@/lib/chain";
@@ -18,6 +18,7 @@ import { mockTx, useRunTx, useTxWallet } from "@/lib/tx";
 import { useAsyncData } from "@/lib/use-chain";
 import { friendlyError } from "@/lib/errors";
 import { formatDate, formatUsd } from "@/lib/format";
+import { formatSeat } from "@/lib/seat-format";
 import type { Event } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -105,7 +106,7 @@ function TicketsView() {
           </EmptyState>
         ) : !data || data.tickets.length === 0 ? (
           <EmptyState title="No tickets yet">
-            <Link href="/" className="underline">Find an event</Link>
+            <Link href="/" className={buttonVariants({ size: "sm", className: "mt-2" })}>Find an event</Link>
           </EmptyState>
         ) : (
           <ul className="space-y-3">
@@ -165,7 +166,7 @@ function TicketRow({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate font-medium">{event?.title ?? "SeatSafe event"}</p>
-          <p className="text-sm text-muted-foreground">{ticket.seatLabel}</p>
+          <p className="text-sm text-muted-foreground">{formatSeat(event, ticket.seatLabel).label}</p>
           {event && <p className="text-xs text-muted-foreground">{formatDate(event.startsAt)}</p>}
         </div>
         {ticket.listed ? (
@@ -176,10 +177,11 @@ function TicketRow({
           ticket.tier === 1 ? (
             <Badge
               variant="outline"
-              className="shrink-0 gap-1 border-vault/50 text-vault"
-              title="Frozen on Solana: only the SeatSafe program can move this ticket, so it can't be resold above the artist's cap."
+              className="shrink-0 gap-1 border-released/50 text-released"
+              title="Only SeatSafe's program can move this ticket, so it can't be scalped or duplicated."
+              aria-label="Protected: only SeatSafe's program can move this ticket, so it can't be scalped or duplicated."
             >
-              <Lock className="size-3" aria-hidden /> Locked
+              <ShieldCheck className="size-3" aria-hidden /> Protected
             </Badge>
           ) : (
             <Badge variant="outline" className="shrink-0 border-transit/50 text-transit" title="A ticket from another platform, sold through the escrow vault.">
@@ -213,9 +215,10 @@ function TicketRow({
                 <Button size="sm" variant="outline" onClick={() => openResell("inPerson")}>
                   <ScanLine /> Sell in person
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => openResell("cantGo")}>
-                  <CalendarX2 /> Can&apos;t go? Resell
-                </Button>
+                {/* Same dialog as Resell, pre-filled at face value. */}
+                <button type="button" onClick={() => openResell("cantGo")} className="self-center px-1 text-xs font-medium text-[#A1A1AA] underline-offset-4 hover:text-foreground hover:underline">
+                  Can&apos;t go? Sell at face value
+                </button>
               </>
             )}
           </>
@@ -241,7 +244,7 @@ function TicketRow({
           ticketMint={ticket.id}
           priceUsd={qr.price}
           netUsd={netOf(qr.price, event)}
-          seat={ticket.seatLabel}
+          seat={formatSeat(event, ticket.seatLabel).label}
           title={event?.title ?? "SeatSafe event"}
           onClose={() => {
             setQr(null);
@@ -274,7 +277,7 @@ function ResellDialog({
   /** "Sell in person": after listing, show the QR for this listing instead of closing. */
   onInPerson?: (listing: string, priceUsd: number) => void;
 }) {
-  const { run } = useRunTx();
+  const { run, wallet } = useRunTx();
   const cap = event?.resaleCapUsd ?? null;
   const start = initialPrice ?? cap;
   const [price, setPrice] = useState(start != null ? String(start) : "");
@@ -308,7 +311,7 @@ function ResellDialog({
         void fetch("/api/stats", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ eventId: event?.id, priceUsd: value, capUsd: cap }),
+          body: JSON.stringify({ eventId: event?.id, priceUsd: value, capUsd: cap, wallet: wallet?.address.toBase58() }),
         }).catch(() => undefined);
       }
     }
@@ -327,7 +330,7 @@ function ResellDialog({
           <DialogHeader>
             <DialogTitle>{onInPerson ? "Sell in person" : cantGo ? "Can't go? Resell your ticket" : "Resell ticket"}</DialogTitle>
             <DialogDescription>
-              {event?.title ?? "SeatSafe event"} · {ticket.seatLabel}
+              {event?.title ?? "SeatSafe event"} · {formatSeat(event, ticket.seatLabel).label}
             </DialogDescription>
           </DialogHeader>
           <Field

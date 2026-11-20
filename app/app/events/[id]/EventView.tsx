@@ -22,7 +22,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/form";
 import { EventArt } from "@/components/EventArt";
 import { AddToCalendar, CalendarLinks } from "@/components/AddToCalendar";
+import { cn } from "@/lib/utils";
 import { SeatPicker } from "@/components/SeatPicker"; // added by D: the 2D seat map (the only seat picker)
+import { formatSeat } from "@/lib/seat-format";
 
 type ViewEvent = Event & Partial<Pick<ChainEvent, "supply" | "sold" | "priceUsd">>;
 
@@ -134,9 +136,10 @@ function EventDetails({
               <Stat label="Artist royalty" value={`${event.royaltyBps / 100}%`} />
             </dl>
             <BuyPrimaryButton event={event} soldOut={soldOut} onDone={refresh} />
+            {/* Remaining = supply − sold, straight from the onchain event account. */}
             {left !== null && (
-              <p className="text-center text-xs text-muted-foreground">
-                {soldOut ? "Sold out" : `${left} of ${event.supply} left`}
+              <p className={cn("text-center text-xs tabular-nums", soldOut ? "font-semibold text-disputed" : left <= 10 ? "font-semibold text-transit" : "text-muted-foreground")}>
+                {soldOut ? "Sold out" : left <= 10 ? `Only ${left} left` : `${left} left`}
               </p>
             )}
           </div>
@@ -264,16 +267,16 @@ function ListingRow({ listing, event, onDone }: { listing: ChainListing; event: 
   return (
     <li className="flex flex-wrap items-center gap-3 rounded-xl border border-border p-3 transition-shadow duration-300 hover:glow-primary">
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">{listing.seat || "General admission"}</p>
+        <p className="truncate font-medium">{formatSeat(event, listing.seat).label}</p>
         <p className="truncate text-xs text-muted-foreground">
           <span
             className="mr-1.5 inline-flex items-center gap-0.5 rounded-full bg-vault/15 px-1.5 py-px text-[10px] font-semibold text-vault"
-            title={listing.tier === 1 ? "Ticket and payment swap in one transaction, at or under the artist's cap." : "Your payment waits in a SeatSafe vault until you confirm the ticket; the seller's bond is yours if they don't deliver."}
+            title={listing.tier === 1 ? "Ticket and payment swap in one transaction, at or under the artist's cap." : "Your payment waits in a SeatSafe vault until you confirm the ticket; if the seller doesn't deliver, you get it back automatically."}
           >
-            <ShieldCheck className="size-3" aria-hidden /> {listing.tier === 1 ? "Atomic swap" : "Escrow + bond"}
+            <ShieldCheck className="size-3" aria-hidden /> {listing.tier === 1 ? "Atomic swap" : listing.bondUsd > 0 ? "Escrow + bond" : "Escrow"}
           </span>
           Seller {listing.sellerName}
-          {listing.tier === 2 && ` · ${formatUsd(listing.bondUsd)} seller bond`}
+          {listing.tier === 2 && listing.bondUsd > 0 && ` · ${formatUsd(listing.bondUsd)} seller bond`}
         </p>
       </div>
       <div className="text-right">
