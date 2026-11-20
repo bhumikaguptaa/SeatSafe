@@ -150,7 +150,7 @@ export function ProtectionTicker() {
       </div>
 
       {stats.recent.length > 0 && (
-        <ul className="-mx-4 mt-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0" aria-label="Recent activity">
+        <ul className="no-scrollbar -mx-4 mt-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0" aria-label="Recent activity">
           <AnimatePresence initial={false}>
             {stats.recent.map((item: ActivityItem) => (
               <motion.li
@@ -158,7 +158,7 @@ export function ProtectionTicker() {
                 layout={!reduced}
                 initial={reduced ? false : { opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex min-w-[16rem] shrink-0 snap-start items-center gap-2 rounded-lg bg-black/25 px-3 py-2 text-xs md:min-w-0"
+                className="flex min-w-[16rem] shrink-0 snap-start items-center gap-2 rounded-lg bg-secondary px-3 py-2 text-xs md:min-w-0"
               >
                 <span className="min-w-0 flex-1 truncate" title={item.text}>{item.text}</span>
                 <span className="shrink-0 text-white/50">{timeAgo(item.at, now)}</span>

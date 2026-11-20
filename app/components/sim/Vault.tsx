@@ -12,7 +12,20 @@ import { cn } from "@/lib/utils";
 
 export type VaultState = "idle" | "holding" | "open" | "slammed";
 
-export function Vault({ balance, state, label = "SeatSafe vault", children }: { balance: number; state: VaultState; label?: string; children?: ReactNode }) {
+export function Vault({
+  balance,
+  state,
+  label = "SeatSafe vault",
+  brand = false,
+  children,
+}: {
+  balance: number;
+  state: VaultState;
+  label?: string;
+  /** Brand gradient (orange theme): only the order-page vault uses it. */
+  brand?: boolean;
+  children?: ReactNode;
+}) {
   const reduced = useReducedMotion() ?? false;
   const shown = useCountUp(balance, reduced);
   const slam = state === "slammed";
@@ -22,7 +35,8 @@ export function Vault({ balance, state, label = "SeatSafe vault", children }: { 
       animate={slam && !reduced ? { x: SHAKE_X } : { x: 0 }}
       transition={MOTION.shake}
       className={cn(
-        "relative flex w-44 flex-col items-center rounded-3xl border-2 bg-gradient-to-b from-[#16264f] to-[#070d1f] p-4 md:w-56",
+        "relative flex w-44 flex-col items-center rounded-3xl border-2 bg-origin-border p-4 md:w-56",
+        brand ? "bg-brand" : "bg-card",
         slam ? "border-disputed glow-disputed" : state === "open" ? "border-released glow-released" : state === "holding" ? "border-vault glow-vault" : "border-white/20",
       )}
     >
@@ -34,7 +48,7 @@ export function Vault({ balance, state, label = "SeatSafe vault", children }: { 
         <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50">{children}</div>
         <motion.div
           className={cn(
-            "absolute inset-0 flex origin-left items-center justify-center rounded-2xl border-2 bg-gradient-to-br from-[#2a3f75] to-[#0f1a3a]",
+            "absolute inset-0 flex origin-left items-center justify-center rounded-2xl border-2 bg-secondary",
             slam ? "border-disputed" : "border-white/25",
           )}
           animate={{ rotateY: state === "open" ? -100 : 0 }}

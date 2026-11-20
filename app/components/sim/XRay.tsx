@@ -195,7 +195,7 @@ export function StackStrip({ active }: { active: Set<StackKey> }) {
             rel="noopener noreferrer"
             className={cn(
               "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-300",
-              on ? "border-vault bg-vault/20 text-white glow-vault" : "border-white/10 bg-white/[0.03] text-white/50 hover:text-white/80",
+              on ? "border-primary bg-primary/15 text-white glow-primary" : "border-white/10 bg-white/[0.03] text-white/50 hover:text-white/80",
             )}
           >
             {s.label}

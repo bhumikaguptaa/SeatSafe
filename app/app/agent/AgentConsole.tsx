@@ -317,23 +317,23 @@ export function AgentConsole() {
 
   return (
     <div className="space-y-4">
-      {/* Prompt: plain-English request, like the voice-assistant home screen. */}
-      <section className="pb-2">
+      {/* Prompt header on the brand gradient (black under the text, orange → pink sweeping in below). */}
+      <section className="bg-brand-top rounded-3xl border border-accent-pink/30 p-5">
         <h2 className="text-[28px] leading-tight font-bold tracking-tight">What should your agent buy?</h2>
         <p className="mt-2 text-[15px] text-muted-foreground">
           Say it in plain English. Your agent only buys inside the rules you approve, from a budget you lock.
         </p>
 
-        <div className="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1">
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
           {SUGGESTIONS.map((s) => (
             <button
               key={s}
               type="button"
               onClick={() => setText(s)}
-              className="w-48 shrink-0 rounded-2xl glass p-3.5 text-left text-[13px] leading-snug text-foreground/85 transition-colors hover:border-muted-foreground/40"
+              className="rounded-2xl border border-white/15 bg-black p-3.5 text-left hover:-translate-y-0.5 active:scale-[0.98] text-[13px] leading-snug text-foreground transition hover:border-accent-pink"
             >
-              <span className="mb-3 flex size-8 items-center justify-center rounded-full bg-muted">
-                <Sparkles className="size-4 text-muted-foreground" />
+              <span className="mb-3 flex size-8 items-center justify-center rounded-full bg-accent-pink/15">
+                <Sparkles className="size-4 text-accent-pink" />
               </span>
               {s}
             </button>
@@ -342,7 +342,7 @@ export function AgentConsole() {
 
         <form
           onSubmit={onSubmit}
-          className="mt-4 flex items-center gap-2 rounded-full glass py-1.5 pr-1.5 pl-5 focus-within:border-ring"
+          className="mt-4 flex items-center gap-2 rounded-full border border-white/15 bg-black py-1.5 pr-1.5 pl-5 focus-within:border-accent-pink"
         >
           <label htmlFor="agent-request" className="sr-only">
             Your request

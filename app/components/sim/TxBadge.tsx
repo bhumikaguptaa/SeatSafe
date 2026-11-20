@@ -19,7 +19,7 @@ export function TxBadge({ signature, label, failed = false }: { signature: strin
       href={explorerTx(signature)}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 rounded-full border border-vault/50 bg-vault/10 px-2 py-0.5 font-mono text-[11px] text-vault hover:bg-vault/20"
+      className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 font-mono text-[11px] text-primary hover:border-primary"
       title="Open this transaction on Solana Explorer (devnet)"
     >
       {label ? `${label} · ` : ""}{signature.slice(0, 6)}…{signature.slice(-4)} <ExternalLink className="size-3" />

@@ -9,11 +9,11 @@ const buttonVariants = cva(
       variant: {
         // Royal-blue gradient fill (--brand-button in globals.css) with a lit top edge.
         default:
-          "[background-image:var(--brand-button)] bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.3)] hover:brightness-110",
+          "btn-gradient bg-primary text-primary-foreground shadow-sm hover:brightness-110", // orange → pink, black text
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+          "bg-accent-pink text-black hover:brightness-110 aria-expanded:bg-accent-pink aria-expanded:text-black", // hot pink secondary
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:

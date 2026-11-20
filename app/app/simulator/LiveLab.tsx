@@ -86,7 +86,7 @@ function ScaledStage({ children }: { children: React.ReactNode }) {
   }, []);
   const scaled = box.scale < 1;
   return (
-    <div ref={outer} className="w-full" style={scaled ? { height: box.height } : undefined}>
+    <div ref={outer} className="w-full overflow-hidden" style={scaled ? { height: box.height } : undefined}>
       <div ref={inner} style={scaled ? { width: STORAGE_W, transform: `scale(${box.scale})`, transformOrigin: "top left" } : undefined}>{children}</div>
     </div>
   );
@@ -509,7 +509,7 @@ export function LiveLab() {
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <div className="flex items-center gap-1 rounded-full border border-white/15 bg-black/30 p-1" role="group" aria-label="Who signs">
               <button type="button" onClick={() => setParams({ driver: null })} className={cn("rounded-full px-3 py-1.5 font-semibold", driver === "users" && "bg-white text-black")}>Two real users</button>
-              <button type="button" disabled={!presenter?.enabled} title={presenter?.enabled ? "Server demo wallets sign" : presenter?.reason} onClick={() => setParams({ driver: "presenter", role: null })} className={cn("rounded-full px-3 py-1.5 font-semibold disabled:opacity-40", driver === "presenter" && "bg-vault text-black")}>Presenter</button>
+              <button type="button" disabled={!presenter?.enabled} title={presenter?.enabled ? "Server demo wallets sign" : presenter?.reason} onClick={() => setParams({ driver: "presenter", role: null })} className={cn("rounded-full px-3 py-1.5 font-semibold disabled:opacity-40", driver === "presenter" && "bg-primary text-primary-foreground")}>Presenter</button>
             </div>
           </div>
         </div>
@@ -523,7 +523,7 @@ export function LiveLab() {
               aria-selected={scenario === id}
               type="button"
               onClick={() => setParams({ scenario: id, mint: null, escrow: null, seller: null })}
-              className={cn("rounded-2xl border px-4 py-3 text-left", scenario === id ? (id === "scam" ? "border-disputed bg-disputed/10 glow-disputed" : "border-vault bg-vault/10 glow-vault") : "border-white/10 bg-white/[0.03]")}
+              className={cn("rounded-2xl border px-4 py-3 text-left", scenario === id ? (id === "scam" ? "border-disputed bg-disputed/10 glow-disputed" : "border-primary bg-primary/10 glow-primary") : "border-white/10 bg-card")}
             >
               <p className="font-bold">{name}</p>
               <p className="text-xs text-white/60">{sub}</p>
@@ -549,7 +549,7 @@ export function LiveLab() {
                   </Button>
                 ))}
                 {role && (
-                  <button type="button" className="ml-auto inline-flex items-center gap-1 rounded-full border border-white/20 px-3 py-1 text-xs hover:bg-white/10" onClick={() => void navigator.clipboard.writeText(shareLink)}>
+                  <button type="button" className="ml-auto inline-flex items-center gap-1 rounded-full border border-white/20 px-3 py-1 text-xs hover:bg-secondary" onClick={() => void navigator.clipboard.writeText(shareLink)}>
                     <Copy className="size-3" /> Copy link for the {role === "seller" ? "buyer" : "seller"}&apos;s window
                   </button>
                 )}
@@ -562,7 +562,7 @@ export function LiveLab() {
           <div>
             {/* Stage */}
             <ScaledStage>
-              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_50%_35%,rgba(61,108,240,0.35),transparent_60%),linear-gradient(180deg,#0b1430,#02060f)] p-4 md:p-6">
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-background p-4 md:p-6">
                 <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4">
                   <div className="flex flex-col items-center gap-1">
                     <Persona name="Seller" role={seller ? short(seller) : "not joined yet"} initial="S" usdc={d?.sellerUsd ?? 0} tone={lastBlocked && latest?.who.startsWith("Seller") ? "disputed" : "neutral"}>
