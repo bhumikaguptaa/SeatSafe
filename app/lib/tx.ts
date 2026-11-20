@@ -16,6 +16,7 @@
 import { createElement, useCallback, useMemo, type ReactNode } from "react";
 import { PublicKey } from "@solana/web3.js";
 import { utils } from "@coral-xyz/anchor";
+import { usePrivy } from "@privy-io/react-auth";
 import { useSignAndSendTransaction, useSignTransaction, useWallets } from "@privy-io/react-auth/solana";
 import { toast } from "sonner";
 import { PRIVY_ENABLED } from "./privy";
@@ -166,6 +167,19 @@ function useNoTxWallet(): TxWallet | null {
 
 /** The logged-in user's wallet, or null (logged out, wallet still loading, or Privy disabled). */
 export const useTxWallet: () => TxWallet | null = PRIVY_ENABLED ? usePrivyTxWallet : useNoTxWallet;
+
+function usePrivyWalletLoading(): boolean {
+  const { ready: authReady, authenticated } = usePrivy();
+  const { ready: walletsReady, wallets } = useWallets();
+  return !authReady || (authenticated && (!walletsReady || wallets.length === 0));
+}
+
+/**
+ * True while Privy is restoring the session or loading a logged-in user's wallet, i.e. while
+ * useTxWallet() is null but the user may well be logged in. Lets pages show a skeleton instead of
+ * flashing "Log in" on a full page load. Always false when Privy is disabled.
+ */
+export const useWalletLoading: () => boolean = PRIVY_ENABLED ? usePrivyWalletLoading : () => false;
 
 // ---------------------------------------------------------------------------
 // React: run an action with loading / success / friendly error toasts

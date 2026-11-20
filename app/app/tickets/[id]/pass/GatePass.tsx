@@ -15,7 +15,7 @@ import { ChevronLeft, ShieldCheck } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { getEvent as getMockEvent, MOCK_USER_ID, tickets as mockTickets } from "@/lib/mock";
 import { getEvent, getMyTickets, USE_MOCK } from "@/lib/chain";
-import { useTxWallet } from "@/lib/tx";
+import { useTxWallet, useWalletLoading } from "@/lib/tx";
 import { useAsyncData } from "@/lib/use-chain";
 import { formatDate } from "@/lib/format";
 import type { Event, Ticket } from "@/lib/types";
@@ -90,14 +90,18 @@ function SeatCell({ label, value }: { label: string; value: string }) {
 export function GatePass() {
   const { id } = useParams<{ id: string }>();
   const wallet = useTxWallet();
+  const walletLoading = useWalletLoading();
   const owner = wallet?.address.toBase58() ?? null;
   const key = USE_MOCK ? `pass:mock:${id}` : owner ? `pass:${owner}:${id}` : null;
-  const { data, loading, error, refresh } = useAsyncData(key, () =>
+  const { data, error, refresh } = useAsyncData(key, () =>
     USE_MOCK ? loadMockPass(id) : loadChainPass(id, owner!),
   );
   const now = useNow();
 
+  const skeleton = <Skeleton className="mx-auto h-[36rem] w-full max-w-sm rounded-3xl" />;
   if (!USE_MOCK && !owner) {
+    // On a full page load Privy restores the session first: don't flash "Log in" at a logged-in user.
+    if (walletLoading) return skeleton;
     return (
       <div className="mx-auto max-w-sm rounded-3xl glass p-6 text-center">
         <BrandMark className="mx-auto mb-3 h-8 opacity-70 grayscale-[35%]" />
@@ -107,7 +111,9 @@ export function GatePass() {
       </div>
     );
   }
-  if (loading && data === undefined) return <Skeleton className="mx-auto h-[36rem] w-full max-w-sm rounded-3xl" />;
+  // data stays undefined until the first load for this key finishes (the loader returns null for
+  // "not your ticket"), so undefined without an error always means "still loading".
+  if (data === undefined && !error) return skeleton;
   if (error && data === undefined) {
     return (
       <div className="mx-auto max-w-sm rounded-3xl glass p-6 text-center">
