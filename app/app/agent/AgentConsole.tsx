@@ -27,7 +27,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { getListingsForEvent, USE_MOCK } from "@/lib/chain";
+import { getListingsForEvent, getResaleListingPrices, USE_MOCK } from "@/lib/chain";
 import { useAsyncData } from "@/lib/use-chain";
 import { formatDate, formatUsd } from "@/lib/format";
 import { fetchUsdcBalance } from "@/components/UsdcBalance";
@@ -39,23 +39,29 @@ import { VoiceApproval } from "@/components/VoiceApproval";
 import { useAgentDemo, type AgentLogEntry, type ParsedRules } from "./useAgentDemo";
 import { useAgentChain } from "./useAgentChain";
 import { useAgentCrank } from "./useAgentCrank";
-import { buyableListings } from "./crank";
+import { buildSuggestions, buyableListings } from "./crank";
 
-// Demo suggestions sized to what's really on devnet: Battle of the Bands is the only event with Tier 1
-// resale listings (two at $14, one at $15, Nov 20 2026), so each of these finds a match on the first
-// check and locks a small budget. The first one is the main demo.
-// Mock mode simulates the scan against lib/mock.ts events (no Battle of the Bands there), so it keeps its own.
-const SUGGESTIONS = USE_MOCK
-  ? [
-      "2 tickets for UT vs A&M under $90, 4+ star sellers, before Friday",
-      "1 ticket for Neon Harbor under $100, 4.5+ star sellers",
-      "1 ticket for Austin Riverhawks under $40",
-    ]
-  : [
-      "1 ticket for Battle of the Bands under $15",
-      "1 ticket for Battle of the Bands under $14, 4+ star sellers",
-      "2 tickets for Battle of the Bands under $15",
-    ];
+// Mock mode simulates the scan against lib/mock.ts events, so its suggestions are fixed.
+// Live mode builds them from what's listed on devnet right now (useLiveSuggestions): hard-coded prices
+// went stale as soon as those listings sold, and the agent then never found a match.
+const MOCK_SUGGESTIONS = [
+  "2 tickets for UT vs A&M under $90, 4+ star sellers, before Friday",
+  "1 ticket for Neon Harbor under $100, 4.5+ star sellers",
+  "1 ticket for Austin Riverhawks under $40",
+];
+
+/** Live mode: suggestions that match current listings and fit my wallet, plus the facts for a "why none" note. */
+function useLiveSuggestions(events: Event[], me: string | null, ordersVersion: string) {
+  // ordersVersion changes when an order opens, fills or closes, so the balance and listings are re-read.
+  const key = !USE_MOCK && events.length > 0 ? `agent:suggest:${me ?? "anon"}:${events.length}:${ordersVersion}` : null;
+  return useAsyncData(key, async () => {
+    const [listings, balanceUsd] = await Promise.all([
+      getResaleListingPrices(),
+      me ? fetchUsdcBalance(me) : Promise.resolve(null),
+    ]);
+    return { ...buildSuggestions(listings, events, me, balanceUsd), balanceUsd };
+  });
+}
 
 const LOG_ICON: Record<AgentLogEntry["kind"], LucideIcon> = {
   lock: Lock,
@@ -397,6 +403,31 @@ export function AgentConsole() {
   const notEnoughUsdc =
     !!preflight.data && rules?.budgetUsd != null && preflight.data.balanceUsd + 1e-9 < rules.budgetUsd;
 
+  const live = useLiveSuggestions(
+    agent.events,
+    chain.me,
+    chain.orders.map((o) => `${o.id}:${o.status}`).join(","),
+  );
+  const suggestions = USE_MOCK ? MOCK_SUGGESTIONS : (live.data?.suggestions ?? []);
+  const suggestionsLoading = !USE_MOCK && live.data === undefined && !live.error;
+  const hasOpenOrder = chain.orders.some((o) => o.status === "OPEN");
+  let suggestionNote: string | null = null;
+  if (!USE_MOCK && live.data && suggestions.length === 0) {
+    const { cheapestBudgetUsd, balanceUsd } = live.data;
+    suggestionNote =
+      cheapestBudgetUsd === null
+        ? "No resale tickets are listed on devnet right now, so there's nothing for your agent to buy. List one from My tickets (Resell), then come back."
+        : `The cheapest ticket your agent can buy needs a ${formatUsd(cheapestBudgetUsd)} budget, and your wallet has ${formatUsd(balanceUsd ?? 0)} devnet USDC. ${
+            hasOpenOrder ? "Close & refund your open order below to free its budget, or top" : "Top"
+          } up at faucet.circle.com (Solana Devnet).`;
+  }
+
+  /** Tapping a suggestion reads it right away (no extra tap on the arrow). */
+  function pickSuggestion(s: string) {
+    setText(s);
+    agent.submit(s);
+  }
+
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     agent.submit(text);
@@ -420,12 +451,25 @@ export function AgentConsole() {
           Say it in plain English. Your agent only buys inside the rules you approve, from a budget you lock.
         </p>
 
+        {suggestionsLoading && (
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-24 rounded-2xl" />
+            ))}
+          </div>
+        )}
+        {suggestionNote && (
+          <p role="status" className="mt-4 rounded-2xl border border-transit/40 bg-transit/10 px-4 py-3 text-sm">
+            {suggestionNote}
+          </p>
+        )}
         <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          {SUGGESTIONS.map((s) => (
+          {suggestions.map((s) => (
             <button
               key={s}
               type="button"
-              onClick={() => setText(s)}
+              disabled={agent.eventsLoading}
+              onClick={() => pickSuggestion(s)}
               className="rounded-2xl border border-white/15 bg-black p-3.5 text-left hover:-translate-y-0.5 active:scale-[0.98] text-[13px] leading-snug text-foreground transition hover:border-accent-pink"
             >
               <span className="mb-3 flex size-8 items-center justify-center rounded-full bg-accent-pink/15">
@@ -447,7 +491,7 @@ export function AgentConsole() {
             id="agent-request"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={SUGGESTIONS[0]}
+            placeholder={suggestions[0] ?? "1 ticket for Battle of the Bands under $15"}
             className="h-10 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
           />
           <Button

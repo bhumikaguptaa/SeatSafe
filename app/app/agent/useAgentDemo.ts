@@ -60,14 +60,18 @@ function words(s: string): string[] {
     .filter((w) => w.length > 1 && !STOPWORDS.has(w));
 }
 
-/** Best event whose title shares at least two meaningful words with the request. */
+/**
+ * Best event whose title shares at least two meaningful words with the request (or its only word, for
+ * one-word titles like "Concert" or "Opera").
+ */
 function matchEvent(text: string, events: Event[]): Event | null {
   const asked = new Set(words(text));
   let best: Event | null = null;
-  let bestScore = 1;
+  let bestScore = 0;
   for (const e of events) {
-    const score = words(e.title).filter((w) => asked.has(w)).length;
-    if (score > bestScore) {
+    const titleWords = words(e.title);
+    const score = titleWords.filter((w) => asked.has(w)).length;
+    if (score >= Math.min(2, titleWords.length) && score > bestScore) {
       best = e;
       bestScore = score;
     }
