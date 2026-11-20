@@ -28,6 +28,7 @@ import { Vault, type VaultState } from "@/components/sim/Vault";
 import { TicketCard } from "@/components/sim/TicketCard";
 import { Coin, Flight, type Point } from "@/components/sim/Coin";
 import { XRayPanel, StackStrip, freshLayers, type LayerKey, type Run, type StackKey } from "@/components/sim/XRay";
+import { ScaledStage } from "@/components/sim/ScaledStage";
 import { AuthButton } from "@/components/AuthButton";
 import { Button } from "@/components/ui/button";
 
@@ -65,31 +66,6 @@ interface ActionDef {
   /** For "prepare" in two-user mode: custom flow. */
   custom?: () => Promise<void>;
   stack: StackKey[];
-}
-
-const STORAGE_W = 900;
-function ScaledStage({ children }: { children: React.ReactNode }) {
-  const outer = useRef<HTMLDivElement>(null);
-  const inner = useRef<HTMLDivElement>(null);
-  const [box, setBox] = useState({ scale: 1, height: 0 });
-  useEffect(() => {
-    const o = outer.current;
-    const i = inner.current;
-    if (!o || !i) return;
-    const ro = new ResizeObserver(() => {
-      const scale = Math.min(1, o.clientWidth / STORAGE_W);
-      setBox({ scale, height: i.offsetHeight * scale });
-    });
-    ro.observe(o);
-    ro.observe(i);
-    return () => ro.disconnect();
-  }, []);
-  const scaled = box.scale < 1;
-  return (
-    <div ref={outer} className="w-full overflow-hidden" style={scaled ? { height: box.height } : undefined}>
-      <div ref={inner} style={scaled ? { width: STORAGE_W, transform: `scale(${box.scale})`, transformOrigin: "top left" } : undefined}>{children}</div>
-    </div>
-  );
 }
 
 function LiveTag({ address, label = "live from Solana devnet" }: { address?: string | null; label?: string }) {
