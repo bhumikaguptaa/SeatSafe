@@ -446,12 +446,11 @@
 --------------------------------------------------------------------------- */
 @font-face {
   font-family: "Motech";
+  /* Local only until the licensed file is added to public/fonts (url() sources 404ed on every page).
+     Add url("/fonts/Motech.woff2") format("woff2") here once the file exists. */
   src:
     local("Motech"),
-    local("Motech Regular"),
-    url("/fonts/Motech.woff2") format("woff2"),
-    url("/fonts/Motech.otf") format("opentype"),
-    url("/fonts/Motech.ttf") format("truetype");
+    local("Motech Regular");
   font-display: swap;
 }
 

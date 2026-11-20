@@ -115,7 +115,8 @@ function inventoryOrder(l: SectionLayout): number[] {
     while (k < slots.length) {
       const len = 2 + Math.floor(h01(`${l.def.id}|${row}|${k}|n`) * 5);
       const run = slots.slice(k, k + len).map((s) => s.index);
-      runs.push({ score: row / l.def.rows + h01(`${l.def.id}|${row}|${k}|s`) * 0.9, seats: run });
+      // Keep ~30% of the runs per row so the inventory spreads over many rows (long front rows don't dominate).
+      if (h01(`${l.def.id}|${row}|${k}|keep`) < 0.3) runs.push({ score: (row / l.def.rows) * 0.5 + h01(`${l.def.id}|${row}|${k}|s`), seats: run });
       k += len + 1 + Math.floor(h01(`${l.def.id}|${row}|${k}|g`) * 4);
     }
   }
