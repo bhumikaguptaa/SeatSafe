@@ -16,6 +16,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatSeat } from "@/lib/seat-format";
 
 export function VerifyForm({ initial = "" }: { initial?: string }) {
   const router = useRouter();
@@ -172,7 +173,7 @@ function Result({ info }: { info: VerifyInfo }) {
           <dl>
             <Row label="Event">{info.event?.title ?? "SeatSafe event"}</Row>
             {info.event && <Row label="Date">{formatDate(info.event.startsAt)}</Row>}
-            <Row label="Seat">{info.seat || "General admission"}</Row>
+            <Row label="Seat">{formatSeat(info.event, info.seat).label}</Row>
             <Row label="Price">
               {formatUsd(info.priceUsd)}
               {info.event?.resaleCapUsd != null && (
@@ -198,7 +199,7 @@ function Result({ info }: { info: VerifyInfo }) {
         <Protected title="Protected SeatSafe escrow">
           <dl>
             <Row label="Event">{info.event?.title ?? "Outside ticket"}</Row>
-            {e.seat && <Row label="Seat">{e.seat}</Row>}
+            {e.seat && <Row label="Seat">{formatSeat(info.event, e.seat).label}</Row>}
             <Row label="Price">{formatUsd(e.priceUsd)}</Row>
             <Row label="Seller bond">
               {formatUsd(e.bondUsd)}

@@ -9,12 +9,13 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { useRouter } from "next/navigation";
 import { Crown, Loader2, ShieldCheck, Ticket as TicketIcon } from "lucide-react";
 import { PublicKey } from "@solana/web3.js";
-import { buildLayout, mapSeats, seatCode, seatLabel, type SeatKind, type SeatSlot, type SeatState, type SectionId, type SectionLayout } from "@/lib/stadium-map";
+import { buildLayout, mapSeats, seatCode, type SeatKind, type SeatSlot, type SeatState, type SectionId, type SectionLayout } from "@/lib/stadium-map";
 import { chainProgram, USE_MOCK, type ChainListing } from "@/lib/chain";
 import { buyPrimary, fundEscrow, swapResale } from "@/lib/program";
 import { saveMeta } from "@/lib/event-meta";
 import { mockTx, useRunTx } from "@/lib/tx";
 import { formatUsd } from "@/lib/format";
+import { formatSeat } from "@/lib/seat-format";
 import { SEAT } from "@/lib/design";
 import type { Event } from "@/lib/types";
 import { CalendarLinks } from "@/components/AddToCalendar";
@@ -112,7 +113,7 @@ export function useSeatBuy(event: PickerEvent) {
     const calendar = <CalendarLinks event={event} />;
     let okBuy = false;
     if (st.kind === "available") {
-      const opts = { pending: "Buying your seat…", success: `You're in! ${seatLabel(slot)}`, successExtra: calendar };
+      const opts = { pending: "Buying your seat…", success: `You're in! ${formatSeat(event, { stand: slot.section, row: slot.row, seat: slot.seat }).label}`, successExtra: calendar };
       okBuy = USE_MOCK ? await mockTx(opts) : (await run((ctx) => buyPrimary(ctx, { event: new PublicKey(event.id), seat: seatCode(slot) }), opts)) !== null;
     } else if (st.kind === "resale" && st.ticketMint) {
       const opts = { pending: "Swapping ticket and payment…", success: "Ticket bought! It's in My tickets.", successExtra: calendar };
@@ -165,7 +166,7 @@ export function TicketCard({
       {showThumbnail && <div className="hidden aspect-[4/3] w-32 shrink-0 overflow-hidden rounded-xl bg-[#ececef] sm:block md:w-40">{thumbnail}</div>}
       <div className="min-w-0 flex-1">
         <p className="truncate text-xs font-medium text-[#52525b]">{event.title}</p>
-        <p className="text-base font-bold md:text-lg">{vip ? "VIP Box · leather seats, glass front" : seatLabel(slot)}</p>
+        <p className="text-base font-bold md:text-lg">{vip ? "VIP Box · leather seats, glass front" : formatSeat(event, { stand: slot.section, row: slot.row, seat: slot.seat }).label}</p>
         {vip ? (
           <p className="mt-1 text-xs text-[#52525b]">VIP upgrades aren&apos;t on sale for this event yet. This is the view from the box.</p>
         ) : st && st.kind !== "off" && st.kind !== "taken" ? (

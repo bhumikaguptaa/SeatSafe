@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { AuthButton } from "@/components/AuthButton";
 import { CalendarLinks } from "@/components/AddToCalendar";
 import { ScanAura } from "@/components/ScanAura"; // added by D: colour-burst aura (visual only)
+import { formatSeat } from "@/lib/seat-format";
 
 // Camera access + ZXing only in the browser.
 const Scanner = dynamic(() => import("@yudiel/react-qr-scanner").then((m) => m.Scanner), {
@@ -91,7 +92,7 @@ export default function ScanPage() {
       setPaused(false);
       return;
     }
-    setOffer({ link: r.link, listing: r.listing, event: info.event, seat: info.seat || "General admission", priceUsd: info.priceUsd, label: meta.label ?? "SeatSafe" });
+    setOffer({ link: r.link, listing: r.listing, event: info.event, seat: formatSeat(info.event, info.seat).label, priceUsd: info.priceUsd, label: meta.label ?? "SeatSafe" });
   };
 
   const buy = async () => {
@@ -128,7 +129,7 @@ export default function ScanPage() {
         id,
         duration: 10_000,
         description: offer.event ? <div><div>Gas paid by SeatSafe.</div><CalendarLinks event={offer.event} /></div> : "Gas paid by SeatSafe.",
-        action: { label: "View tx", onClick: () => window.open(explorerTx(sig), "_blank", "noopener") },
+        action: { label: "View transaction ↗", onClick: () => window.open(explorerTx(sig), "_blank", "noopener") },
       });
       router.push("/tickets");
     } catch (err) {
