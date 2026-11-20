@@ -19,6 +19,7 @@ import { explorerTx } from "@/lib/solana";
 import { chainProgram } from "@/lib/chain";
 import { fromBaseUnits } from "@/lib/program";
 import bundledMeta from "@/lib/event-meta.json";
+import { cleanFeed } from "@/lib/feed";
 
 export interface ActivityItem {
   id: string;
@@ -26,6 +27,8 @@ export interface ActivityItem {
   text: string;
   at: string;
   explorerUrl: string | null;
+  /** Dollar amount the item is about, when it has one (the feed hides items under $5). */
+  amountUsd?: number;
 }
 
 export interface Stats {
@@ -133,12 +136,12 @@ export async function computeStats(db: SupabaseClient | null): Promise<Stats> {
       const title = titleOf(o?.event_id);
       const at = title ? ` · ${title}` : "";
       const amount = num(o?.amount_usd);
-      const base = { id: e.id, at: e.at, explorerUrl: e.tx_signature ? explorerTx(e.tx_signature) : null };
+      const base = { id: e.id, at: e.at, explorerUrl: e.tx_signature ? explorerTx(e.tx_signature) : null, amountUsd: o ? amount : undefined };
       switch (e.type) {
         case "SWAPPED":
           return { ...base, kind: "resale", text: `Ticket resold at a fair ${money(amount)}${at}` };
         case "REFUNDED":
-          return { ...base, kind: "refund", text: `Scam stopped: ${money(round2(amount + bondOf(o)))} auto-refunded${at}` };
+          return { ...base, kind: "refund", amountUsd: o ? round2(amount + bondOf(o)) : undefined, text: `Scam stopped: ${money(round2(amount + bondOf(o)))} auto-refunded${at}` };
         case "FUNDED":
           return { ...base, kind: "escrow", text: `${money(amount)} locked in a SeatSafe vault${at}` };
         case "TICKET_SENT":
@@ -156,11 +159,11 @@ export async function computeStats(db: SupabaseClient | null): Promise<Stats> {
     const blockedItems: ActivityItem[] = blocked.map((b) => {
       const title = titleOf(b.event_id);
       const over = b.price_usd != null && b.cap_usd != null ? `${money(num(b.price_usd))} over the ${money(num(b.cap_usd))} cap` : "listing over the cap";
-      return { id: `blocked:${b.id}`, kind: "blocked", at: b.at, explorerUrl: null, text: `Scalper blocked: ${over}${title ? ` · ${title}` : ""}` };
+      return { id: `blocked:${b.id}`, kind: "blocked", at: b.at, amountUsd: b.price_usd != null ? num(b.price_usd) : undefined, explorerUrl: null, text: `Scalper blocked: ${over}${title ? ` · ${title}` : ""}` };
     });
-    const recent = [...orderEvents.map(describe).filter((x): x is ActivityItem => x !== null), ...blockedItems]
-      .sort((a, b) => b.at.localeCompare(a.at))
-      .slice(0, 8);
+    const recent = cleanFeed(
+      [...orderEvents.map(describe).filter((x): x is ActivityItem => x !== null), ...blockedItems].sort((a, b) => b.at.localeCompare(a.at)),
+    ).slice(0, 8);
 
     const empty = tickets.length + orders.length + orderEvents.length + blocked.length === 0;
     return {
