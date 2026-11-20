@@ -16,6 +16,7 @@ import { TicketCard } from "@/components/sim/TicketCard";
 import { Coin, Flight, type Point } from "@/components/sim/Coin";
 import { StepRail } from "@/components/sim/StepRail";
 import { TxBadge } from "@/components/sim/TxBadge";
+import { ScaledStage } from "@/components/sim/ScaledStage";
 import { MOTION, SHAKE_X, TONE, money } from "@/lib/design";
 import { cn } from "@/lib/utils";
 import { useNow } from "@/lib/use-chain";
@@ -45,35 +46,6 @@ interface LiveBalances {
   relayerSol: number;
   sellerAddress: string;
   buyerAddress: string;
-}
-
-/** The stage is designed at 900 px; on narrower screens it scales down as a whole (flights use % so they still line up). */
-const STAGE_W = 900;
-function ScaledStage({ children }: { children: React.ReactNode }) {
-  const outer = useRef<HTMLDivElement>(null);
-  const inner = useRef<HTMLDivElement>(null);
-  const [box, setBox] = useState({ scale: 1, height: 0 });
-  useEffect(() => {
-    const o = outer.current;
-    const i = inner.current;
-    if (!o || !i) return;
-    const measure = () => {
-      const scale = Math.min(1, o.clientWidth / STAGE_W);
-      setBox({ scale, height: i.offsetHeight * scale });
-    };
-    const ro = new ResizeObserver(measure);
-    ro.observe(o);
-    ro.observe(i);
-    return () => ro.disconnect();
-  }, []);
-  const scaled = box.scale < 1;
-  return (
-    <div ref={outer} className="w-full overflow-hidden" style={scaled ? { height: box.height } : undefined}>
-      <div ref={inner} style={scaled ? { width: STAGE_W, transform: `scale(${box.scale})`, transformOrigin: "top left" } : undefined}>
-        {children}
-      </div>
-    </div>
-  );
 }
 
 export function SimulatedLab() {
