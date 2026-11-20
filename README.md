@@ -5,7 +5,7 @@
 - **Live app:** https://seat-safe-chi.vercel.app
 - **Demo video (3 min):** TODO(C)
 - **Program (Solana devnet):** [`7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy`](https://explorer.solana.com/address/7fnVUPd18tDr2CbEgjTxt55Emq4CMMskR9qxprjQjypy?cluster=devnet)
-- **Track:** Consumer Applications · **Chain award:** Best use of Solana · **Bounties:** QuickNode Streams, Grok Bot, ElevenLabs (TODO: keep only if voice is in the video)
+- **Track:** Consumer Applications · **Chain award:** Best use of Solana · **Bounties:** QuickNode Streams, Grok Bot, ElevenLabs 
 
 ![How SeatSafe works](docs/seatsafe-user-flow.png)
 
