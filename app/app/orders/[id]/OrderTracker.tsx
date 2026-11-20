@@ -238,7 +238,8 @@ export function OrderTracker() {
         </AnimatePresence>
 
         {/* Hero glass card: where the money is. */}
-        <GlassHero as="div" className="mt-6 p-4 sm:p-5">
+        {/* The one brand-gradient surface on this page. */}
+        <GlassHero as="div" brand className="mt-6 p-4 sm:p-5">
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {SPOTS.map((s) => {
               const here = s.id === ui.spot;
@@ -246,7 +247,7 @@ export function OrderTracker() {
               return (
                 <div key={s.id} className="flex flex-col items-center gap-2">
                   <div
-                    className={`flex h-24 w-full items-center justify-center rounded-2xl border bg-muted/60 transition-colors ${
+                    className={`flex h-24 w-full items-center justify-center rounded-2xl border bg-black transition-colors ${
                       here ? tone.border : "border-border"
                     }`}
                   >
@@ -254,7 +255,7 @@ export function OrderTracker() {
                       <motion.div
                         layoutId="escrow-coin"
                         transition={{ type: "spring", stiffness: 260, damping: 24 }}
-                        className={`flex size-14 items-center justify-center rounded-full border-2 bg-[#0b1430]/80 text-[11px] font-semibold tabular-nums ${tone.border} ${tone.text} ${tone.glow}`}
+                        className={`flex size-14 items-center justify-center rounded-full border-2 bg-black text-[11px] font-semibold tabular-nums ${tone.border} ${tone.text} ${tone.glow}`}
                       >
                         {view.state === "DISPUTED" ? (
                           <motion.span

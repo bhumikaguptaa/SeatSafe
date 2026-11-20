@@ -3,7 +3,7 @@
 // Owner: D. Discover: featured event, category chips, and an "Upcoming" list of event rows.
 // Data comes ONLY from useEvents() (mock today, Supabase later).
 // Colours come from the global theme; event art is <EventArt> (palette shades + category icon).
-// The featured event is a <GlassHero> (glass with soft light blobs, like Finora's card).
+// The featured event is a <GlassHero brand>: the brand gradient (one of only two places it's used).
 
 import { useState } from "react";
 import Link from "next/link";
@@ -32,12 +32,12 @@ const FILTERS: { id: Filter; label: string }[] = [
 function FeaturedEvent({ event }: { event: Event }) {
   return (
     <Link href={`/events/${event.id}`} className="group block">
-      <GlassHero className="h-64 sm:h-72">
+      <GlassHero brand className="h-64 sm:h-72">
         <div className="absolute top-4 left-4 flex gap-2">
-          <span className="rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-xs font-semibold text-white capitalize backdrop-blur-md">
+          <span className="rounded-full bg-pink-light px-2.5 py-1 text-xs font-semibold text-black capitalize">
             Featured · {event.category}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
+          <span className="inline-flex items-center gap-1 rounded-full bg-pink-light px-2.5 py-1 text-xs font-semibold text-black">
             <ShieldCheck className="size-3.5" />
             Protected
           </span>
@@ -56,7 +56,7 @@ function FeaturedEvent({ event }: { event: Event }) {
               </p>
             </div>
             <span
-              className={cn(buttonVariants(), "h-11 shrink-0 rounded-2xl px-5 text-[15px] font-semibold ring-1 ring-white/40")}
+              className={cn(buttonVariants(), "h-11 shrink-0 rounded-2xl bg-white bg-none! px-5 text-[15px] font-semibold text-black hover:bg-white")}
             >
               Get tickets
             </span>
@@ -71,7 +71,7 @@ function EventRow({ event }: { event: Event }) {
   return (
     <Link
       href={`/events/${event.id}`}
-      className="group flex items-center gap-4 rounded-2xl py-3.5 transition-colors hover:bg-muted/40"
+      className="group flex min-w-0 items-center gap-4 rounded-2xl py-3.5 transition-colors hover:bg-muted/40"
     >
       <EventArt event={event} size="tile" className="size-14 shrink-0 rounded-2xl" />
       <div className="min-w-0 flex-1">
@@ -104,7 +104,7 @@ export default function DiscoverPage() {
     <PageShell title="Discover" description="Concerts, games and campus events. Every purchase is payment-protected.">
       <ProtectionTicker /> {/* Added by A */}
       <div className="space-y-5">
-        <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Filter by category">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by category">
           {FILTERS.map((f) => (
             <button
               key={f.id}
@@ -114,7 +114,7 @@ export default function DiscoverPage() {
               className={cn(
                 "h-9 shrink-0 rounded-full px-4 text-sm font-semibold transition-colors",
                 filter === f.id
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-accent-pink text-black"
                   : "bg-muted text-muted-foreground hover:text-foreground",
               )}
             >
@@ -143,7 +143,7 @@ export default function DiscoverPage() {
                     {rest.length} {rest.length === 1 ? "event" : "events"}
                   </span>
                 </div>
-                <div className="mt-1 grid divide-y divide-border lg:grid-cols-2 lg:gap-x-10 lg:divide-y-0">
+                <div className="mt-1 grid grid-cols-1 divide-y divide-border lg:grid-cols-2 lg:gap-x-10 lg:divide-y-0">
                   {rest.map((event) => (
                     <EventRow key={event.id} event={event} />
                   ))}

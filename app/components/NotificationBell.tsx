@@ -119,7 +119,7 @@ export function NotificationBell() {
       >
         <Bell className="size-5" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-disputed px-1 text-[10px] leading-4 font-bold text-white">
+          <span className="absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-accent-pink px-1 text-[10px] leading-4 font-bold text-black">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -143,7 +143,7 @@ export function NotificationBell() {
               onClick={() => n.url && router.push(n.url)}
               className="flex items-start gap-2 py-2"
             >
-              <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", !n.read_at && n.created_at > seen ? "bg-vault" : "bg-transparent")} aria-hidden />
+              <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", !n.read_at && n.created_at > seen ? "bg-primary" : "bg-transparent")} aria-hidden />
               <span className="min-w-0 flex-1">
                 <span className="block text-sm leading-snug font-medium">{n.title}</span>
                 {n.body && <span className="block text-xs text-muted-foreground">{n.body}</span>}

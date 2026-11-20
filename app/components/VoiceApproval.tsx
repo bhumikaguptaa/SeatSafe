@@ -175,7 +175,7 @@ function CallPanel({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 40 }}
       transition={{ type: "spring", stiffness: 300, damping: 28 }}
-      className="fixed inset-x-4 bottom-24 z-50 mx-auto max-w-sm overflow-hidden rounded-3xl border border-border bg-[#0b1430]/90 p-6 shadow-[inset_0_1px_0_rgb(255_255_255/0.22),0_24px_60px_-20px_rgb(2_6_15/0.8)] backdrop-blur-xl md:inset-x-auto md:right-8 md:bottom-8 md:w-96"
+      className="fixed inset-x-4 bottom-24 z-50 mx-auto max-w-sm overflow-hidden rounded-3xl border border-accent-pink/60 bg-card p-6 shadow-[0_24px_60px_-20px_rgb(0_0_0/0.9)] md:inset-x-auto md:right-8 md:bottom-8 md:w-96"
     >
       <div className="relative flex flex-col items-center text-center">
         {/* Caller avatar: rings while ringing, steady once answered */}
@@ -184,13 +184,13 @@ function CallPanel({
             [0, 0.6].map((delay) => (
               <motion.span
                 key={delay}
-                className="absolute inset-0 rounded-full border border-foreground/30"
+                className="absolute inset-0 rounded-full border border-accent-pink/60"
                 animate={{ scale: [1, 1.6], opacity: [0.6, 0] }}
                 transition={{ duration: 1.8, repeat: Infinity, delay, ease: "easeOut" }}
               />
             ))}
           <span className="flex size-16 items-center justify-center rounded-full border border-border bg-muted">
-            <Bot className="size-7" />
+            <Bot className="size-7 text-accent-pink" />
           </span>
         </div>
 
@@ -206,7 +206,7 @@ function CallPanel({
           {BARS.map((h, i) => (
             <motion.span
               key={i}
-              className="w-1 rounded-full bg-muted-foreground"
+              className="w-1 rounded-full bg-accent-pink"
               animate={
                 isSpeaking
                   ? { height: [`${h * 40}%`, `${h * 100}%`, `${h * 40}%`] }
@@ -249,12 +249,12 @@ function CallPanel({
 function RoundAction({
   label,
   onClick,
-  variant = "default",
+  variant = "secondary", // pink (secondary) call buttons
   children,
 }: {
   label: string;
   onClick: () => void;
-  variant?: "default" | "outline";
+  variant?: "default" | "secondary" | "outline";
   children: ReactNode;
 }) {
   return (

@@ -68,7 +68,7 @@ function ScaledStage({ children }: { children: React.ReactNode }) {
   }, []);
   const scaled = box.scale < 1;
   return (
-    <div ref={outer} className="w-full" style={scaled ? { height: box.height } : undefined}>
+    <div ref={outer} className="w-full overflow-hidden" style={scaled ? { height: box.height } : undefined}>
       <div ref={inner} style={scaled ? { width: STAGE_W, transform: `scale(${box.scale})`, transformOrigin: "top left" } : undefined}>
         {children}
       </div>
@@ -249,7 +249,7 @@ export function SimulatedLab() {
               disabled={!liveInfo?.enabled}
               title={liveInfo?.enabled ? "Run real devnet transactions" : liveInfo?.reason ?? "Checking…"}
               onClick={() => { setLive(true); reset(); }}
-              className={cn("flex items-center gap-1 rounded-full px-3 py-1.5 font-semibold disabled:opacity-40", live && "bg-vault text-black")}
+              className={cn("flex items-center gap-1 rounded-full px-3 py-1.5 font-semibold disabled:opacity-40", live && "bg-primary text-primary-foreground")}
             >
               <Radio className="size-3" /> Live on devnet
             </button>
@@ -267,7 +267,7 @@ export function SimulatedLab() {
               onClick={() => reset(s.id)}
               className={cn(
                 "rounded-2xl border px-4 py-3 text-left transition-colors",
-                scenario === s.id ? (s.id === "scam" ? "border-disputed bg-disputed/10 glow-disputed" : "border-vault bg-vault/10 glow-vault") : "border-white/10 bg-white/[0.03] hover:bg-white/[0.07]",
+                scenario === s.id ? (s.id === "scam" ? "border-disputed bg-disputed/10 glow-disputed" : "border-primary bg-primary/10 glow-primary") : "border-white/10 bg-card hover:bg-secondary",
               )}
             >
               <p className="font-bold">{s.name}</p>
@@ -281,7 +281,7 @@ export function SimulatedLab() {
         {/* Stage */}
         <div className="mt-4">
         <ScaledStage>
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_50%_35%,rgba(61,108,240,0.35),transparent_60%),linear-gradient(180deg,#0b1430,#02060f)] p-3 md:p-6">
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-background p-3 md:p-6">
           <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 md:gap-6">
             <Persona name="Sam" role={scenario === "fair" ? "Seller · owns a ticket" : "Seller · says he has a ticket"} initial="S" usdc={sellerUsd} tone={frame.sellerTone ?? "neutral"} delta={delta("seller")}>
               {ticketNode("seller")}
@@ -291,7 +291,7 @@ export function SimulatedLab() {
               {frame.cap && (
                 <div className={cn("w-44 rounded-xl border px-3 py-2 text-center text-xs md:w-56", frame.cap.price > frame.cap.cap ? "border-disputed/60 bg-disputed/10" : "border-released/50 bg-released/10")} title="The artist sets a maximum resale price. The program refuses anything above it.">
                   <p className="font-semibold">Price {money(frame.cap.price)} · Max {money(frame.cap.cap)}</p>
-                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/10">
+                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-secondary">
                     <motion.div
                       className={cn("h-full rounded-full", frame.cap.price > frame.cap.cap ? "bg-disputed" : "bg-released")}
                       initial={{ width: 0 }}

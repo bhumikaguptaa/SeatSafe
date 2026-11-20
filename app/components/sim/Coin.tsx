@@ -17,7 +17,7 @@ export function Coin({ amount, tone = "vault", label, className }: { amount: num
       <span
         className={cn(
           "num flex size-12 items-center justify-center rounded-full border-2 text-xs font-extrabold shadow-lg md:size-14 md:text-sm",
-          "bg-gradient-to-br from-[#5ba3ff] to-[#1f5fd6] text-white",
+          "bg-primary text-primary-foreground",
           TONE[tone].border,
           TONE[tone].glow,
         )}

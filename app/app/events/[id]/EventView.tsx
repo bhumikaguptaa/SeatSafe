@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/form";
 import { EventArt } from "@/components/EventArt";
 import { AddToCalendar, CalendarLinks } from "@/components/AddToCalendar";
+import { SeatPicker } from "@/components/SeatPicker"; // added by D: the 2D seat map (the only seat picker)
 
 type ViewEvent = Event & Partial<Pick<ChainEvent, "supply" | "sold" | "priceUsd">>;
 
@@ -107,37 +108,53 @@ function EventDetails({
   const tier2 = listings.filter((l) => l.tier === 2);
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-6 md:py-8">
+    // D (layout only): a wide marketplace page. Compact event header, then listings + map side by side,
+    // then the existing list view at reading width. Buy / calendar components and logic are unchanged.
+    <div className="mx-auto w-full max-w-7xl px-4 py-5 md:py-6">
       <Card variant="solid" className="gap-0 overflow-hidden p-0">
-        <div className="relative h-32 md:h-44">
-          <EventArt event={event} className="absolute inset-0" />
-          <Badge className="absolute top-3 left-3 bg-black/50 text-white capitalize">{event.category}</Badge>
-        </div>
-        <div className="space-y-4 p-4 md:p-6">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">{event.title}</h1>
-            <p className="text-sm text-muted-foreground">
-              {formatDate(event.startsAt)} · {event.venue}
-              {event.city ? `, ${event.city}` : ""}
-            </p>
-            <p className="text-xs text-muted-foreground">By {event.organizerName}</p>
-            {showCalendar && <AddToCalendar event={event} defaultOpen={openCalendar} className="mt-3" />}
+        <div className="flex flex-col gap-4 p-4 md:flex-row md:items-center md:gap-6 md:p-5">
+          <div className="flex min-w-0 flex-1 items-center gap-4">
+            <div className="relative size-16 shrink-0 overflow-hidden rounded-xl md:size-20">
+              <EventArt event={event} size="tile" className="absolute inset-0" />
+            </div>
+            <div className="min-w-0">
+              <Badge className="bg-pink-light text-black capitalize">{event.category}</Badge>
+              <h1 className="mt-1 text-xl leading-tight font-bold tracking-tight md:text-2xl">{event.title}</h1>
+              <p className="text-sm text-muted-foreground">
+                {formatDate(event.startsAt)} · {event.venue}
+                {event.city ? `, ${event.city}` : ""} · By {event.organizerName}
+              </p>
+              {showCalendar && <AddToCalendar event={event} defaultOpen={openCalendar} className="mt-2" />}
+            </div>
           </div>
-          <dl className="grid grid-cols-3 gap-2 text-center text-sm">
-            <Stat label="Price" value={formatUsd(event.priceFromUsd)} />
-            <Stat label="Resale cap" value={event.resaleCapUsd != null ? formatUsd(event.resaleCapUsd) : "None"} />
-            <Stat label="Artist royalty" value={`${event.royaltyBps / 100}%`} />
-          </dl>
-          <BuyPrimaryButton event={event} soldOut={soldOut} onDone={refresh} />
-          {left !== null && (
-            <p className="text-center text-xs text-muted-foreground">
-              {soldOut ? "Sold out" : `${left} of ${event.supply} left`}
-            </p>
-          )}
+          <div className="flex flex-col gap-2 md:w-[360px] md:shrink-0">
+            <dl className="grid grid-cols-3 gap-2 text-center text-sm">
+              <Stat label="Price" value={formatUsd(event.priceFromUsd)} />
+              <Stat label="Resale cap" value={event.resaleCapUsd != null ? formatUsd(event.resaleCapUsd) : "None"} />
+              <Stat label="Artist royalty" value={`${event.royaltyBps / 100}%`} />
+            </dl>
+            <BuyPrimaryButton event={event} soldOut={soldOut} onDone={refresh} />
+            {left !== null && (
+              <p className="text-center text-xs text-muted-foreground">
+                {soldOut ? "Sold out" : `${left} of ${event.supply} left`}
+              </p>
+            )}
+          </div>
         </div>
       </Card>
 
-      <section className="mt-8 space-y-3">
+      <section className="mt-5">
+        {/* D: listings + 2D seat map marketplace (the only seat picker; the 3D stadium is not shown). */}
+        <SeatPicker event={event} listings={listings} onDone={refresh} />
+      </section>
+
+      <div className="mx-auto max-w-4xl">
+
+      <details open className="group mt-4">
+        <summary className="cursor-pointer list-none text-sm font-semibold text-muted-foreground hover:text-foreground">
+          <span className="group-open:hidden">Show</span><span className="hidden group-open:inline">Hide</span> list view · fan resale and outside tickets
+        </summary>
+      <section className="mt-6 space-y-3">
         <div>
           <h2 className="text-lg font-semibold">Fan resale</h2>
           <p className="text-sm text-muted-foreground">
@@ -172,6 +189,8 @@ function EventDetails({
           </ul>
         )}
       </section>
+      </details>
+      </div>
     </div>
   );
 }
@@ -243,7 +262,7 @@ function ListingRow({ listing, event, onDone }: { listing: ChainListing; event: 
   };
 
   return (
-    <li className="flex flex-wrap items-center gap-3 rounded-xl border border-border p-3 transition-shadow duration-300 hover:glow-vault">
+    <li className="flex flex-wrap items-center gap-3 rounded-xl border border-border p-3 transition-shadow duration-300 hover:glow-primary">
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium">{listing.seat || "General admission"}</p>
         <p className="truncate text-xs text-muted-foreground">
