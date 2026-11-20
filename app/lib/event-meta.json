@@ -24,7 +24,8 @@
       "venue": "West Quad Lawn",
       "city": "Austin, TX",
       "organizerName": "Campus Radio KSRF",
-      "imageGradient": "bg-gradient-to-br from-yellow-400 via-lime-600 to-teal-900"
+      "imageGradient": "bg-gradient-to-br from-yellow-400 via-lime-600 to-teal-900",
+      "imageUrl": "/events/concert.jpg"
     },
     "2aiG3Nznw6g4hfQCR85juQKj36HRyaDB33G1CUbVzCRy": {
       "title": "Relay smoke test",

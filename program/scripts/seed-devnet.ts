@@ -102,6 +102,7 @@ const EVENTS = [
       title: "Battle of the Bands: Dorm Edition", category: "campus",
       venue: "West Quad Lawn", city: "Austin, TX", organizerName: "Campus Radio KSRF",
       imageGradient: "bg-gradient-to-br from-yellow-400 via-lime-600 to-teal-900",
+      imageUrl: "/events/concert.jpg",
     },
   },
   {
